@@ -1,0 +1,774 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:Canvas;color:CanvasText}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<title>MIP · Backstage</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: cabeçalho com troca de pessoa e projeto, trilho de fases, abas por bloco do roadmap, conteúdo em uma coluna de leitura. */
+/* A mesma hierarquia usa apenas preto, branco e cinzas nos dois temas. */
+:root{
+  color-scheme:light;
+  --bg:#f4f4f4; --surface:#fff; --surface2:#ededed; --ink:#151515; --muted:#555; --line:#c9c9c9;
+  --accent:#161616; --accent-ink:#fff; --accent-soft:#e7e7e7;
+  --ok:#262626; --ok-soft:#e9e9e9; --warn:#3d3d3d; --warn-soft:#dedede;
+  --pend:#555; --pend-soft:#e8e8e8; --bad:#171717; --bad-soft:#d9d9d9;
+  --hero-bg:#171717; --hero-ink:#fff; --hero-muted:#d5d5d5; --hero-button-bg:#fff; --hero-button-ink:#171717;
+  --toast-bg:#171717; --toast-ink:#fff;
+  --f-display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --f-body:'Instrument Sans','Segoe UI',system-ui,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0d0d0d; --surface:#191919; --surface2:#292929; --ink:#f5f5f5; --muted:#b5b5b5; --line:#505050;
+  --accent:#f5f5f5; --accent-ink:#101010; --accent-soft:#303030;
+  --ok:#ececec; --ok-soft:#303030; --warn:#e0e0e0; --warn-soft:#343434;
+  --pend:#c9c9c9; --pend-soft:#292929; --bad:#f2f2f2; --bad-soft:#383838;
+  --hero-bg:#252525; --hero-ink:#fff; --hero-muted:#d5d5d5; --hero-button-bg:#f5f5f5; --hero-button-ink:#111;
+  --toast-bg:#303030; --toast-ink:#fff;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;padding-block:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:980px;margin:0 auto;padding-block:16px 48px}
+h1,h2,h3{font-family:var(--f-display);margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:22px;line-height:1.2} h3{font-size:16px;line-height:1.3}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-size:12px}
+.muted{color:var(--muted)}
+.top{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;justify-content:space-between;padding-bottom:14px}
+.brand{display:flex;align-items:baseline;gap:8px}
+.brand b{font-family:var(--f-display);font-size:20px}
+.brand-link{font:700 22px var(--f-display);color:var(--ink);background:none;border:0;padding:0;cursor:pointer}
+.brand span{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.ctrls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ctrls label{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
+select,input[type=text],input[type=email],textarea{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 10px;min-width:0}
+textarea{width:100%;min-height:64px;resize:vertical}
+input[type=text],input[type=email]{width:100%}
+select{padding-right:6px}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.bad{color:var(--bad);border-color:var(--bad);border-style:double;border-width:2px}
+.btn.sm{padding:4px 9px;font-size:13px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.phases{display:flex;gap:0;overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface);margin-bottom:12px}
+.ph{flex:1 0 120px;padding:9px 12px;font-size:13px;color:var(--muted);border-right:1px solid var(--line);display:flex;gap:8px;align-items:center;white-space:nowrap}
+.ph:last-child{border-right:0}
+.ph i{width:9px;height:9px;border-radius:50%;border:2px solid var(--line);flex:none}
+.ph.done{color:var(--ink)} .ph.done i{background:var(--ok);border-color:var(--ok)}
+.ph.now{color:var(--ink);font-weight:600;background:var(--accent-soft)} .ph.now i{background:var(--accent);border-color:var(--accent)}
+.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:18px}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:9px 12px;cursor:pointer;color:var(--muted);font-weight:500;white-space:nowrap}
+.tab.on{color:var(--ink);border-bottom-color:var(--accent)}
+.project-hero{background:var(--hero-bg);color:var(--hero-ink);border-radius:16px;padding:24px;display:flex;flex-wrap:wrap;gap:18px;align-items:end;justify-content:space-between;margin-bottom:16px}
+.project-hero h1{font-size:clamp(26px,4vw,38px);line-height:1.08;margin:8px 0}
+.project-hero .muted{color:var(--hero-muted)}.project-hero .chip{background:rgba(255,255,255,.16);color:var(--hero-ink)}
+.project-hero .btn{background:var(--hero-button-bg);color:var(--hero-button-ink);border-color:var(--hero-button-bg)}
+.home-hero{background:var(--hero-bg);color:var(--hero-ink);border-radius:18px;padding:clamp(24px,5vw,44px);margin-bottom:22px;position:relative;overflow:hidden}
+.home-hero:after{content:'◎';position:absolute;right:7%;top:-70px;font-size:260px;line-height:1;opacity:.12;pointer-events:none}
+.home-hero h1{font-size:clamp(30px,5vw,52px);line-height:1.03;max-width:650px;margin:10px 0 14px}.home-hero p{max-width:570px;color:var(--hero-muted);font-size:17px}
+.eyebrow{font:500 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;opacity:.8}
+.home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}
+.home-project{padding:20px;gap:15px}.home-project h3{font-size:22px}.home-project .btn{align-self:flex-start}
+.progress{height:7px;border-radius:99px;background:var(--surface2);overflow:hidden}.progress>span{display:block;height:100%;border-radius:99px;background:var(--accent)}
+.journey{display:flex;gap:7px;overflow-x:auto;padding:4px 0 12px;margin-bottom:12px}.journey button{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:8px 13px;white-space:nowrap;cursor:pointer}.journey button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}.journey button.done{color:var(--ink)}
+.stepper{display:flex;gap:5px;margin:8px 0 18px}.stepper span{height:5px;flex:1;border-radius:99px;background:var(--surface2)}.stepper span.done{background:var(--accent)}
+.question-card{padding:clamp(20px,4vw,36px);gap:20px}.question-card h3{font-size:clamp(22px,3vw,30px)}.question-card .opt{border-radius:10px;padding:11px 14px}.question-card .opts{gap:9px}
+.review-grid{display:grid;grid-template-columns:1fr;gap:10px}.review-grid>div{padding:12px 14px;border:1px solid var(--line);border-radius:8px}.review-grid b{display:block;margin-bottom:3px}
+.intro-card{background:var(--accent-soft);border:1px solid var(--accent);border-radius:14px;padding:24px;display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center}.intro-art{width:88px;height:88px;border-radius:26px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font:700 54px var(--f-display);transform:rotate(-8deg)}
+.stage-note{font-size:13px;color:var(--muted)}
+@media(max-width:600px){.intro-card{grid-template-columns:1fr}.intro-art{width:60px;height:60px;font-size:40px}.project-hero{padding:20px}.tabs{display:none}}
+.sec{display:flex;flex-direction:column;gap:14px}
+.head{display:flex;flex-direction:column;gap:6px;margin-bottom:2px}
+.hus{display:flex;flex-wrap:wrap;gap:4px}
+.hu{font-family:var(--f-mono);font-size:11px;background:var(--surface2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card.flat{background:transparent}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;min-width:0}
+.row.start{justify-content:flex-start}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;background:var(--pend-soft);color:var(--pend);white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.warn{background:var(--warn-soft);color:var(--warn)} .chip.bad{background:var(--bad-soft);color:var(--bad)} .chip.acc{background:var(--accent-soft);color:var(--accent)}
+.chip i{width:6px;height:6px;border-radius:50%;background:currentColor}
+.banner{border:1px solid var(--line);background:var(--surface2);border-radius:8px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+.banner.warn{background:var(--warn-soft);border-color:var(--warn);border-style:dashed;color:var(--ink)}
+.banner.bad{background:var(--bad-soft);border-color:var(--bad);border-width:2px}
+.banner.info{background:var(--accent-soft);border-color:var(--accent)}
+.err{color:var(--bad);font-size:13px;font-weight:500}
+.field{display:flex;flex-direction:column;gap:5px}
+.field>label,.q{font-weight:600;font-size:14px}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opt{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:14px}
+.opt:has(input:checked){background:var(--accent-soft);border-color:var(--accent);font-weight:600}
+.opt input{accent-color:var(--accent);margin:0}
+.opt.dis{opacity:.6;cursor:not-allowed}
+.list{display:flex;flex-direction:column}
+.li{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}
+.li:first-child{border-top:0}
+.li>.l{display:flex;flex-direction:column;min-width:0}
+.counters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.cnt{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;text-align:left;cursor:pointer}
+.cnt b{display:block;font-family:var(--f-display);font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
+.cnt span{font-size:12px;color:var(--muted)}
+.cnt.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.item{background:var(--surface);border:1px solid var(--line);border-left-width:5px;border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.item.conv{border-left-color:var(--ok)} .item.div{border-left-color:var(--warn);border-left-style:dashed} .item.pend{border-left-color:var(--pend);border-left-style:double}
+.cmp{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.cmp>div{background:var(--surface2);border-radius:8px;padding:9px 11px;display:flex;flex-direction:column;gap:5px;min-width:0;overflow-wrap:anywhere}
+.paper{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:20px 22px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.6}
+.tok{font-family:var(--f-mono);font-size:12px;overflow-wrap:anywhere;background:var(--surface2);padding:8px 10px;border-radius:6px}
+details.demo{border:1px dashed var(--line);border-radius:8px;padding:10px 14px;margin-top:22px;background:var(--surface)}
+details.demo summary{cursor:pointer;font-weight:600}
+details.demo ol{margin:8px 0 0;padding-left:20px;color:var(--muted)}
+#toast{position:fixed;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;pointer-events:none;padding-inline:max(16px,env(safe-area-inset-left,0px))}
+#toast div{background:var(--toast-bg);color:var(--toast-ink);padding:10px 16px;border-radius:8px;max-width:520px;box-shadow:0 6px 24px rgba(0,0,0,.25);font-weight:500}
+#toast div.bad{background:var(--toast-bg);color:var(--toast-ink);border:2px solid var(--toast-ink)}
+@media (max-width:560px){.counters{grid-template-columns:repeat(2,minmax(0,1fr))} .paper{padding:14px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.brand-button{border:0;background:none;color:inherit;cursor:pointer;padding:0}.test-controls{position:relative}.test-controls summary{cursor:pointer;font-size:13px;color:var(--muted)}.test-controls[open] .row{position:absolute;right:0;top:28px;z-index:10;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;min-width:260px;box-shadow:0 12px 28px rgba(0,0,0,.12)}.intro-card{margin-bottom:20px}.intro-art{animation:intro-float 4s ease-in-out infinite}@keyframes intro-float{0%,100%{transform:rotate(-8deg) translateY(0)}50%{transform:rotate(2deg) translateY(-7px)}}.question-card .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}.question-card .opt{border-radius:9px;min-height:46px}.journey button:hover,.btn:hover{transform:translateY(-1px)}@media(max-width:600px){.test-controls[open] .row{right:-6px;max-width:90vw}.journey{margin-bottom:12px}}
+.task-card{display:flex;flex-direction:column;align-items:flex-start;gap:10px;background:var(--accent-soft);border:1px solid var(--accent);border-radius:14px;padding:22px}.task-card h3{font-size:22px}.task-card p{max-width:680px}.task-card .btn{margin-top:4px}.journey-progress{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 12px}.journey-steps{display:grid;grid-template-columns:repeat(8,minmax(82px,1fr));gap:5px;margin-top:8px;overflow-x:auto}.journey-step{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;font-size:11px;color:var(--muted);min-width:82px}.journey-dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);background:var(--surface2);font-size:12px}.journey-step.done{color:var(--ok)}.journey-step.done .journey-dot{background:var(--ok);border-color:var(--ok);color:var(--surface)}.journey-step.current{color:var(--accent);font-weight:700}.journey-step.current .journey-dot{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}.journey-step.future{opacity:.65}.secondary-nav{margin-bottom:16px}.secondary-nav summary{cursor:pointer;color:var(--muted);font-size:13px;padding:5px 2px}.secondary-nav .journey{margin:9px 0 0}.asset-switch{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px}@media(max-width:760px){.journey-steps{grid-auto-flow:column;grid-auto-columns:85px;grid-template-columns:none}}
+.theme-toggle{min-width:128px}.theme-toggle:hover{background:var(--surface2)}.chip.ok{border:1px solid var(--ok)}.chip.warn{border:1px dashed var(--warn)}.chip.bad{border:2px double var(--bad)}.chip.acc{border:1px solid var(--accent)}.btn.pri:hover{filter:brightness(.85)}:root[data-theme=dark] .btn.pri:hover{filter:brightness(1.15)}
+
+/* Experiência de primeiro acesso e sistema visual do fluxo guiado */
+:root{--shadow-soft:0 16px 44px rgba(0,0,0,.045);--shadow-float:0 20px 55px rgba(0,0,0,.09)}
+:root[data-theme="dark"]{--shadow-soft:0 18px 46px rgba(0,0,0,.18);--shadow-float:0 24px 56px rgba(0,0,0,.3)}
+body{font-size:16px;line-height:1.58}
+.wrap{max-width:1160px;padding-block:22px 72px}
+.top{padding:3px 0 34px;gap:20px}
+.brand{align-items:center;gap:11px}.brand b{font-size:26px;letter-spacing:-.055em}.brand span{font:500 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase}
+.ctrls{gap:10px}
+h1,h2,h3{letter-spacing:-.035em}h2{font-size:clamp(25px,3vw,36px);line-height:1.14}h3{font-size:18px;line-height:1.28}
+.eyebrow{font-size:11px;letter-spacing:.15em;font-weight:600}
+.btn{min-height:43px;padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-weight:600;transition:transform .18s ease,background .18s ease,box-shadow .18s ease,border-color .18s ease}
+.btn.sm{min-height:36px;padding:6px 12px}.btn.pri{box-shadow:0 5px 15px rgba(0,0,0,.09)}.btn:hover{transform:translateY(-2px);box-shadow:var(--shadow-soft)}.btn:active{transform:translateY(0)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+select,input[type=text],input[type=email],textarea{border:1px solid transparent;background:var(--surface2);border-radius:10px;padding:12px 14px;min-height:46px;transition:border-color .18s ease,box-shadow .18s ease,background .18s ease}
+textarea{min-height:112px;line-height:1.55}
+select:hover,input[type=text]:hover,input[type=email]:hover,textarea:hover{background:var(--surface)}
+select:focus,input[type=text]:focus,input[type=email]:focus,textarea:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px var(--accent-soft);background:var(--surface)}
+.field{gap:7px}.field>label,.q{font-size:14px}.field .muted{font-weight:400}
+.card,.item,.cnt,.cmp>div,.paper{border:0;border-radius:18px;background:var(--surface);box-shadow:var(--shadow-soft)}
+.card{padding:clamp(20px,3vw,30px);gap:17px}.card.flat{box-shadow:none}
+.grid{gap:16px}.li{padding:16px 0;border-top:1px solid var(--line)}.li:first-child{border-top:0}
+.chip{padding:5px 10px;border-radius:999px}.chip.ok,.chip.warn,.chip.bad,.chip.acc{border-width:0}.chip.warn{border-left:2px dashed var(--warn)}.chip.bad{border-left:3px double var(--bad)}
+.banner{border:0;border-radius:12px;padding:15px 18px;background:var(--surface2)}.banner.info{border:0;background:var(--accent-soft)}.banner.warn{border:0;border-left:3px dashed var(--warn);background:var(--warn-soft)}.banner.bad{border:0;border-left:3px double var(--bad);background:var(--bad-soft)}
+.task-card{border:0;border-radius:20px;padding:clamp(25px,4vw,38px);background:var(--accent-soft);gap:12px}.task-card h3{font-size:clamp(23px,3vw,30px)}
+.project-hero{border-radius:22px;padding:clamp(28px,4vw,46px);margin-bottom:20px;min-height:195px}.project-hero h1{font-size:clamp(36px,5vw,56px)}.project-hero .btn{box-shadow:none}
+.journey-progress{border:0;background:transparent;padding:10px 2px 8px;margin-bottom:2px}.journey-steps{gap:8px;margin-top:15px}.journey-step{gap:8px}.journey-dot{width:29px;height:29px;border:0;background:var(--surface2)}
+.secondary-nav{margin-bottom:26px}.secondary-nav summary{display:inline-flex;align-items:center;padding:8px 0}.journey button{border:0;background:var(--surface2)}.journey button.on{border:0;background:var(--ink);color:var(--bg)}
+.sec{gap:22px;max-width:940px;margin:auto}.head{gap:8px;padding:0 2px;margin-bottom:3px}.head p{max-width:700px}
+.question-card{padding:clamp(26px,5vw,48px);gap:27px}.question-card h3{font-size:clamp(25px,3vw,34px)}.question-card .opt,.opt{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 14px;transition:border-color .18s ease,background .18s ease,transform .18s ease}.opt:hover{transform:translateY(-1px);border-color:var(--ink)}.opt:has(input:checked){border-color:var(--ink);background:var(--accent-soft)}
+.review-grid{gap:9px}.review-grid>div{border:0;border-radius:12px;background:var(--surface2);padding:16px 18px}
+.intro-card{border:0;border-radius:22px;padding:clamp(25px,4vw,40px);background:var(--accent-soft);gap:28px}.intro-art{border-radius:24px}
+.counters{gap:12px}.cnt{padding:18px;box-shadow:none;background:var(--surface2);border:0}.cnt.on{box-shadow:inset 0 0 0 2px var(--ink);background:var(--surface)}.cnt b{font-size:31px}
+.item{padding:22px 24px;gap:17px;border:0;box-shadow:var(--shadow-soft)}.item.conv,.item.div,.item.pend{border-left:0}.item.conv::before,.item.div::before,.item.pend::before{content:'';display:block;width:34px;height:3px;border-radius:99px;background:var(--ink)}.item.div::before{background:repeating-linear-gradient(90deg,var(--ink) 0 5px,transparent 5px 9px)}.item.pend::before{background:var(--muted);opacity:.55}
+.cmp{gap:12px}.cmp>div{background:var(--surface2);box-shadow:none;padding:16px 18px;border-radius:12px}
+.paper{padding:clamp(22px,4vw,42px);line-height:1.7}.asset-switch{border:0;background:var(--surface2);border-radius:16px;padding:18px}
+details.demo{border:0;border-top:1px solid var(--line);border-radius:0;background:transparent;padding:22px 0 0;margin-top:72px}details.demo summary{font-size:13px;color:var(--muted);font-weight:500}
+/* Home editorial: introdução primeiro, retomada depois */
+.landing{display:flex;flex-direction:column;gap:100px}
+.landing-hero{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);min-height:520px;overflow:hidden;border-radius:30px;background:var(--hero-bg);color:var(--hero-ink)}
+.landing-copy{padding:clamp(34px,6vw,76px);display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:24px;position:relative;z-index:1}
+.landing-copy h1{font-size:clamp(42px,5.8vw,72px);line-height:1.04;max-width:700px;letter-spacing:-.06em}.landing-copy p{font-size:clamp(17px,1.8vw,20px);color:var(--hero-muted);max-width:570px;line-height:1.55}
+.landing-actions{display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-top:6px}.landing-actions .btn,.landing-outcome .btn{background:var(--hero-button-bg);color:var(--hero-button-ink);border-color:var(--hero-button-bg);min-height:52px;padding:12px 22px}.landing-actions a{color:var(--hero-ink);text-decoration:none;font-weight:600;border-bottom:1px solid currentColor;padding-bottom:3px}
+.landing-art{position:relative;min-height:420px;display:grid;place-items:center;isolation:isolate;background:radial-gradient(circle at 50% 48%,rgba(255,255,255,.15),transparent 42%)}
+.art-orbit{position:absolute;border:1px solid rgba(255,255,255,.38);border-radius:50%;aspect-ratio:1;transform:rotate(-20deg)}.orbit-one{width:min(78%,420px);box-shadow:0 0 0 28px rgba(255,255,255,.04)}.orbit-two{width:min(48%,250px);border-width:2px;animation:orbit-breathe 8s ease-in-out infinite}
+.art-core{width:min(35%,180px);aspect-ratio:1;border-radius:50%;background:var(--hero-ink);color:var(--hero-bg);display:grid;place-items:center;font:700 clamp(33px,4vw,52px) var(--f-display);letter-spacing:-.08em;z-index:1;box-shadow:0 20px 60px rgba(0,0,0,.22)}
+.art-caption{position:absolute;bottom:42px;font:500 11px var(--f-mono);letter-spacing:.13em;text-transform:uppercase;color:var(--hero-muted)}
+@keyframes orbit-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.065)}}
+.landing-reason{max-width:750px;margin:auto;text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px}.landing-reason h2{font-size:clamp(34px,4.3vw,52px)}.landing-reason p{font-size:18px;color:var(--muted);line-height:1.72}
+.landing-section-head{display:flex;align-items:end;justify-content:space-between;gap:28px;margin-bottom:28px}.landing-section-head h2{margin-top:9px;max-width:660px}.landing-section-head>p{color:var(--muted);max-width:350px}
+.landing-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.landing-step{min-height:184px;padding:25px;border-radius:18px;background:var(--surface);box-shadow:var(--shadow-soft);display:flex;flex-direction:column;justify-content:space-between;gap:20px;transition:transform .2s ease,box-shadow .2s ease}.landing-step:hover{transform:translateY(-4px);box-shadow:var(--shadow-float)}.step-number{font:500 12px var(--f-mono);color:var(--muted)}.landing-step h3{font-size:20px;margin-bottom:5px}.landing-step p{font-size:14px;color:var(--muted);line-height:1.55}
+.landing-outcome{padding:clamp(34px,6vw,68px);background:var(--hero-bg);color:var(--hero-ink);border-radius:26px;display:flex;flex-direction:column;align-items:flex-start;gap:18px}.landing-outcome h2{max-width:720px;font-size:clamp(34px,4.3vw,54px)}.landing-outcome p{color:var(--hero-muted);max-width:720px;font-size:17px}.landing-outcome .btn{margin-top:8px}
+.landing-projects{margin-top:-30px}.landing-project-list{background:var(--surface);border-radius:18px;padding:4px 26px}.landing-project{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:22px 0;border-top:1px solid var(--line)}.landing-project:first-child{border-top:0}.landing-project h3{margin-bottom:5px}.landing-project p{color:var(--muted)}
+.onboarding-shell{max-width:820px;margin:45px auto 80px}.onboarding-intro{max-width:680px;margin-bottom:32px}.onboarding-intro h1{font-size:clamp(40px,5vw,62px);line-height:1.07;margin:12px 0 16px}.onboarding-intro p{font-size:18px;color:var(--muted)}.onboarding-form{background:var(--surface);border-radius:22px;padding:clamp(24px,5vw,48px);display:grid;gap:24px;box-shadow:var(--shadow-soft)}.onboarding-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:8px}
+@media(max-width:900px){.landing{gap:75px}.landing-hero{grid-template-columns:1fr}.landing-art{min-height:250px}.orbit-one{width:250px}.orbit-two{width:160px}.art-core{width:112px}.art-caption{bottom:22px}.landing-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.wrap{padding-block:16px 48px}.top{padding-bottom:20px}.landing{gap:62px}.landing-hero{border-radius:22px;min-height:auto}.landing-copy{padding:35px 28px;gap:18px}.landing-copy h1{font-size:clamp(38px,10vw,52px)}.landing-art{min-height:190px}.orbit-one{width:165px}.orbit-two{width:110px}.art-core{width:78px;font-size:28px}.art-caption{display:none}.landing-reason{padding:0 8px}.landing-reason p{font-size:16px}.landing-section-head{display:block}.landing-section-head>p{margin-top:12px}.landing-steps{grid-template-columns:1fr 1fr;gap:8px}.landing-step{padding:18px;min-height:164px}.landing-step h3{font-size:17px}.landing-step p{font-size:12px}.landing-outcome{padding:32px 27px}.landing-project{align-items:flex-start;flex-direction:column}.onboarding-shell{margin:25px auto 50px}.onboarding-intro p{font-size:16px}.card{padding:20px}.project-hero{min-height:0}.landing-actions{gap:17px}}
+@media(max-width:380px){.landing-steps{grid-template-columns:1fr}.landing-step{min-height:126px}.landing-copy{padding:31px 24px}}
+html{scroll-behavior:smooth}::placeholder{color:var(--muted);opacity:.8}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head><body>
+
+<div class="wrap" id="app"></div>
+<div id="toast" aria-live="polite"></div>
+
+<script>
+/* ===== Constantes ===== */
+const QS={contrib:{label:'Quem contribuiu?',multi:true,tag:'contribuinte'},titular:{label:'Quem deve ser titular?',multi:true,tag:'titular'},uso:{label:'Quem pode continuar usando o ativo se sair do projeto?',multi:false}};
+const QK=['contrib','titular','uso'];
+const USO=['Todos','Só os titulares','Ninguém sem acordo'];
+const CATS=['Código','Marca','Design','Conteúdo','Protótipo','Outro'];
+const PH=['coleta','encerrada','decisao','confirmacao','consolidado'];
+const PHN={coleta:'Coleta aberta',encerrada:'Coleta encerrada',decisao:'Em decisão',confirmacao:'Em confirmação',consolidado:'Consolidado'};
+const ST={conv:['Mesma percepção','ok'],div:['Visões diferentes','warn'],pend:['Resposta ausente','']};
+const SCEN={
+ contrib:[['Lista de contribuições como declarada','Cada pessoa mantém o que informou e a equipe registra as descrições lado a lado.'],['Lista ajustada pela equipe','As pessoas conversam, olham as evidências e combinam uma lista única de quem contribuiu.']],
+ titular:[['Titularidade de quem contribuiu','Todas as pessoas que contribuíram passam a ser titulares.'],['Titulares escolhidos pela equipe','A equipe define os titulares mesmo que não coincidam com quem contribuiu e registra o motivo.'],['Titularidade em aberto','O item é marcado como sem acordo e o projeto não fica Consolidado enquanto isso valer.']],
+ uso:[['Todos continuam usando','Qualquer integrante pode usar o ativo depois de sair do projeto.'],['Só os titulares continuam usando','Quem sai sem ser titular deixa de usar o ativo.'],['Ninguém usa sem novo acordo','Depois da saída, qualquer uso exige um novo acordo da equipe.']]
+};
+const LIMITS='Este memorial é um registro preparatório das decisões da equipe. Ele não substitui contrato, advogado ou registro oficial.';
+
+/* ===== Estado ===== */
+let people,projects,ui,tt;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone=o=>JSON.parse(JSON.stringify(o));
+const rid=()=>Math.random().toString(36).slice(2,7);
+const fmt=t=>new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).replace(', ',' às ');
+const cur=()=>projects.find(x=>x.id===ui.pid);
+const nm=pid=>people[pid]?people[pid].name:pid;
+const mem=(p,pid)=>p.members.find(m=>m.pid===pid);
+const elig=p=>p.members.filter(m=>m.status==='ativo'&&m.elig).map(m=>m.pid);
+const approved=p=>p.assets.filter(a=>a.st==='ok');
+const ansOf=(p,pid,aid)=>p.answers[pid]&&p.answers[pid][aid];
+const log=(p,who,text)=>p.history.unshift({at:Date.now(),who,text});
+const lastV=p=>p.versions[p.versions.length-1];
+const STORAGE='mip-backstage-v1-onboarding';
+function persist(){try{localStorage.setItem(STORAGE,JSON.stringify({people,projects,ui:{me:ui.me,pid:ui.pid,tab:ui.tab,introSeen:ui.introSeen,questionIntro:ui.questionIntro,qasset:ui.qasset,qstep:ui.qstep,theme:ui.theme}}))}catch(e){}}
+function restore(){try{const saved=JSON.parse(localStorage.getItem(STORAGE));if(saved&&saved.people&&Array.isArray(saved.projects)){people=saved.people;projects=saved.projects;Object.assign(ui,saved.ui||{});ui.tab=ui.tab==='home'||ui.tab==='novo'?'home':taskFor(cur(),ui.me).tab;if(ui.tab==='resp')focusQuestion(cur(),ui.me)}}catch(e){}}
+function say(t,kind){const el=$('#toast');el.innerHTML='<div class="'+(kind||'')+'">'+esc(t)+'</div>';clearTimeout(tt);tt=setTimeout(()=>{el.innerHTML=''},4500)}
+async function copy(t){try{await navigator.clipboard.writeText(t);say('Texto copiado.')}catch(e){say('Não foi possível copiar. Selecione o texto e copie manualmente.','bad')}}
+async function sha(t){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(e){let h1=0xdeadbeef,h2=0x41c6ce57;for(let i=0;i<t.length;i++){const c=t.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677)}return ((h1>>>0).toString(16).padStart(8,'0')+(h2>>>0).toString(16).padStart(8,'0')).repeat(4)}}
+
+function mkProject(id,name,context,org){return{id,name,context,org,setupStep:'equipe',phase:'coleta',members:[{pid:org,status:'ativo',elig:true}],link:{active:true,code:rid()},assets:[],answers:{},proposal:{},comments:[],versions:[],history:[],memorials:[],ack:{}}}
+function sendAns(p,pid,aid,f,at){p.answers[pid]=p.answers[pid]||{};p.answers[pid][aid]={draft:clone(f),sent:Object.assign(clone(f),{at:at||Date.now()})}}
+
+function seed(){
+  people={self:{name:'Você',g:'',email:''}};
+  projects=[];
+  ui={me:'self',pid:null,tab:'home',filter:'todos',open:null,err:{},flag:{},verifyText:'',verify:null,refuse:'',cmt:{},novo:{person:'',name:'',ctx:''},inv:'',sug:{name:'',cat:'',desc:''},addA:{name:'',cat:'',desc:''},refSug:{},introSeen:false,questionIntro:{},qstep:0,qasset:null,theme:'light'};
+}
+function seedDemo(){
+  people={ana:{name:'Ana',g:'f',email:'ana@email.com'},bruno:{name:'Bruno',g:'m',email:'bruno@email.com'},carla:{name:'Carla',g:'f',email:'carla@email.com'},diego:{name:'Diego',g:'m',email:'diego@email.com'}};
+  const p=mkProject('p1','App Rotas','Projeto da disciplina','ana');
+  p.members.push({pid:'bruno',status:'ativo',elig:true},{pid:'carla',status:'ativo',elig:true});
+  p.assets=[{id:'a1',name:'Logo',cat:'Marca',desc:'Logotipo do app',st:'ok'},{id:'a2',name:'Backend',cat:'Código',desc:'API e servidor de rotas',st:'ok'}];
+  sendAns(p,'ana','a1',{contrib:['ana','carla'],titular:['ana','bruno'],uso:'Todos',desc:'Defini o conceito e a paleta do logotipo',link:''});
+  sendAns(p,'ana','a2',{contrib:['ana','bruno'],titular:['ana','bruno'],uso:'Todos',desc:'Desenhei a arquitetura e o banco de dados',link:'https://github.com/app-rotas/backend'});
+  sendAns(p,'bruno','a1',{contrib:['ana','carla'],titular:['ana','bruno','carla'],uso:'Só os titulares',desc:'',link:''});
+  p.answers.bruno.a2={draft:{contrib:['bruno'],titular:[],uso:'',desc:'Criei a API de rotas',link:''},sent:null};
+  log(p,'ana','criou o projeto App Rotas');
+  const q=mkProject('p2','Jogo X','Game jam de 48 horas','ana');
+  q.members.push({pid:'bruno',status:'ativo',elig:true});
+  q.assets=[{id:'x1',name:'Trilha sonora',cat:'Conteúdo',desc:'Faixas originais do jogo',st:'ok'}];
+  sendAns(q,'ana','x1',{contrib:['ana'],titular:['ana'],uso:'Só os titulares',desc:'Compus as três faixas',link:''});
+  log(q,'ana','criou o projeto Jogo X');
+  p.setupStep='resp';q.setupStep='resp';projects=[p,q];
+  ui={me:'ana',pid:'p1',tab:'home',filter:'todos',open:null,err:{},flag:{},verifyText:'',verify:null,refuse:'',cmt:{},novo:{name:'',ctx:''},inv:'',sug:{name:'',cat:'',desc:''},addA:{name:'',cat:'',desc:''},refSug:{},introSeen:false,questionIntro:{},qstep:0,qasset:null,theme:'light'};
+}
+function fillDemo(p){
+  sendAns(p,'bruno','a1',{contrib:['ana','carla'],titular:['ana','bruno','carla'],uso:'Só os titulares',desc:'',link:''});
+  sendAns(p,'bruno','a2',{contrib:['bruno'],titular:['ana','bruno'],uso:'Todos',desc:'Criei a API de rotas',link:'https://github.com/app-rotas/backend/tree/api'});
+  sendAns(p,'carla','a1',{contrib:['ana','carla'],titular:['ana','bruno'],uso:'Todos',desc:'Fiz as versões finais do logo',link:'https://figma.com/file/logo-app-rotas'});
+  log(p,'sistema','respostas de exemplo preenchidas para a demonstração');
+}
+
+/* ===== Regras (HU-15) ===== */
+const norm=(v,q)=>QS[q].multi?[...v].sort().join('|'):v;
+function itemStatus(p,aid,q){
+  const E=elig(p),vals=[];
+  E.forEach(pid=>{const a=ansOf(p,pid,aid);if(a&&a.sent)vals.push({pid,v:a.sent[q]})});
+  const set=new Set(vals.map(x=>norm(x.v,q)));
+  const status=set.size>1?'div':(vals.length===0||vals.length<E.length?'pend':'conv');
+  return{status,vals,missing:E.filter(pid=>!vals.find(x=>x.pid===pid))};
+}
+function origin(p,aid,q){
+  if(!QS[q].multi)return[];
+  const r=itemStatus(p,aid,q);if(r.status!=='div')return[];
+  const all=new Set();r.vals.forEach(x=>x.v.forEach(i=>all.add(i)));
+  const out=[];
+  all.forEach(pid=>{
+    const by=r.vals.filter(x=>x.v.includes(pid)).map(x=>x.pid),not=r.vals.filter(x=>!x.v.includes(pid)).map(x=>x.pid);
+    if(not.length===0)return;
+    const g=people[pid].g==='f'?'incluída':'incluído';
+    out.push(by.length===1?nm(pid)+' foi '+g+' como '+QS[q].tag+' só por '+nm(by[0]):nm(pid)+' foi '+g+' como '+QS[q].tag+' por '+by.map(nm).join(' e ')+', mas não por '+not.map(nm).join(' e '));
+  });
+  return out;
+}
+function allItems(p){const o=[];approved(p).forEach(a=>QK.forEach(q=>o.push({aid:a.id,q,key:a.id+':'+q,...itemStatus(p,a.id,q)})));return o}
+
+/* ===== Peças de UI ===== */
+const chip=(t,c,dot)=>'<span class="chip '+(c||'')+'">'+(dot?'<i></i>':'')+esc(t)+'</span>';
+const hu=s=>'<div class="hus">'+s.split(' ').map(x=>'<span class="hu">'+x+'</span>').join('')+'</div>';
+const head=(t,hs,sub)=>'<div class="head"><h2>'+esc(t)+'</h2>'+(sub?'<p class="muted">'+sub+'</p>':'')+'</div>';
+const banner=(t,k,btn)=>'<div class="banner '+(k||'')+'"><span>'+t+'</span>'+(btn||'')+'</div>';
+const btn=(act,label,o)=>{o=o||{};return '<button class="btn '+(o.c||'')+'" data-act="'+act+'"'+Object.keys(o.d||{}).map(k=>' data-'+k+'="'+esc(o.d[k])+'"').join('')+(o.dis?' disabled':'')+'>'+label+'</button>'};
+const errm=k=>ui.err[k]?'<div class="err" role="alert">'+esc(ui.err[k])+'</div>':'';
+const naoElig=()=>banner('Você não é elegível nesta rodada. Entrou depois do encerramento da coleta ou foi marcada como não participante.','info');
+const roleTxt=(p,pid)=>p.org===pid?'Organizador(a)':'Integrante';
+function memChip(m){return m.status==='ativo'?(m.elig?chip('Ativo','ok',1):chip('Ativo, não elegível','warn',1)):m.status==='pendente'?chip('Convite pendente','warn',1):chip('Não participante','',1)}
+
+/* ===== Equipe (HU-01 a HU-05, HU-13) ===== */
+function vEquipe(p){
+  const org=p.org===ui.me;
+  let h=head('Equipe',  'HU-01 HU-02 HU-03 HU-04 HU-05 HU-13',esc(p.context||'Sem contexto'));
+  if(org&&p.phase==='coleta'&&p.setupStep==='equipe')h+='<div class="task-card"><span class="eyebrow">Primeiro passo</span><h3>Prepare a equipe</h3><p>Confira quem participa e convide quem falta. Você pode voltar a esta lista durante a coleta.</p>'+btn('setupteam','Equipe pronta · organizar ativos',{c:'pri'})+'</div>';
+  if(!p.ack[ui.me])h+=banner('A MIP organiza as decisões da equipe. Ela não substitui contrato, advogado ou registro oficial.','info',btn('ack','Entendi'));
+  h+='<div class="card"><div class="row"><h3>Integrantes</h3>'+chip(elig(p).length+' elegíveis','acc')+'</div><div class="list">';
+  p.members.forEach(m=>{
+    h+='<div class="li"><div class="l"><b>'+esc(nm(m.pid))+'</b><span class="muted" style="font-size:13px">'+roleTxt(p,m.pid)+(people[m.pid].email?' · '+esc(people[m.pid].email):'')+'</span></div><div class="row start">'+memChip(m)+
+      (org&&m.status!=='pendente'&&m.status!=='naopart'?btn('naopart','Marcar como não participante',{c:'sm',d:{pid:m.pid}}):'')+'</div>'+
+      (m.status==='naopart'?'<div class="muted" style="font-size:13px;width:100%">Marcada por '+esc(nm(m.by))+' em '+fmt(m.at)+'. Continua na lista e no memorial, mas não conta como pendência.</div>':'')+'</div>';
+  });
+  h+='</div>'+errm('np')+'</div>';
+  if(org){
+    h+='<div class="grid"><div class="card"><h3>Convidar por e-mail</h3><div class="field"><label for="inv">E-mail</label><input type="email" id="inv" data-in="inv" value="'+esc(ui.inv)+'" placeholder="nome@email.com"></div>'+errm('inv')+'<div>'+btn('invite','Enviar convite')+'</div>'+(ui.flag.invited?'<div class="muted" style="font-size:13px">'+esc(ui.flag.invited)+'</div>':'')+'</div>'+
+    '<div class="card"><h3>Convidar por link</h3><div class="tok">mip.app/convite/'+esc(p.link.code)+'</div><div class="row start">'+chip(p.link.active?'Link ativo':'Link desativado',p.link.active?'ok':'',1)+btn('toglink',p.link.active?'Desativar link':'Ativar link',{c:'sm'})+'</div>'+errm('link')+'</div></div>';
+  }
+  h+='<div class="card"><h3>Histórico do projeto</h3><div class="list">'+(p.history.slice(0,8).map(x=>'<div class="li"><span>'+esc(x.who==='sistema'?'Sistema':nm(x.who))+' '+esc(x.text)+'</span><span class="mono muted">'+fmt(x.at)+'</span></div>').join('')||'<span class="muted">Sem registros.</span>')+'</div></div>';
+  return h;
+}
+
+/* ===== Ativos (HU-06 a HU-09) ===== */
+function vAtivos(p){
+  const org=p.org===ui.me,me=ui.me;
+  let h=head('Ativos','HU-06 HU-07 HU-08 HU-09','Liste as criações que a equipe vai discutir. Cada ativo terá três perguntas.');
+  if(!org&&p.phase==='coleta'&&!approved(p).length)h+=banner('Aguardando a organizadora cadastrar os ativos. Você pode sugerir um que considera importante.','info');
+  if(org&&p.phase==='coleta'&&p.setupStep==='ativos')h+='<div class="task-card"><span class="eyebrow">Segundo passo</span><h3>Organize os ativos</h3><p>Inclua os ativos que precisam de uma decisão. Depois, cada pessoa registra sua percepção individualmente.</p>'+(approved(p).length?btn('setupassets','Ativos prontos · responder',{c:'pri'}):'<span class="muted">Cadastre pelo menos um ativo para continuar.</span>')+'</div>';
+  h+='<div class="card"><div class="list">';
+  if(!p.assets.length)h+='<span class="muted">Nenhum ativo cadastrado.</span>';
+  p.assets.forEach(a=>{
+    const n=p.members.filter(m=>ansOf(p,m.pid,a.id)&&ansOf(p,m.pid,a.id).sent).length;
+    h+='<div class="li"><div class="l"><b>'+esc(a.name)+' <span class="chip">'+esc(a.cat)+'</span></b><span class="muted" style="font-size:13px">'+esc(a.desc||'Sem descrição')+'</span>'+
+    (a.st==='sug'?'<span style="font-size:13px">Sugerido por '+esc(nm(a.by))+'. Ainda não aparece no questionário.</span>':'')+
+    (a.st==='rec'?'<span style="font-size:13px">Recusada por '+esc(nm(p.org))+'. Motivo: '+esc(a.reason)+'</span>':'')+'</div><div class="row start">'+
+    (a.st==='ok'?chip('No questionário','ok',1):a.st==='sug'?chip('Sugerido por '+nm(a.by),'warn',1):chip('Recusada por '+nm(p.org),'bad',1))+
+    (org&&p.phase==='coleta'&&a.st==='sug'?btn('aprov','Aprovar',{c:'sm pri',d:{aid:a.id}})+'<input type="text" style="width:190px" placeholder="Motivo da recusa" data-in="refsug" data-a="'+a.id+'" value="'+esc(ui.refSug[a.id]||'')+'">'+btn('recus','Recusar',{c:'sm',d:{aid:a.id}}):'')+
+    (org&&p.phase==='coleta'&&a.st==='ok'?btn('del','Excluir',{c:'sm',d:{aid:a.id}}):'')+'</div>'+
+    (ui.flag.del===a.id?'<div class="banner warn" style="width:100%"><span>'+n+' resposta'+(n===1?'':'s')+' serão descartadas. Deseja excluir "'+esc(a.name)+'"?</span><span class="row start">'+btn('delok','Confirmar exclusão',{c:'sm bad',d:{aid:a.id}})+btn('delno','Cancelar',{c:'sm'})+'</span></div>':'')+
+    (ui.err['d'+a.id]?'<div style="width:100%">'+errm('d'+a.id)+'</div>':'')+(ui.err['r'+a.id]?'<div style="width:100%">'+errm('r'+a.id)+'</div>':'')+'</div>';
+  });
+  h+='</div></div>';
+  if(p.phase!=='coleta')return h+banner('A lista de ativos está fechada para edição desde o encerramento da coleta.','info');
+  const f=org?ui.addA:ui.sug,k=org?'addA':'sug';
+  h+='<div class="card"><h3>'+(org?'Cadastrar ativo':'Sugerir um ativo que ficou de fora')+'</h3><div class="grid">'+
+   '<div class="field"><label for="fn">Nome</label><input type="text" id="fn" data-in="'+k+'" data-k="name" value="'+esc(f.name)+'">'+errm('fn')+'</div>'+
+   '<div class="field"><label for="fc">Categoria</label><select id="fc" data-in="'+k+'" data-k="cat"><option value="">Escolha</option>'+CATS.map(c=>'<option'+(f.cat===c?' selected':'')+'>'+c+'</option>').join('')+'</select>'+errm('fc')+'</div></div>'+
+   '<div class="field"><label for="fd">Descrição</label><input type="text" id="fd" data-in="'+k+'" data-k="desc" value="'+esc(f.desc)+'"></div><div>'+btn(org?'addasset':'sugasset',org?'Cadastrar ativo':'Enviar sugestão',{c:org&&approved(p).length?'':'pri'})+'</div></div>';
+  return h;
+}
+
+/* ===== Respostas (HU-10 a HU-13) ===== */
+function ensureAns(p,pid,aid){p.answers[pid]=p.answers[pid]||{};return p.answers[pid][aid]=p.answers[pid][aid]||{draft:{contrib:[],titular:[],uso:'',desc:'',link:''},sent:null}}
+function vResp(p){
+  const me=ui.me,m=mem(p,me),as=approved(p),open=p.phase==='coleta';
+  let h=head('Coleta individual','','Registre sua percepção sobre cada ativo. Não existe resposta sugerida.');
+  if(!m||m.status!=='ativo'||!m.elig)return h+naoElig();
+  if(!ui.questionIntro[me])return h+'<div class="intro-card"><div class="intro-art">✳</div><div><h3>Um espaço para a sua perspectiva</h3><p>Você responde individualmente. Suas escolhas ficam ocultas das outras pessoas até o encerramento da coleta. Depois, a equipe poderá comparar as percepções e conversar sobre elas.</p><div class="row start" style="margin-top:16px">'+btn('qintro','Começar',{c:'pri'})+btn('qintro','Pular apresentação')+'</div></div></div>';
+  if(!open)h+=banner('A coleta terminou. Suas respostas ficam disponíveis para consulta, sem edição.','info');
+  if(!as.length)return h+'<div class="card"><h3>Aguardando ativos</h3><p class="muted">Quem organiza ainda vai definir o que a equipe responderá. Você pode sugerir um ativo que ficou de fora.</p>'+btn('go','Ver ativos',{c:'pri',d:{tab:'ativos'}})+'</div>';
+  const done=as.filter(a=>{const x=ansOf(p,me,a.id);return x&&x.sent}).length;
+  h+='<div class="card"><div class="row"><b>'+done+' de '+as.length+' ativos enviados</b><span class="muted">Você pode salvar e voltar depois</span></div><div class="progress"><span style="width:'+(100*done/as.length)+'%"></span></div></div>';
+  if(ui.flag.qsent)h+=banner('Respostas enviadas para '+esc(p.assets.find(a=>a.id===ui.flag.qsent)?.name||'o ativo')+'. '+(done<as.length?'Continue com o próximo ativo.':'Sua parte nesta coleta terminou.'),'info');
+  if(!ui.qasset||!as.some(a=>a.id===ui.qasset))return h+'<div class="home-grid">'+as.map((a,i)=>{const an=ensureAns(p,me,a.id);return '<div class="card home-project"><span class="eyebrow">Ativo '+(i+1)+' de '+as.length+'</span><h3>'+esc(a.name)+'</h3><p class="muted">'+esc(a.desc||a.cat)+'</p>'+(an.sent?chip('Respostas enviadas','ok',1):chip('A responder','warn',1))+'<div>'+btn('qasset',an.sent?'Consultar respostas':'Responder sobre este ativo',{c:an.sent?'':'pri',d:{aid:a.id}})+'</div></div>'}).join('')+'</div>';
+  const a=as.find(x=>x.id===ui.qasset),an=ensureAns(p,me,a.id),d=an.draft,s=Math.min(3,Math.max(0,ui.qstep)),q=QK[s],E=elig(p);
+  h+='<div>'+btn('qlist','← Todos os ativos',{c:'sm'})+'</div><div class="card question-card"><div class="row"><div><span class="eyebrow">Ativo '+(as.indexOf(a)+1)+' de '+as.length+'</span><h3>'+esc(a.name)+'</h3><span class="muted">'+esc(a.desc||a.cat)+'</span></div>'+(an.sent?chip('Enviado','ok',1):chip('Rascunho','warn',1))+'</div><div><span class="stage-note">'+(s===3?'Revisão antes do envio':'Pergunta '+(s+1)+' de 3')+'</span><div class="stepper">'+[0,1,2,3].map(i=>'<span class="'+(i<=s?'done':'')+'"></span>').join('')+'</div></div>';
+  if(s<3){
+    h+='<div><h3>'+esc(QS[q].label)+'</h3><p class="muted">'+(['Selecione as pessoas que participaram da criação deste ativo.','Escolha quem, na sua visão, deve ser titular deste ativo.','Pense no que deveria acontecer se alguém deixar o projeto.'][s])+'</p></div><div class="opts">';
+    if(QS[q].multi)E.forEach(pid=>h+='<label class="opt'+(open?'':' dis')+'"><input type="checkbox" data-ch="ans" data-a="'+a.id+'" data-q="'+q+'" data-v="'+pid+'"'+(d[q].includes(pid)?' checked':'')+(open?'':' disabled')+'>'+esc(nm(pid))+'</label>');
+    else USO.forEach(u=>h+='<label class="opt'+(open?'':' dis')+'"><input type="radio" name="uso-'+a.id+'" data-ch="ans" data-a="'+a.id+'" data-q="uso" data-v="'+esc(u)+'"'+(d.uso===u?' checked':'')+(open?'':' disabled')+'>'+esc(u)+'</label>');
+    h+='</div>'+errm(a.id+':'+q);
+    if(s===0){h+=d.contrib.includes(me)?'<div class="field"><label for="ds">Como você contribuiu?</label><textarea id="ds" data-in="ans" data-a="'+a.id+'" data-k="desc"'+(open?'':' disabled')+'>'+esc(d.desc)+'</textarea>'+errm(a.id+':desc')+'</div>':'';h+='<div class="field"><label for="lk">Link de evidência (opcional)</label><input id="lk" type="text" data-in="ans" data-a="'+a.id+'" data-k="link" placeholder="https://" value="'+esc(d.link)+'"'+(open?'':' disabled')+'>'+errm(a.id+':link')+'</div>'}
+  }else h+='<div><h3>Revise suas respostas</h3><p class="muted">Confira sua percepção antes de enviar. Você poderá alterá-la enquanto a coleta estiver aberta.</p></div><div class="review-grid">'+QK.map(k=>'<div><b>'+esc(QS[k].label)+'</b>'+esc(QS[k].multi?d[k].map(nm).join(', ')||'Não respondida':d[k]||'Não respondida')+'</div>').join('')+(d.contrib.includes(me)?'<div><b>Sua contribuição</b>'+esc(d.desc||'Não descrita')+'</div>':'')+(d.link?'<div><b>Evidência</b>'+esc(d.link)+'</div>':'')+'</div>'+errm(a.id+':contrib')+errm(a.id+':titular')+errm(a.id+':uso')+errm(a.id+':desc')+errm(a.id+':link');
+  h+='<div class="row start">'+(s?btn('qback','Voltar'):btn('qlist','Voltar'))+(open?(s===3?btn('qsend','Enviar respostas',{c:'pri'}):btn('qnext','Continuar',{c:'pri'}))+btn('draft','Salvar rascunho',{d:{aid:a.id}}):s<3?btn('qnext','Próxima pergunta'):btn('qlist','Concluir consulta'))+'</div></div>';
+
+  return h;
+}
+
+/* ===== Coleta (HU-14, HU-26) ===== */
+function vColeta(p){
+  const org=p.org===ui.me,E=elig(p),as=approved(p);
+  let h=head(org?'Acompanhar a coleta':'Aguardando a equipe','','As respostas individuais ficam ocultas até o encerramento. Ausência de resposta nunca conta como concordância.');
+  if(!org&&p.phase==='coleta')h+=banner('Você concluiu suas respostas. Quem organiza acompanha as pendências e decide quando encerrar a coleta.','info');
+  h+='<div class="card"><div class="list">';
+  p.members.forEach(m=>{
+    if(m.status==='pendente')return;
+    const sent=as.filter(a=>{const x=ansOf(p,m.pid,a.id);return x&&x.sent}).length;
+    const isE=E.includes(m.pid);
+    h+='<div class="li"><div class="l"><b>'+esc(nm(m.pid))+'</b><span class="muted" style="font-size:13px">'+(isE?sent+' de '+as.length+' ativos enviados':m.status==='naopart'?'Não participante':'Não elegível nesta rodada')+'</span></div><div class="row start">'+
+    (!isE?chip('Fora da contagem','',1):sent===as.length&&as.length?chip('Enviado','ok',1):sent?chip('Parcial','warn',1):chip('Pendente','',1))+'</div></div>';
+  });
+  h+='</div></div>';
+  const miss=E.filter(pid=>as.some(a=>{const x=ansOf(p,pid,a.id);return !(x&&x.sent)}));
+  if(org&&p.phase==='coleta'){
+    if(!as.length)h+=banner('Cadastre ao menos um ativo antes de encerrar a coleta.','warn',btn('go','Organizar ativos',{c:'sm',d:{tab:'ativos'}}));
+    else if(ui.flag.close){
+      h+=banner(miss.length?miss.map(pid=>{const none=!as.some(a=>{const x=ansOf(p,pid,a.id);return x&&x.sent});return esc(nm(pid))+(none?' não respondeu.':' não respondeu a todos os ativos.')}).join(' ')+' Essas ausências permanecerão pendentes no mapa e não serão tratadas como concordância. Após encerrar, ninguém poderá editar respostas.':'Todos os elegíveis responderam. Encerrar a coleta agora?','warn','<span class="row start">'+btn('closeok','Encerrar coleta',{c:'pri sm'})+btn('closeno','Cancelar',{c:'sm'})+'</span>');
+    }else if(as.length)h+='<div class="task-card"><h3>'+(miss.length?'Ainda faltam respostas':'A coleta está pronta para encerrar')+'</h3><p>'+(miss.length?'Você pode lembrar as pessoas pendentes ou encerrar mesmo assim, registrando as ausências.':'Todas as pessoas elegíveis responderam aos ativos.')+'</p>'+btn('closeask',miss.length?'Revisar encerramento com pendências':'Encerrar coleta e ver percepções',{c:'pri'})+'</div>';
+    if(miss.length){
+      h+='<div class="card"><h3>Lembrar quem ainda não respondeu</h3><div class="row start">'+miss.map(pid=>btn('remind','Enviar lembrete a '+esc(nm(pid)),{c:'sm',d:{pid}})).join('')+btn('remindgrp','Copiar mensagem para o grupo',{c:'sm'})+'</div>'+(ui.flag.grp?'<div class="tok">'+esc(ui.flag.grp)+'</div>':'')+'</div>';
+    }
+  }else if(p.phase!=='coleta')h+=banner('Coleta encerrada. As respostas já aparecem no mapa de divergências.','info',btn('go','Abrir o mapa',{c:'sm',d:{tab:'mapa'}}));
+  return h;
+}
+
+/* ===== Mapa (HU-15 a HU-18) ===== */
+function vMapa(p){
+  let h=head('Mapa de divergências','HU-15 HU-16 HU-17 HU-18','Compare o que cada pessoa declarou antes de construir uma decisão coletiva.');
+  if(p.phase==='coleta')return h+banner('O mapa fica disponível quando a coleta for encerrada.','info');
+  const E=elig(p);
+  if(p.org===ui.me&&p.phase==='encerrada')h+='<div class="task-card"><h3>Próximo passo: construir a proposta</h3><p>Compare as declarações abaixo e converse com a equipe. Quando estiverem prontos, registre uma proposta para cada ativo.</p>'+btn('startdec','Preparar proposta',{c:'pri'})+'</div>';
+  else if(p.phase==='encerrada')h+=banner('A pessoa organizadora prepara a proposta. Você poderá ler e comentar quando ela estiver disponível.','info');
+  if(!E.includes(ui.me)&&mem(p,ui.me)&&mem(p,ui.me).status!=='ativo')return h+naoElig();
+  const items=allItems(p),c={conv:0,div:0,pend:0};items.forEach(i=>c[i.status]++);
+  h+='<div class="counters">'+[['todos','Itens',items.length],['conv','Mesma percepção',c.conv],['div','Visões diferentes',c.div],['pend','Sem resposta',c.pend]].map(x=>'<button class="cnt'+(ui.filter===x[0]?' on':'')+'" data-act="filter" data-f="'+x[0]+'"><b>'+x[2]+'</b><span>'+x[1]+'</span></button>').join('')+'</div>';
+  h+='<div class="muted" style="font-size:13px">Cada item representa uma pergunta sobre um ativo. Ausência de resposta não significa concordância.</div>';
+  items.filter(i=>ui.filter==='todos'||i.status===ui.filter).forEach(i=>{
+    const a=p.assets.find(x=>x.id===i.aid),op=ui.open===i.key,or=origin(p,i.aid,i.q);
+    h+='<div class="item '+i.status+'"><div class="row"><div class="l"><b>'+esc(a.name)+' × '+QS[i.q].label+'</b>'+(or.length&&!op?'<span class="muted" style="font-size:13px">'+esc(or[0])+'</span>':'')+'</div><div class="row start">'+chip(ST[i.status][0],ST[i.status][1],1)+btn('open',op?'Fechar':'Abrir',{c:'sm',d:{key:i.key}})+'</div></div>';
+    if(op){
+      h+='<div class="eyebrow">Declarações individuais</div><div class="cmp">'+E.map(pid=>{const an=ansOf(p,pid,i.aid),s=an&&an.sent;
+        return '<div><b>'+esc(nm(pid))+'</b>'+(s?'<span>'+(QS[i.q].multi?(s[i.q].map(nm).join(', ')||'Ninguém'):esc(s[i.q]))+'</span>'+(i.q==='contrib'&&s.contrib.includes(pid)?'<span class="muted" style="font-size:13px">'+esc(s.desc)+'</span>'+(s.link?'<span class="mono">'+esc(s.link)+'</span>':'<span class="muted" style="font-size:13px">Sem link de evidência</span>'):''):'<span class="muted">'+esc(nm(pid))+' não respondeu</span>')+'</div>'}).join('')+'</div>';
+      if(or.length)h+='<div>'+or.map(x=>'<div>• '+esc(x)+'</div>').join('')+'</div>';
+      if(i.status==='div'){
+        h+='<div><b style="font-size:14px">Cenários possíveis</b><div class="muted" style="font-size:13px">Textos fixos por tipo de pergunta. Nenhum é recomendado nem vem selecionado.</div></div><div class="cmp">'+SCEN[i.q].map(s=>'<div><b>'+esc(s[0])+'</b><span style="font-size:13px">'+esc(s[1])+'</span></div>').join('')+'</div>';
+      }
+    }
+    h+='</div>';
+  });
+
+  return h;
+}
+
+/* ===== Decisão (HU-19 a HU-21) ===== */
+function propOf(p,aid){return p.proposal[aid]=p.proposal[aid]||{titulares:[],uso:'',texto:'',semAcordo:false,saved:false}}
+function vDecisao(p){
+  const org=p.org===ui.me,E=elig(p),as=approved(p);
+  let h=head('Proposta de decisão','HU-19 HU-20 HU-21','Compare as declarações no mapa, converse e registre uma proposta. Cada integrante confirma individualmente depois.');
+  if(p.phase==='coleta'||p.phase==='encerrada')return h+banner(p.phase==='coleta'?'A decisão começa depois do encerramento da coleta.':'Inicie a fase de decisão no mapa de divergências.','info');
+  h+='<div>'+btn('go','Consultar declarações no mapa',{c:'sm',d:{tab:'mapa'}})+'</div>';
+  const edit=p.phase==='decisao'&&org;
+  const focus=as.find(a=>a.id===ui.dasset)||as.find(a=>!propOf(p,a.id).saved)||as[0];
+  if(as.length>1)h+='<div class="asset-switch"><span class="eyebrow">Ativos da proposta</span><div class="row start">'+as.map(a=>btn('dasset',esc(a.name)+(propOf(p,a.id).saved?' ✓':''),{c:'sm'+(focus&&focus.id===a.id?' pri':''),d:{aid:a.id}})).join('')+'</div></div>';
+  if(edit&&as.length){const left=as.filter(a=>!propOf(p,a.id).saved).length;h+='<div class="task-card"><h3>'+(left?'Proposta em elaboração':'Proposta pronta para confirmação')+'</h3><p>'+(left?left+' ativo'+(left===1?' precisa':'s precisam')+' de uma proposta. Salve cada um antes de enviar.':'Revise os ativos e envie a versão para que cada pessoa confirme individualmente.')+'</p>'+(left?'':btn('sendv','Enviar proposta para confirmação',{c:'pri'}))+errm('send')+'</div>'}
+  const lv=lastV(p);
+  if(p.phase==='decisao'&&!org)h+=banner('A pessoa organizadora está preparando uma proposta. Leia o que já foi registrado e deixe comentários; a confirmação será individual quando uma versão for enviada.','info');
+  if(p.phase==='decisao'&&lv){
+    const ref=Object.keys(lv.conf).filter(k=>lv.conf[k].v==='no');
+    if(ref.length)h+=banner('A v'+lv.n+' voltou para decisão. '+ref.map(k=>esc(nm(k))+' recusou: "'+esc(lv.conf[k].comment)+'"').join(' '),'bad');
+  }
+  if(p.phase!=='decisao'){
+    h+=banner('A proposta está '+(p.phase==='consolidado'?'consolidada':'em confirmação')+'. Editar o texto cria uma nova versão e invalida as confirmações da v'+(lv?lv.n:1)+'.','info',org&&p.phase==='confirmacao'?btn('editask','Editar proposta',{c:'sm'}):'');
+    if(ui.flag.edit)h+=banner('Editar criará a v'+(lv.n+1)+' e invalidará as confirmações da v'+lv.n+'. A v'+lv.n+' continua disponível para consulta.','warn','<span class="row start">'+btn('editok','Continuar e editar',{c:'pri sm'})+btn('editno','Cancelar',{c:'sm'})+'</span>');
+  }
+  as.filter(a=>focus&&a.id===focus.id).forEach(a=>{
+    const pr=propOf(p,a.id);
+    h+='<div class="card"><div class="row"><h3>'+esc(a.name)+' <span class="chip">'+esc(a.cat)+'</span></h3>'+(pr.semAcordo?chip('Sem acordo','bad',1):pr.saved?chip('Redigida por '+nm(pr.by)+' em '+fmt(pr.at),'ok',1):chip('Não redigida','',1))+'</div>';
+    h+='<div class="banner info"><span><b>Declarações individuais:</b> '+esc(ST[itemStatus(p,a.id,'titular').status][0])+' sobre titularidade. <b>Decisão da equipe:</b> '+(pr.saved?(pr.semAcordo?'sem acordo':esc(pr.titulares.map(nm).join(', '))):'ainda não proposta')+'.</span>'+btn('go','Ver declarações',{c:'sm',d:{tab:'mapa'}})+'</div>';
+    if(edit){
+      h+='<p class="stage-note">Proposta da equipe para este ativo · diferente das declarações individuais</p>';
+      h+='<div class="field"><div class="q">Titulares</div><div class="opts">'+E.map(pid=>'<label class="opt"><input type="checkbox" data-ch="prop" data-a="'+a.id+'" data-q="titulares" data-v="'+pid+'"'+(pr.titulares.includes(pid)?' checked':'')+'>'+esc(nm(pid))+'</label>').join('')+'</div></div>'+
+      '<div class="field"><div class="q">Regra de uso depois da saída</div><div class="opts">'+USO.map(u=>'<label class="opt"><input type="radio" name="pu-'+a.id+'" data-ch="prop" data-a="'+a.id+'" data-q="uso" data-v="'+esc(u)+'"'+(pr.uso===u?' checked':'')+'>'+u+'</label>').join('')+'</div></div>'+
+      '<div class="field"><label for="pt-'+a.id+'">Texto da decisão</label><textarea id="pt-'+a.id+'" data-in="prop" data-a="'+a.id+'" data-k="texto">'+esc(pr.texto)+'</textarea></div>'+
+      '<label class="opt" style="align-self:flex-start"><input type="checkbox" data-ch="prop" data-a="'+a.id+'" data-q="sem"'+(pr.semAcordo?' checked':'')+'>Marcar titularidade como "Sem acordo"</label>'+errm('p'+a.id)+'<div>'+btn('saveprop',pr.saved?'Salvar alterações':'Salvar proposta deste ativo',{c:pr.saved?'sm':'pri sm',d:{aid:a.id}})+'</div>';
+    }else{
+      h+='<p class="stage-note">Proposta da equipe</p>';h+=pr.saved||pr.semAcordo?'<div class="cmp"><div><b>Titulares</b><span>'+(pr.semAcordo?'Sem acordo':esc(pr.titulares.map(nm).join(', ')))+'</span></div><div><b>Regra de uso</b><span>'+esc(pr.uso||'Não definida')+'</span></div><div><b>Texto</b><span>'+esc(pr.texto||'Sem texto')+'</span></div></div>':'<span class="muted">A organizadora ainda não redigiu este ativo.</span>';
+      if(p.phase==='decisao'&&!org)h+='<div class="muted" style="font-size:13px">A pessoa organizadora redige a proposta. Você pode comentar antes da confirmação.</div>';
+    }
+    const cs=p.comments.filter(c=>c.aid===a.id);
+    h+='<div class="list">'+cs.map(c=>'<div class="li"><span><b>'+esc(nm(c.pid))+':</b> '+esc(c.text)+'</span><span class="mono muted">'+fmt(c.at)+'</span></div>').join('')+'</div>';
+    if(E.includes(ui.me)&&(p.phase==='decisao'||p.phase==='confirmacao'))h+='<div class="field"><label for="cm-'+a.id+'">Comentar</label><input type="text" id="cm-'+a.id+'" data-in="cmt" data-a="'+a.id+'" value="'+esc(ui.cmt[a.id]||'')+'" placeholder="Escreva um comentário para a equipe"></div><div>'+btn('comment','Comentar',{c:'sm',d:{aid:a.id}})+'</div>';
+    h+='</div>';
+  });
+
+  return h;
+}
+
+/* ===== Confirmação (HU-21 a HU-23) ===== */
+function verCard(p,v,curr){
+  const E=elig(p);
+  let h='<div class="card"><div class="row"><h3>Versão v'+v.n+'</h3><div class="row start">'+(curr?chip('Versão atual','acc',1):chip('Versão antiga','',1))+'<span class="mono muted">'+fmt(v.at)+'</span></div></div>';
+  h+='<div class="list">'+Object.keys(v.snap).map(aid=>{const s=v.snap[aid];return '<div class="li"><div class="l"><b>'+esc(s.name)+' <span class="chip">'+esc(s.cat)+'</span></b><span style="font-size:14px">'+(s.semAcordo?'Titularidade sem acordo':'Titulares: '+esc(s.titulares.map(nm).join(', '))+'. Uso: '+esc(s.uso)+'.')+'</span>'+(s.texto?'<span class="muted" style="font-size:13px">'+esc(s.texto)+'</span>':'')+'</div></div>'}).join('')+'</div>';
+  h+='<div class="cmp">'+E.map(pid=>{const c=v.conf[pid];return '<div><b>'+esc(nm(pid))+'</b>'+(c?(c.v==='ok'?chip('Confirmou','ok',1):chip('Recusou','bad',1))+(c.comment?'<span style="font-size:13px">'+esc(c.comment)+'</span>':'')+'<span class="mono muted">'+fmt(c.at)+'</span>':chip('Pendente','',1))+'</div>'}).join('')+'</div>';
+  if(!curr)h+='<p class="stage-note">Versão anterior, disponível apenas para consulta.</p>';
+  return h+'</div>';
+}
+function vConf(p){
+  let h=head('Confirmação','HU-21 HU-22 HU-23','Leia a versão atual antes de confirmar ou recusar. A decisão é individual e silêncio não conta como confirmação.');
+  const lv=lastV(p);
+  if(!lv)return h+banner('Ainda não existe versão para confirmar. Quem organiza envia a proposta na etapa Decisão.','info');
+  const E=elig(p),me=ui.me,c=lv.conf[me];
+  if(p.phase==='consolidado')h+=banner('Todos os elegíveis confirmaram a v'+lv.n+'. O memorial está disponível.','info',btn('go','Ver memorial',{c:'pri sm',d:{tab:'memorial'}}));
+  const sem=Object.values(lv.snap).some(s=>s.semAcordo);
+  if(p.phase==='confirmacao'&&E.every(x=>lv.conf[x]&&lv.conf[x].v==='ok')&&sem)h+=banner('Todos confirmaram, mas há item sem acordo. O projeto não pode ficar Consolidado.','warn',p.org===me?btn('editask','Voltar para decisão',{c:'sm'}):'');
+  if(ui.flag.edit&&p.phase==='confirmacao')h+=banner('Editar criará a v'+(lv.n+1)+' e invalidará as confirmações da v'+lv.n+'.','warn','<span class="row start">'+btn('editok','Continuar e editar',{c:'pri sm'})+btn('editno','Cancelar',{c:'sm'})+'</span>');
+  h+=verCard(p,lv,true);
+  if(p.phase==='confirmacao'){
+    if(!E.includes(me))h+=naoElig();
+    else if(c)h+=banner('Sua confirmação da v'+lv.n+' foi registrada. Aguarde a posição das demais pessoas; ausência de resposta não significa concordância.','info');
+    else h+='<div class="card"><h3>Seu posicionamento sobre a v'+lv.n+'</h3><div class="field"><label for="rf">Motivo (obrigatório para recusar)</label><textarea id="rf" data-in="refuse">'+esc(ui.refuse)+'</textarea>'+errm('refuse')+'</div><div class="row start">'+btn('conf','Confirmar v'+lv.n,{c:'pri',d:{n:lv.n}})+btn('refuse','Recusar',{c:'bad',d:{n:lv.n}})+'</div></div>';
+  }
+  if(p.versions.length>1)h+='<h3 style="margin-top:6px">Versões anteriores</h3>'+p.versions.slice(0,-1).reverse().map(v=>verCard(p,v,false)).join('');
+  return h;
+}
+
+/* ===== Memorial (HU-24, HU-25) ===== */
+function memorialBody(p,at){
+  const v=lastV(p),cons=p.phase==='consolidado',L=[],E=elig(p);
+  L.push('MEMORIAL DE DECISÕES');L.push('Projeto: '+p.name+' ('+(p.context||'sem contexto')+')');
+  L.push('Estado: '+(cons?'Consolidado':'Não consolidado'));L.push('Versão da proposta: v'+v.n);L.push('Gerado em: '+fmt(at));L.push('');
+  L.push('PESSOAS');
+  p.members.forEach(m=>L.push('- '+nm(m.pid)+', '+roleTxt(p,m.pid).toLowerCase()+(m.status==='naopart'?' (Não participante)':m.status==='pendente'?' (Convite pendente)':!m.elig?' (não elegível nesta rodada)':'')));
+  L.push('');L.push('ATIVOS, CONTRIBUIÇÕES E DECISÕES');
+  approved(p).forEach(a=>{
+    L.push('');L.push(a.name+' ('+a.cat+')');
+    E.forEach(pid=>{const x=ansOf(p,pid,a.id),s=x&&x.sent;if(s&&s.contrib.includes(pid)){L.push('  Contribuição de '+nm(pid)+': '+s.desc);L.push('  Evidência: '+(s.link||'não informada'))}});
+    const s=v.snap[a.id];
+    if(s){L.push('  Decisão: '+(s.semAcordo?'SEM ACORDO na titularidade':'titulares '+s.titulares.map(nm).join(', ')+'; uso após a saída: '+s.uso));if(s.texto)L.push('  Texto: '+s.texto)}
+  });
+  L.push('');L.push('CONFIRMAÇÕES DA v'+v.n);
+  E.forEach(pid=>{const c=v.conf[pid];L.push('- '+nm(pid)+': '+(c?(c.v==='ok'?'confirmou':'recusou ('+c.comment+')')+' em '+fmt(c.at):'ainda não se posicionou')) });
+  const ref=[];p.versions.forEach(x=>Object.keys(x.conf).forEach(k=>{if(x.conf[k].v==='no')ref.push('- '+nm(k)+' recusou a v'+x.n+': '+x.conf[k].comment)}));
+  if(ref.length){L.push('');L.push('RECUSAS REGISTRADAS');ref.forEach(r=>L.push(r))}
+  const sem=Object.keys(v.snap).filter(k=>v.snap[k].semAcordo).map(k=>v.snap[k].name);
+  if(sem.length){L.push('');L.push('ITENS SEM ACORDO');sem.forEach(s=>L.push('- '+s+', titularidade'))}
+  L.push('');L.push(LIMITS);
+  return L.join('\n');
+}
+function vMemorial(p){
+  let h=head('Memorial','HU-24 HU-25','O documento reúne só os dados deste projeto.');
+  if(!lastV(p))return h+banner('O memorial fica disponível depois do envio da primeira versão para confirmação.','info');
+  const ms=p.memorials;
+  h+='<div class="card"><div class="row"><h3>Memorial de '+esc(p.name)+'</h3>'+chip(p.phase==='consolidado'?'Consolidado':'Não consolidado',p.phase==='consolidado'?'ok':'warn',1)+'</div><div class="muted" style="font-size:13px">Registro preparatório das decisões da equipe. Não substitui contrato ou registro oficial.</div><div>'+btn('genmem',ms.length?'Gerar nova cópia':'Gerar memorial agora',{c:ms.length?'':'pri'})+'</div></div>';
+  if(ms.length){
+    const m=ms[0];
+    h+='<div class="paper">'+esc(m.body)+'\n\nCódigo de verificação (SHA-256): '+m.hash+'</div><div class="row start">'+btn('copymem','Copiar texto do memorial',{c:'sm'})+'<span class="muted" style="font-size:13px">'+ms.length+' memorial'+(ms.length>1?'is':'')+' gerado'+(ms.length>1?'s':'')+' neste projeto</span></div>';
+  }
+  h+='<div class="card"><h3>Verificar integridade</h3><div class="muted" style="font-size:13px">Cole o texto do memorial. A MIP confere o código com os memoriais que gerou.</div><textarea id="vt" data-in="vtext" style="min-height:110px">'+esc(ui.verifyText)+'</textarea><div class="row start">'+btn('verify','Verificar',{c:'sm'})+'</div>'+(ui.verify?banner(esc(ui.verify.msg),ui.verify.ok?'info':'bad'):'')+'</div>';
+  return h;
+}
+
+/* ===== Geral ===== */
+const JOURNEY=[['equipe','Equipe'],['ativos','Ativos'],['resp','Respostas'],['coleta','Coleta'],['mapa','Conversa'],['decisao','Proposta'],['conf','Confirmação'],['memorial','Memorial']];
+function taskFor(p,pid=ui.me){
+  const m=mem(p,pid),org=p.org===pid,as=approved(p);
+  if(!m||m.status==='pendente')return{tab:'equipe',label:'Aceitar convite',note:'Entre no projeto para ver suas tarefas.'};
+  if(p.phase==='coleta'){
+    if(org&&(p.setupStep==='equipe'||!p.setupStep&&!p.assets.length))return{tab:'equipe',label:'Preparar equipe',note:'Confira os integrantes e convites antes de listar os ativos.'};
+    if(org&&(p.setupStep==='ativos'||!as.length))return{tab:'ativos',label:'Organizar ativos',note:'Defina o que a equipe vai discutir.'};
+    if(!as.length)return{tab:'ativos',label:'Aguardar ativos',note:'A organizadora prepara a lista. Você pode sugerir um ativo.'};
+    if(!m.elig)return{tab:'coleta',label:'Acompanhar projeto',note:'Você não participa das respostas desta rodada.'};
+    const left=as.filter(a=>{const x=ansOf(p,pid,a.id);return !x||!x.sent});
+    if(m.elig&&left.length)return{tab:'resp',label:'Continuar questionário',note:left.length+' ativo'+(left.length===1?'':'s')+' aguardando suas respostas.'};
+    return{tab:'coleta',label:org?'Acompanhar coleta':'Acompanhar equipe',note:org?'Veja quem respondeu e decida quando encerrar.':'Suas respostas foram enviadas. Aguarde a equipe.'};
+  }
+  if(p.phase==='encerrada')return{tab:'mapa',label:org?'Analisar respostas':'Ver percepções da equipe',note:'Compare as declarações e converse sobre as diferenças.'};
+  if(p.phase==='decisao')return{tab:'decisao',label:org?'Preparar proposta':'Revisar proposta',note:org?'Registre uma proposta para cada ativo.':'Leia e comente enquanto a proposta é preparada.'};
+  if(p.phase==='confirmacao'){const v=lastV(p),c=v&&v.conf[pid];return{tab:'conf',label:c||!m.elig?'Acompanhar confirmações':'Confirmar proposta',note:c?'Sua posição foi registrada. Aguarde as demais pessoas.':'Leia a versão atual e registre sua posição.'}}
+  return{tab:'memorial',label:'Ver memorial',note:'Consulte o registro das decisões da equipe.'};
+}
+const projectNext=p=>{const t=taskFor(p);return[t.label,t.tab]};
+function focusQuestion(p,pid=ui.me){const next=approved(p).find(a=>!ansOf(p,pid,a.id)?.sent);if(next&&(!ui.qasset||ansOf(p,pid,ui.qasset)?.sent||!approved(p).some(a=>a.id===ui.qasset))){ui.qasset=next.id;ui.qstep=0}}
+function journeyIndex(p,pid=ui.me){return Math.max(0,JOURNEY.findIndex(x=>x[0]===taskFor(p,pid).tab))}
+function journeyUI(p){const current=journeyIndex(p);return '<div class="journey-progress" aria-label="Progresso da jornada"><span class="eyebrow">Jornada do projeto</span><div class="journey-steps">'+JOURNEY.map((x,i)=>'<div class="journey-step '+(i<current?'done':i===current?'current':'future')+'"><span class="journey-dot">'+(i<current?'✓':i+1)+'</span><span>'+x[1]+'</span></div>').join('')+'</div></div>'}
+function vProjeto(p){const n=projectNext(p),as=approved(p),E=elig(p);return head('Visão do projeto','','Acompanhe o próximo passo da equipe.')+'<div class="grid"><div class="card"><span class="eyebrow">Etapa atual</span><h3>'+esc(PHN[p.phase])+'</h3><p class="muted">'+(p.phase==='coleta'?'Cada pessoa responde em particular. Depois do encerramento, a equipe poderá comparar as respostas.':p.phase==='consolidado'?'A equipe confirmou a proposta atual. O memorial registra as decisões.':'Abra a próxima etapa para acompanhar as decisões.')+'</p><div>'+btn('go',n[0],{c:'pri',d:{tab:n[1]}})+'</div></div><div class="card"><span class="eyebrow">Neste projeto</span><div class="list"><div class="li"><span>Participantes da rodada</span><b>'+E.length+'</b></div><div class="li"><span>Ativos no questionário</span><b>'+as.length+'</b></div><div class="li"><span>Seu papel</span><b>'+roleTxt(p,ui.me)+'</b></div></div></div></div>'}
+const HOME_STEPS=[
+  ['Equipe','Reúna as pessoas que participam do projeto.'],
+  ['Ativos','Liste o que a equipe criou e quer discutir.'],
+  ['Respostas','Cada pessoa registra sua perspectiva em particular.'],
+  ['Coleta','Acompanhe as respostas e encerre quando fizer sentido.'],
+  ['Divergências','Veja pontos em comum, diferenças e ausências.'],
+  ['Decisão','Converse e escreva uma proposta para cada ativo.'],
+  ['Confirmação','Cada integrante confirma ou recusa a versão atual.'],
+  ['Memorial','Guarde um registro preparatório das decisões.']
+];
+function vHome(){
+  const mine=projects.filter(p=>mem(p,ui.me));
+  let h='<main class="landing"><section class="landing-hero"><div class="landing-copy"><span class="eyebrow">MIP / BACKSTAGE</span><h1>O que a equipe cria merece uma conversa clara desde o começo.</h1><p>O Backstage ajuda vocês a reconhecer contribuições, conversar sobre titularidade e registrar decisões com transparência.</p><div class="landing-actions">'+(mine.length?btn('openproject','Continuar minha jornada',{c:'pri',d:{pid:mine[0].id}}):btn('go','Começar minha jornada',{c:'pri',d:{tab:'novo'}}))+'<a href="#etapas">Conhecer as etapas ↓</a></div></div><div class="landing-art" aria-hidden="true"><span class="art-orbit orbit-one"></span><span class="art-orbit orbit-two"></span><span class="art-core">mip.</span><span class="art-caption">criar · conversar · decidir</span></div></section>';
+  h+='<section class="landing-reason"><span class="eyebrow">POR QUE COMEÇAR AGORA</span><h2>Boas decisões começam com perspectivas visíveis.</h2><p>Em projetos colaborativos, cada pessoa pode entender de um jeito quem criou, quem deve ser titular e como o trabalho poderá ser usado no futuro. Conversar cedo ajuda a evitar suposições e a documentar o que a equipe realmente decidiu.</p></section>';
+  h+='<section id="etapas" class="landing-journey"><div class="landing-section-head"><div><span class="eyebrow">O CAMINHO</span><h2>Oito passos, uma conversa de cada vez.</h2></div><p>Você avança com orientação. Quando depender de outras pessoas, o Backstage mostra o que está pendente.</p></div><div class="landing-steps">'+HOME_STEPS.map((x,i)=>'<div class="landing-step"><span class="step-number">'+String(i+1).padStart(2,'0')+'</span><div><h3>'+x[0]+'</h3><p>'+x[1]+'</p></div></div>').join('')+'</div></section>';
+  h+='<section class="landing-outcome"><span class="eyebrow">AO FINAL</span><h2>Um memorial das decisões da equipe.</h2><p>Um registro das contribuições, da proposta, das confirmações e dos pontos que ainda precisem de acordo. Ele prepara a conversa para formalização futura, sem substituir um contrato ou registro oficial.</p>'+(mine.length?btn('openproject','Continuar minha jornada',{c:'pri',d:{pid:mine[0].id}}):btn('go','Começar minha jornada',{c:'pri',d:{tab:'novo'}}))+'</section>';
+  if(mine.length)h+='<section class="landing-projects"><div class="landing-section-head"><div><span class="eyebrow">SEUS PROJETOS</span><h2>Retome de onde parou.</h2></div>'+btn('go','Criar outro projeto',{d:{tab:'novo'}})+'</div><div class="landing-project-list">'+mine.map(p=>{const t=taskFor(p);return '<div class="landing-project"><div><h3>'+esc(p.name)+'</h3><p>'+esc(t.note)+'</p></div>'+btn('openproject',t.label,{c:'pri',d:{pid:p.id}})+'</div>'}).join('')+'</div></section>';
+  return h+'</main>';
+}
+function header(){
+  return '<div class="top"><button class="brand brand-button" data-act="go" data-tab="home" aria-label="Ir para a Home"><b>MIP</b><span>Backstage</span></button><div class="ctrls"><button class="btn sm theme-toggle" data-act="theme" aria-label="'+(ui.theme==='dark'?'Ativar versão clara':'Ativar versão escura')+'" aria-pressed="'+(ui.theme==='dark')+'">'+(ui.theme==='dark'?'☼ Versão clara':'◐ Versão escura')+'</button><button class="btn sm" data-act="go" data-tab="home">Home</button></div></div>';
+}
+function render(){
+  if(document.documentElement)document.documentElement.dataset.theme=ui.theme==='dark'?'dark':'light';
+  const p=cur(),m=p&&mem(p,ui.me);let h=header();
+  if(ui.tab==='home')h+=vHome();
+  else if(ui.tab==='novo')h+=vNovo();
+  else if(!m)h+='<div class="card"><h2>Você não tem acesso a este projeto</h2><p class="muted">Nenhum dado deste projeto é exibido.</p>'+btn('openlink','Abrir link de convite',{c:'pri sm',d:{who:ui.me}})+errm('link')+'</div>';
+  else if(m.status==='pendente')h+='<div class="card"><h2>Convite para '+esc(p.name)+'</h2><p class="muted">Aceite para ver o projeto. As respostas individuais ficam ocultas durante a coleta.</p>'+btn('accept','Aceitar convite',{c:'pri',d:{pid:ui.me}})+'</div>';
+  else{
+    const next=projectNext(p),T=[['projeto','Projeto'],...JOURNEY];
+    h+='<div class="project-hero"><div><span class="eyebrow">'+esc(roleTxt(p,ui.me))+' · '+esc(PHN[p.phase])+'</span><h1>'+esc(p.name)+'</h1><p class="muted">'+esc(taskFor(p).note)+'</p></div>'+(ui.tab===next[1]?chip('Etapa atual','acc',1):btn('go','Voltar à tarefa atual',{d:{tab:next[1]}}))+'</div>';
+    h+=journeyUI(p)+(ui.notice?banner(esc(ui.notice),'info'):'')+'<details class="secondary-nav"><summary>Consultar outras etapas do projeto</summary><nav class="journey" aria-label="Navegação de consulta">'+T.map(t=>'<button class="'+(ui.tab===t[0]?'on':'')+'" data-act="go" data-tab="'+t[0]+'">'+t[1]+'</button>').join('')+'</nav></details><div class="sec">';
+    h+=({projeto:vProjeto,equipe:vEquipe,ativos:vAtivos,resp:vResp,coleta:vColeta,mapa:vMapa,decisao:vDecisao,conf:vConf,memorial:vMemorial}[ui.tab]||vEquipe)(p);
+    h+='</div>';
+  }
+  $('#app').innerHTML=h+demo();
+  persist();
+}
+function vNovo(){
+  return '<div class="onboarding-shell"><div class="onboarding-intro"><span class="eyebrow">ETAPA 01 / EQUIPE</span><h1>Vamos começar pelo seu projeto.</h1><p>Dê um nome ao projeto e diga como prefere ser chamado. Na próxima tela, você poderá reunir a equipe.</p></div><div class="onboarding-form"><div class="field"><label for="person">Seu nome</label><input type="text" id="person" data-in="novo" data-k="person" value="'+esc(ui.novo.person||'')+'" placeholder="Como a equipe conhece você?" autocomplete="name">'+errm('person')+'</div><div class="field"><label for="pn">Nome do projeto</label><input type="text" id="pn" data-in="novo" data-k="name" value="'+esc(ui.novo.name)+'" placeholder="Ex.: Nosso aplicativo">'+errm('pn')+'</div><div class="field"><label for="pc">Breve contexto <span class="muted">(opcional)</span></label><input type="text" id="pc" data-in="novo" data-k="ctx" value="'+esc(ui.novo.ctx)+'" placeholder="O que sua equipe está criando?"></div><div class="onboarding-actions">'+btn('mkproj','Criar projeto e organizar equipe',{c:'pri'})+btn('go','Voltar à apresentação',{d:{tab:'home'}})+'</div></div></div>';
+}
+function demo(){
+  const p=cur(),mine=projects.filter(x=>mem(x,ui.me)&&mem(x,ui.me).status!=='pendente');return '<details class="demo"><summary>Ferramentas de teste · simulação</summary><p class="muted" style="margin:8px 0">Use estas ações para preparar cenários dos testes de usabilidade. Elas não fazem parte da jornada do participante.</p><div class="row start"><label>Ver como <select id="who" data-ch="who">'+Object.keys(people).map(k=>'<option value="'+k+'"'+(ui.me===k?' selected':'')+'>'+esc(people[k].name)+'</option>').join('')+'</select></label><label>Projeto <select id="proj" data-ch="proj">'+(mine.some(x=>x.id===ui.pid)?'':'<option value="'+ui.pid+'" selected>Endereço aberto</option>')+mine.map(x=>'<option value="'+x.id+'"'+(ui.pid===x.id?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label></div><div class="row start" style="margin-top:10px">'+btn('demo-load','Carregar cenário simulado',{c:'sm'})+btn('demo-fill','Preencher respostas de exemplo',{c:'sm',dis:!p||p.id!=='p1'})+btn('demo-skip','Abrir fase de decisão',{c:'sm',dis:!p||p.id!=='p1'})+btn('demo-reset','Reiniciar demonstração',{c:'sm bad'})+'</div><div class="row start" style="margin-top:10px">'+(p?p.members.filter(m=>m.status==='pendente').map(m=>btn('accept','Aceitar convite como '+nm(m.pid),{c:'sm',d:{pid:m.pid}})).join('')+['diego','bruno','carla'].map(w=>btn('openlink','Testar link como '+nm(w),{c:'sm',d:{who:w}})).join(''):'')+'</div><div class="row start" style="margin-top:10px">'+btn('otheredit','Testar edição de resposta alheia',{c:'sm'})+btn('tryedit','Testar edição após coleta',{c:'sm'})+btn('tryprop','Testar edição da proposta',{c:'sm'})+(p&&p.memorials.length?btn('pasteorig','Inserir memorial original',{c:'sm'})+btn('pastealt','Inserir memorial alterado',{c:'sm'}):'')+'</div></details>';
+}
+
+/* ===== Ações ===== */
+function act(a,d){
+  const p=cur(),me=ui.me;ui.err={};ui.notice='';
+  switch(a){
+  case 'theme':ui.theme=ui.theme==='dark'?'light':'dark';break;
+  case 'go':ui.tab=d.tab;ui.flag={};if(d.tab==='novo'&&!ui.novo.person&&nm(me)!=='Você')ui.novo.person=nm(me);if(d.tab==='resp')focusQuestion(p,me);break;
+  case 'intro':ui.introSeen=true;break;
+  case 'openproject':{const changed=ui.pid!==d.pid;ui.pid=d.pid;ui.tab=taskFor(projects.find(x=>x.id===d.pid),me).tab;if(changed){ui.qasset=null;ui.qstep=0}if(ui.tab==='resp')focusQuestion(projects.find(x=>x.id===d.pid),me);break}
+  case 'qintro':ui.questionIntro[me]=true;break;
+  case 'setupteam':if(p.org===me&&p.phase==='coleta'){p.setupStep='ativos';ui.tab='ativos';ui.notice='Equipe preparada. Agora organize os ativos.'}break;
+  case 'setupassets':if(p.org===me&&p.phase==='coleta'&&approved(p).length){p.setupStep='resp';ui.tab='resp';focusQuestion(p,me);ui.notice='Ativos organizados. Registre agora sua percepção individual.'}break;
+  case 'dasset':ui.dasset=d.aid;break;
+  case 'qasset':ui.qasset=d.aid;ui.qstep=0;ui.flag={};break;
+  case 'qlist':ui.qasset=null;ui.qstep=0;ui.flag={};break;
+  case 'qback':ui.qstep=Math.max(0,ui.qstep-1);break;
+  case 'qnext':{const an=ensureAns(p,me,ui.qasset),q=QK[ui.qstep];if(p.phase==='coleta'&&q){if(QS[q].multi?!an.draft[q].length:!an.draft[q]){ui.err[ui.qasset+':'+q]='Escolha uma opção para continuar';break}if(q==='contrib'&&an.draft.contrib.includes(me)&&!an.draft.desc.trim()){ui.err[ui.qasset+':desc']='Descreva sua contribuição';break}if(q==='contrib'&&an.draft.link.trim()&&!/^https?:\/\/\S+$/i.test(an.draft.link.trim())){ui.err[ui.qasset+':link']='Informe um link válido, começando com http';break}}ui.qstep=Math.min(3,ui.qstep+1);break}
+  case 'qsend':{const aid=ui.qasset;if(sendAnswer(p,aid)){const remaining=approved(p).find(a=>!ansOf(p,me,a.id)?.sent);ui.flag.qsent=aid;if(remaining){ui.qasset=remaining.id;ui.qstep=0}else{ui.qasset=null;ui.qstep=0;ui.tab='coleta';ui.notice='Suas respostas foram enviadas. Acompanhe o restante da coleta.'}}break}
+  case 'mine':ui.tab='home';break;
+  case 'ack':p.ack[me]=true;break;
+  case 'filter':ui.filter=d.f;break;
+  case 'open':ui.open=ui.open===d.key?null:d.key;break;
+  case 'invite':{
+    const e=ui.inv.trim().toLowerCase();
+    if(!/^\S+@\S+\.\S+$/.test(e)){ui.err.inv='Informe um e-mail válido';break}
+    let pid=Object.keys(people).find(k=>people[k].email===e);
+    if(pid&&mem(p,pid)){ui.err.inv='Esta pessoa já faz parte do projeto';break}
+    if(!pid){pid=e.split('@')[0].replace(/[^a-z0-9]/g,'')||rid();const nmx=pid.charAt(0).toUpperCase()+pid.slice(1);people[pid]={name:nmx,g:'m',email:e}}
+    p.members.push({pid,status:'pendente',elig:true});log(p,me,'convidou '+e);ui.flag.invited=nm(pid)+' aparece como convite pendente até aceitar.';ui.inv='';break}
+  case 'accept':{const m=mem(p,d.pid);m.status='ativo';m.elig=p.phase==='coleta';log(p,d.pid,'aceitou o convite'+(m.elig?'':' depois do encerramento da coleta e não é elegível nesta rodada'));if(d.pid===me){ui.tab=taskFor(p,me).tab;if(ui.tab==='resp')focusQuestion(p,me);ui.notice='Convite aceito. Esta é sua próxima tarefa no projeto.'}say(nm(d.pid)+' agora está Ativo.');break}
+  case 'toglink':p.link.active=!p.link.active;log(p,me,p.link.active?'ativou o link de convite':'desativou o link de convite');break;
+  case 'openlink':{
+    if(!p.link.active){ui.err.link='Este convite não está mais ativo';break}
+    const who=d.who;if(mem(p,who)){ui.me=who;ui.tab=taskFor(p,who).tab;if(ui.tab==='resp')focusQuestion(p,who);say(nm(who)+' já é integrante. Nenhum integrante duplicado foi criado.');break}
+    p.members.push({pid:who,status:'ativo',elig:p.phase==='coleta'});log(p,who,'entrou pelo link de convite');ui.me=who;ui.tab=taskFor(p,who).tab;if(ui.tab==='resp')focusQuestion(p,who);ui.notice='Você entrou no projeto. Veja sua tarefa atual.';say(nm(who)+' entrou no projeto como Ativo'+(p.phase==='coleta'?'.':', mas não é elegível nesta rodada.'));break}
+  case 'naopart':{
+    if(d.pid===p.org){ui.err.np='Quem organiza não pode ser marcado como não participante';break}
+    const m=mem(p,d.pid);m.status='naopart';m.by=me;m.at=Date.now();
+    Object.values(p.proposal).forEach(pr=>{pr.titulares=pr.titulares.filter(x=>x!==d.pid)});
+    log(p,me,'marcou '+nm(d.pid)+' como não participante');break}
+  case 'addasset':{
+    if(p.phase!=='coleta'||p.org!==me)break;
+    const f=ui.addA;if(!f.name.trim()){ui.err.fn='Informe o nome do ativo';break}if(!f.cat){ui.err.fc='Escolha uma categoria';break}
+    p.assets.push({id:'a'+rid(),name:f.name.trim(),cat:f.cat,desc:f.desc.trim(),st:'ok'});log(p,me,'cadastrou o ativo '+f.name.trim());ui.addA={name:'',cat:'',desc:''};say('Ativo cadastrado. Ele já aparece no questionário de todos.');break}
+  case 'sugasset':{
+    const f=ui.sug;if(p.phase!=='coleta'){ui.err.fn='A coleta já foi encerrada';break}
+    if(!f.name.trim()){ui.err.fn='Informe o nome do ativo';break}if(!f.cat){ui.err.fc='Escolha uma categoria';break}
+    p.assets.push({id:'a'+rid(),name:f.name.trim(),cat:f.cat,desc:f.desc.trim(),st:'sug',by:me});log(p,me,'sugeriu o ativo '+f.name.trim());ui.sug={name:'',cat:'',desc:''};say('Sugestão enviada para '+nm(p.org)+'.');break}
+  case 'aprov':{if(p.phase!=='coleta'||p.org!==me)break;const x=p.assets.find(y=>y.id===d.aid);x.st='ok';log(p,me,'aprovou o ativo '+x.name);break}
+  case 'recus':{if(p.phase!=='coleta'||p.org!==me)break;const x=p.assets.find(y=>y.id===d.aid);x.st='rec';x.reason=(ui.refSug[d.aid]||'').trim()||'Sem motivo informado';log(p,me,'recusou o ativo '+x.name);break}
+  case 'del':{
+    if(p.phase!=='coleta'){ui.err['d'+d.aid]='Ativos não podem ser excluídos depois do encerramento da coleta';break}
+    const n=p.members.filter(m=>ansOf(p,m.pid,d.aid)&&ansOf(p,m.pid,d.aid).sent).length;
+    if(n===0)delAsset(p,d.aid);else ui.flag.del=d.aid;break}
+  case 'delok':delAsset(p,d.aid);ui.flag={};break;
+  case 'delno':ui.flag={};break;
+  case 'draft':persist();say('Rascunho salvo. Você pode voltar depois e continuar.');break;
+  case 'send':if(sendAnswer(p,d.aid)){const as=approved(p),next=as.find(x=>{const an=ansOf(p,me,x.id);return !an||!an.sent});if(next){ui.qasset=next.id;ui.qstep=0}else ui.qstep=4}break;
+  case 'tryedit':say('Ação bloqueada: a coleta foi encerrada.','bad');break;
+  case 'otheredit':say('Ação negada: você só pode alterar as suas próprias respostas.','bad');break;
+  case 'closeask':ui.flag.close=true;break;
+  case 'closeno':ui.flag={};break;
+  case 'closeok':if(p.org!==me||p.phase!=='coleta'||!approved(p).length||!ui.flag.close)break;p.phase='encerrada';log(p,me,'encerrou a coleta');ui.flag={};ui.tab='mapa';ui.notice='Coleta encerrada. Compare as declarações e prepare a conversa.';say('Coleta encerrada. O mapa de divergências está aberto.');break;
+  case 'remind':say('Lembrete enviado por e-mail para '+nm(d.pid)+'. O e-mail traz só o link do projeto.');break;
+  case 'remindgrp':{const E=elig(p),as=approved(p);const miss=E.filter(pid=>as.some(a=>{const x=ansOf(p,pid,a.id);return !(x&&x.sent)})).map(nm);ui.flag.grp='Pessoal, faltam respostas na MIP: '+miss.join(', ')+'. Acesse mip.app/p/'+p.id;copy(ui.flag.grp);break}
+  case 'startdec':if(p.org!==me||p.phase!=='encerrada')break;p.phase='decisao';log(p,me,'iniciou a fase de decisão');ui.tab='decisao';ui.notice='Agora registre uma proposta para cada ativo.';break;
+  case 'saveprop':{
+    if(p.org!==me||p.phase!=='decisao')break;
+    const pr=propOf(p,d.aid);
+    if(!pr.semAcordo&&(!pr.titulares.length||!pr.uso||!pr.texto.trim())){ui.err['p'+d.aid]='Defina titulares, regra de uso e texto da decisão, ou marque "Sem acordo".';break}
+    pr.saved=true;pr.by=me;pr.at=Date.now();ui.dasset=approved(p).find(a=>!propOf(p,a.id).saved)?.id||d.aid;ui.notice=approved(p).every(a=>propOf(p,a.id).saved)?'Todas as propostas foram salvas. Envie a versão para confirmação.':'Proposta salva. Continue com o próximo ativo.';log(p,me,'registrou a proposta de '+p.assets.find(x=>x.id===d.aid).name);say(pr.semAcordo?'Item registrado como sem acordo. O projeto não poderá ficar Consolidado enquanto ele valer.':'Proposta salva.');break}
+  case 'tryprop':say('Ação negada: só a organizadora altera a proposta. Use o comentário.','bad');break;
+  case 'comment':{const t=(ui.cmt[d.aid]||'').trim();if(!t){say('Escreva o comentário antes de enviar.','bad');break}p.comments.push({aid:d.aid,pid:me,text:t,at:Date.now()});ui.cmt[d.aid]='';say('Comentário registrado. A proposta não foi alterada.');break}
+  case 'sendv':{
+    if(p.org!==me||p.phase!=='decisao')break;
+    const as=approved(p);if(!as.length){ui.err.send='Cadastre ao menos um ativo antes de enviar.';break}if(as.some(a=>!(propOf(p,a.id).saved||propOf(p,a.id).semAcordo&&propOf(p,a.id).saved))){ui.err.send='Conclua a proposta de todos os ativos antes de enviar.';break}
+    const snap={};as.forEach(a=>{const pr=p.proposal[a.id];snap[a.id]={name:a.name,cat:a.cat,titulares:clone(pr.titulares),uso:pr.uso,texto:pr.texto,semAcordo:pr.semAcordo}});
+    const n=p.versions.length+1;p.versions.push({n,at:Date.now(),snap,conf:{}});p.phase='confirmacao';log(p,me,'enviou a v'+n+' para confirmação');ui.tab='conf';ui.notice='Versão v'+n+' enviada. Cada pessoa deve confirmar ou recusar individualmente.';say('Versão v'+n+' criada. O projeto está Em confirmação.');break}
+  case 'editask':ui.flag.edit=true;break;
+  case 'editno':ui.flag={};break;
+  case 'editok':{if(p.org!==me||p.phase!=='confirmacao')break;p.phase='decisao';ui.flag={};log(p,me,'reabriu a proposta; o próximo envio criará a v'+(p.versions.length+1));ui.tab='decisao';break}
+  case 'oldconf':{const lv=lastV(p);say('Ação negada: a versão atual é a v'+lv.n+'. Você foi levado a ela.','bad');break}
+  case 'conf':case 'refuse':{
+    const lv=lastV(p);if(+d.n!==lv.n||p.phase!=='confirmacao'){say('Ação negada: só é possível se posicionar sobre a versão atual.','bad');break}
+    if(lv.conf[me]){say('Você já se posicionou sobre esta versão.','bad');break}
+    if(!elig(p).includes(me)){say('Você não é elegível para confirmar nesta rodada.','bad');break}
+    if(a==='refuse'){
+      if(!ui.refuse.trim()){ui.err.refuse='Explique o motivo da recusa';break}
+      lv.conf[me]={v:'no',comment:ui.refuse.trim(),at:Date.now()};p.phase='decisao';ui.tab='decisao';ui.notice='Recusa registrada. A proposta voltou para revisão de quem organiza.';ui.refuse='';log(p,me,'recusou a v'+lv.n);say('Recusa registrada. O projeto voltou para Em decisão.');break}
+    lv.conf[me]={v:'ok',comment:'',at:Date.now()};log(p,me,'confirmou a v'+lv.n);
+    if(elig(p).every(x=>lv.conf[x]&&lv.conf[x].v==='ok')&&!Object.values(lv.snap).some(s=>s.semAcordo)){p.phase='consolidado';ui.tab='memorial';ui.notice='A equipe confirmou a proposta. O memorial pode ser gerado agora.';say('Todos confirmaram a v'+lv.n+'. O projeto está Consolidado.')}else{ui.notice='Sua confirmação foi registrada. Aguarde as demais pessoas.';say('Confirmação registrada.')}break}
+  case 'genmem':genMem(p);return;
+  case 'copymem':copy(p.memorials[0].body+'\n\nCódigo de verificação (SHA-256): '+p.memorials[0].hash);return;
+  case 'pasteorig':ui.verifyText=p.memorials[0].body+'\n\nCódigo de verificação (SHA-256): '+p.memorials[0].hash;ui.verify=null;break;
+  case 'pastealt':ui.verifyText=(p.memorials[0].body+'\n\nCódigo de verificação (SHA-256): '+p.memorials[0].hash).replace('Estado: ','Estado: (alterado) ');ui.verify=null;break;
+  case 'verify':doVerify();return;
+  case 'mkproj':{
+    if(!ui.novo.person.trim()){ui.err.person='Informe seu nome';break}
+    if(!ui.novo.name.trim()){ui.err.pn='Informe o nome do projeto';break}
+    people[me].name=ui.novo.person.trim();const q=mkProject('p'+rid(),ui.novo.name.trim(),ui.novo.ctx.trim(),me);log(q,me,'criou o projeto '+q.name);projects.push(q);ui.pid=q.id;ui.tab='equipe';ui.notice='Projeto criado. Comece pela equipe.';ui.novo={person:people[me].name,name:'',ctx:''};say('Projeto criado. Agora organize a equipe.');break}
+  case 'demo-load':{const theme=ui.theme;seedDemo();ui.theme=theme;ui.introSeen=true;ui.tab='home';say('Cenário simulado carregado para testes.');break}
+  case 'demo-fill':if(!p||p.id!=='p1')break;fillDemo(p);say('Respostas de exemplo preenchidas. Carla ainda não enviou o Backend.');break;
+  case 'demo-skip':{if(!p||p.id!=='p1')break;if(p.phase==='coleta'){fillDemo(p);p.phase='decisao';log(p,'sistema','abriu a fase de decisão para a demonstração')}ui.tab='decisao';say('Projeto na fase de decisão.');break}
+  case 'demo-reset':{const theme=ui.theme;localStorage.removeItem(STORAGE);seed();ui.theme=theme;say('Jornada reiniciada.');break}
+  }
+  render();
+}
+function delAsset(p,aid){const x=p.assets.find(y=>y.id===aid);p.assets=p.assets.filter(y=>y.id!==aid);Object.values(p.answers).forEach(o=>delete o[aid]);delete p.proposal[aid];log(p,ui.me,'excluiu o ativo '+x.name+' e descartou as respostas');say('Ativo excluído e registrado no histórico.')}
+function sendAnswer(p,aid){
+  if(!approved(p).some(a=>a.id===aid))return false;
+  if(p.phase!=='coleta'||!elig(p).includes(ui.me))return false;
+  const me=ui.me,an=ensureAns(p,me,aid),d=an.draft,E=elig(p);
+  d.contrib=d.contrib.filter(x=>E.includes(x));d.titular=d.titular.filter(x=>E.includes(x));
+  let bad=false;
+  QK.forEach(q=>{if(QS[q].multi?!d[q].length:!d[q]){ui.err[aid+':'+q]='Responda esta pergunta para enviar';bad=true}});
+  if(d.contrib.includes(me)&&!d.desc.trim()){ui.err[aid+':desc']='Descreva sua contribuição';bad=true}
+  if(d.link.trim()&&!/^https?:\/\/\S+$/i.test(d.link.trim())){ui.err[aid+':link']='Informe um link válido, começando com http';bad=true}
+  if(bad){ui.qstep=QK.findIndex(q=>ui.err[aid+':'+q]);if(ui.qstep<0)ui.qstep=0;say('Revise o campo destacado para enviar.','bad');return false}
+  const had=!!an.sent;d.link=d.link.trim();an.sent=Object.assign(clone(d),{at:Date.now()});
+  log(p,me,(had?'alterou':'enviou')+' as respostas de '+p.assets.find(x=>x.id===aid).name);
+  say('Respostas de '+p.assets.find(x=>x.id===aid).name+' registradas em '+fmt(an.sent.at)+'.');
+  return true;
+}
+async function genMem(p){const at=Date.now(),body=memorialBody(p,at),hash=await sha(body);p.memorials.unshift({at,body,hash});log(p,ui.me,'gerou o memorial');say('Memorial gerado com código de verificação.');render()}
+async function doVerify(){
+  const t=ui.verifyText.replace(/\n*Código de verificação \(SHA-256\):.*$/s,'');
+  if(!ui.verifyText.trim()){ui.verify={ok:false,msg:'Cole o texto do memorial para verificar.'};render();return}
+  const h=await sha(t);let f=null;projects.forEach(p=>p.memorials.forEach(m=>{if(m.hash===h)f=m}));
+  ui.verify=f?{ok:true,msg:'Este arquivo corresponde ao memorial gerado em '+fmt(f.at)}:{ok:false,msg:'Este arquivo não corresponde a nenhum memorial gerado pela MIP'};render();
+}
+
+/* ===== Eventos ===== */
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;act(b.dataset.act,b.dataset)});
+document.addEventListener('input',e=>{
+  const t=e.target,x=t.dataset;if(!x.in)return;const p=cur();
+  if(x.in==='inv')ui.inv=t.value;
+  else if(x.in==='refuse')ui.refuse=t.value;
+  else if(x.in==='vtext')ui.verifyText=t.value;
+  else if(x.in==='refsug')ui.refSug[x.a]=t.value;
+  else if(x.in==='cmt')ui.cmt[x.a]=t.value;
+  else if(x.in==='novo')ui.novo[x.k]=t.value;
+  else if(x.in==='addA'||x.in==='sug')ui[x.in][x.k]=t.value;
+  else if(x.in==='ans'){ensureAns(p,ui.me,x.a).draft[x.k]=t.value;persist()}
+  else if(x.in==='prop'){const pr=propOf(p,x.a);pr[x.k]=t.value;pr.saved=false}
+  persist();
+});
+document.addEventListener('change',e=>{
+  const t=e.target,x=t.dataset;if(!x.ch)return;const p=cur();
+  if(x.ch==='who'){ui.me=t.value;ui.err={};ui.flag={};ui.refuse='';ui.tab='home'}
+  else if(x.ch==='proj'){ui.pid=t.value;ui.err={};ui.flag={};ui.open=null;ui.tab=taskFor(cur()).tab;ui.qasset=null}
+  else if(x.ch==='ans'){const d=ensureAns(p,ui.me,x.a).draft;ui.err={};if(x.q==='uso')d.uso=x.v;else{const i=d[x.q].indexOf(x.v);i<0?d[x.q].push(x.v):d[x.q].splice(i,1)}}
+  else if(x.ch==='prop'){const pr=propOf(p,x.a);pr.saved=false;ui.err={};if(x.q==='uso')pr.uso=x.v;else if(x.q==='sem')pr.semAcordo=t.checked;else{const i=pr.titulares.indexOf(x.v);i<0?pr.titulares.push(x.v):pr.titulares.splice(i,1)}}
+  persist();render();
+});
+document.addEventListener('input',e=>{const t=e.target;if(t.dataset.in==='addA'||t.dataset.in==='sug'){}});
+document.addEventListener('change',e=>{const t=e.target;if(t.dataset.in==='addA'||t.dataset.in==='sug'){ui[t.dataset.in][t.dataset.k]=t.value}});
+
+seed();restore();render();
+</script>
+
+</body></html>
