@@ -1,4 +1,4 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:Canvas;color:CanvasText}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:Canvas;color:CanvasText}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <title>MIP · Backstage</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -6,27 +6,18 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: cabeçalho com troca de pessoa e projeto, trilho de fases, abas por bloco do roadmap, conteúdo em uma coluna de leitura. */
-/* A mesma hierarquia usa apenas preto, branco e cinzas nos dois temas. */
+/* Hierarquia em preto, branco e cinzas; cor só para status (ok, atenção, recusa), sempre junto de texto. */
 :root{
-  color-scheme:light;
-  --bg:#f4f4f4; --surface:#fff; --surface2:#ededed; --ink:#151515; --muted:#555; --line:#c9c9c9;
-  --accent:#161616; --accent-ink:#fff; --accent-soft:#e7e7e7;
-  --ok:#262626; --ok-soft:#e9e9e9; --warn:#3d3d3d; --warn-soft:#dedede;
-  --pend:#555; --pend-soft:#e8e8e8; --bad:#171717; --bad-soft:#d9d9d9;
-  --hero-bg:#171717; --hero-ink:#fff; --hero-muted:#d5d5d5; --hero-button-bg:#fff; --hero-button-ink:#171717;
-  --toast-bg:#171717; --toast-ink:#fff;
-  --f-display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
-  --f-body:'Instrument Sans','Segoe UI',system-ui,sans-serif;
-  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
-}
-:root[data-theme="dark"]{
   color-scheme:dark;
   --bg:#0d0d0d; --surface:#191919; --surface2:#292929; --ink:#f5f5f5; --muted:#b5b5b5; --line:#505050;
   --accent:#f5f5f5; --accent-ink:#101010; --accent-soft:#303030;
-  --ok:#ececec; --ok-soft:#303030; --warn:#e0e0e0; --warn-soft:#343434;
-  --pend:#c9c9c9; --pend-soft:#292929; --bad:#f2f2f2; --bad-soft:#383838;
+  --ok:#6fd08c; --ok-soft:#17331f; --warn:#f0c060; --warn-soft:#3a2e12;
+  --pend:#c9c9c9; --pend-soft:#292929; --bad:#ff8a80; --bad-soft:#3d1a18;
   --hero-bg:#252525; --hero-ink:#fff; --hero-muted:#d5d5d5; --hero-button-bg:#f5f5f5; --hero-button-ink:#111;
   --toast-bg:#303030; --toast-ink:#fff;
+  --f-display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --f-body:'Instrument Sans','Segoe UI',system-ui,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;padding-block:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -71,7 +62,7 @@ select{padding-right:6px}
 .home-hero{background:var(--hero-bg);color:var(--hero-ink);border-radius:18px;padding:clamp(24px,5vw,44px);margin-bottom:22px;position:relative;overflow:hidden}
 .home-hero:after{content:'◎';position:absolute;right:7%;top:-70px;font-size:260px;line-height:1;opacity:.12;pointer-events:none}
 .home-hero h1{font-size:clamp(30px,5vw,52px);line-height:1.03;max-width:650px;margin:10px 0 14px}.home-hero p{max-width:570px;color:var(--hero-muted);font-size:17px}
-.eyebrow{font:500 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;opacity:.8}
+
 .home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}
 .home-project{padding:20px;gap:15px}.home-project h3{font-size:22px}.home-project .btn{align-self:flex-start}
 .progress{height:7px;border-radius:99px;background:var(--surface2);overflow:hidden}.progress>span{display:block;height:100%;border-radius:99px;background:var(--accent)}
@@ -130,21 +121,20 @@ details.demo ol{margin:8px 0 0;padding-left:20px;color:var(--muted)}
 @media (max-width:560px){.counters{grid-template-columns:repeat(2,minmax(0,1fr))} .paper{padding:14px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .brand-button{border:0;background:none;color:inherit;cursor:pointer;padding:0}.test-controls{position:relative}.test-controls summary{cursor:pointer;font-size:13px;color:var(--muted)}.test-controls[open] .row{position:absolute;right:0;top:28px;z-index:10;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;min-width:260px;box-shadow:0 12px 28px rgba(0,0,0,.12)}.intro-card{margin-bottom:20px}.intro-art{animation:intro-float 4s ease-in-out infinite}@keyframes intro-float{0%,100%{transform:rotate(-8deg) translateY(0)}50%{transform:rotate(2deg) translateY(-7px)}}.question-card .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}.question-card .opt{border-radius:9px;min-height:46px}.journey button:hover,.btn:hover{transform:translateY(-1px)}@media(max-width:600px){.test-controls[open] .row{right:-6px;max-width:90vw}.journey{margin-bottom:12px}}
-.task-card{display:flex;flex-direction:column;align-items:flex-start;gap:10px;background:var(--accent-soft);border:1px solid var(--accent);border-radius:14px;padding:22px}.task-card h3{font-size:22px}.task-card p{max-width:680px}.task-card .btn{margin-top:4px}.journey-progress{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 12px}.journey-steps{display:grid;grid-template-columns:repeat(8,minmax(82px,1fr));gap:5px;margin-top:8px;overflow-x:auto}.journey-step{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;font-size:11px;color:var(--muted);min-width:82px}.journey-dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);background:var(--surface2);font-size:12px}.journey-step.done{color:var(--ok)}.journey-step.done .journey-dot{background:var(--ok);border-color:var(--ok);color:var(--surface)}.journey-step.current{color:var(--accent);font-weight:700}.journey-step.current .journey-dot{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}.journey-step.future{opacity:.65}.secondary-nav{margin-bottom:16px}.secondary-nav summary{cursor:pointer;color:var(--muted);font-size:13px;padding:5px 2px}.secondary-nav .journey{margin:9px 0 0}.asset-switch{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px}@media(max-width:760px){.journey-steps{grid-auto-flow:column;grid-auto-columns:85px;grid-template-columns:none}}
-.theme-toggle{min-width:128px}.theme-toggle:hover{background:var(--surface2)}.chip.ok{border:1px solid var(--ok)}.chip.warn{border:1px dashed var(--warn)}.chip.bad{border:2px double var(--bad)}.chip.acc{border:1px solid var(--accent)}.btn.pri:hover{filter:brightness(.85)}:root[data-theme=dark] .btn.pri:hover{filter:brightness(1.15)}
+.task-card{display:flex;flex-direction:column;align-items:flex-start;gap:10px;background:var(--accent-soft);border:1px solid var(--accent);border-radius:14px;padding:22px}.task-card h3{font-size:22px}.task-card p{max-width:680px}.task-card .btn{margin-top:4px}.journey-progress{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 12px}.journey-steps{display:grid;grid-template-columns:repeat(8,minmax(82px,1fr));gap:5px;margin-top:8px;overflow-x:auto}.journey-step{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;font-size:13px;line-height:1.3;color:var(--muted);min-width:82px}.journey-dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);background:var(--surface2);font-size:12px}.journey-step.done{color:var(--ok)}.journey-step.done .journey-dot{background:var(--ok);border-color:var(--ok);color:var(--surface)}.journey-step.current{color:var(--accent);font-weight:700}.journey-step.current .journey-dot{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}.journey-step.future{opacity:.65}.secondary-nav{margin-bottom:16px}.secondary-nav summary{cursor:pointer;color:var(--muted);font-size:13px;padding:5px 2px}.secondary-nav .journey{margin:9px 0 0}.asset-switch{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px}@media(max-width:760px){.journey-steps{grid-auto-flow:column;grid-auto-columns:85px;grid-template-columns:none}}
+.btn.pri:hover{filter:brightness(.88)}
 
 /* Experiência de primeiro acesso e sistema visual do fluxo guiado */
-:root{--shadow-soft:0 16px 44px rgba(0,0,0,.045);--shadow-float:0 20px 55px rgba(0,0,0,.09)}
-:root[data-theme="dark"]{--shadow-soft:0 18px 46px rgba(0,0,0,.18);--shadow-float:0 24px 56px rgba(0,0,0,.3)}
+:root{--shadow-soft:0 18px 46px rgba(0,0,0,.18);--shadow-float:0 24px 56px rgba(0,0,0,.3)}
 body{font-size:16px;line-height:1.58}
 .wrap{max-width:1160px;padding-block:22px 72px}
 .top{padding:3px 0 34px;gap:20px}
 .brand{align-items:center;gap:11px}.brand b{font-size:26px;letter-spacing:-.055em}.brand span{font:500 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase}
 .ctrls{gap:10px}
 h1,h2,h3{letter-spacing:-.035em}h2{font-size:clamp(25px,3vw,36px);line-height:1.14}h3{font-size:18px;line-height:1.28}
-.eyebrow{font-size:11px;letter-spacing:.15em;font-weight:600}
+
 .btn{min-height:43px;padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-weight:600;transition:transform .18s ease,background .18s ease,box-shadow .18s ease,border-color .18s ease}
-.btn.sm{min-height:36px;padding:6px 12px}.btn.pri{box-shadow:0 5px 15px rgba(0,0,0,.09)}.btn:hover{transform:translateY(-2px);box-shadow:var(--shadow-soft)}.btn:active{transform:translateY(0)}
+.btn.sm{min-height:44px;padding:8px 14px}.btn.pri{box-shadow:0 5px 15px rgba(0,0,0,.09)}.btn:hover{transform:translateY(-2px);box-shadow:var(--shadow-soft)}.btn:active{transform:translateY(0)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 select,input[type=text],input[type=email],textarea{border:1px solid transparent;background:var(--surface2);border-radius:10px;padding:12px 14px;min-height:46px;transition:border-color .18s ease,box-shadow .18s ease,background .18s ease}
 textarea{min-height:112px;line-height:1.55}
@@ -154,7 +144,7 @@ select:focus,input[type=text]:focus,input[type=email]:focus,textarea:focus{outli
 .card,.item,.cnt,.cmp>div,.paper{border:0;border-radius:18px;background:var(--surface);box-shadow:var(--shadow-soft)}
 .card{padding:clamp(20px,3vw,30px);gap:17px}.card.flat{box-shadow:none}
 .grid{gap:16px}.li{padding:16px 0;border-top:1px solid var(--line)}.li:first-child{border-top:0}
-.chip{padding:5px 10px;border-radius:999px}.chip.ok,.chip.warn,.chip.bad,.chip.acc{border-width:0}.chip.warn{border-left:2px dashed var(--warn)}.chip.bad{border-left:3px double var(--bad)}
+.chip{padding:5px 10px;border-radius:999px}
 .banner{border:0;border-radius:12px;padding:15px 18px;background:var(--surface2)}.banner.info{border:0;background:var(--accent-soft)}.banner.warn{border:0;border-left:3px dashed var(--warn);background:var(--warn-soft)}.banner.bad{border:0;border-left:3px double var(--bad);background:var(--bad-soft)}
 .task-card{border:0;border-radius:20px;padding:clamp(25px,4vw,38px);background:var(--accent-soft);gap:12px}.task-card h3{font-size:clamp(23px,3vw,30px)}
 .project-hero{border-radius:22px;padding:clamp(28px,4vw,46px);margin-bottom:20px;min-height:195px}.project-hero h1{font-size:clamp(36px,5vw,56px)}.project-hero .btn{box-shadow:none}
@@ -190,6 +180,37 @@ details.demo{border:0;border-top:1px solid var(--line);border-radius:0;backgroun
 @media(max-width:600px){.wrap{padding-block:16px 48px}.top{padding-bottom:20px}.landing{gap:62px}.landing-hero{border-radius:22px;min-height:auto}.landing-copy{padding:35px 28px;gap:18px}.landing-copy h1{font-size:clamp(38px,10vw,52px)}.landing-art{min-height:190px}.orbit-one{width:165px}.orbit-two{width:110px}.art-core{width:78px;font-size:28px}.art-caption{display:none}.landing-reason{padding:0 8px}.landing-reason p{font-size:16px}.landing-section-head{display:block}.landing-section-head>p{margin-top:12px}.landing-steps{grid-template-columns:1fr 1fr;gap:8px}.landing-step{padding:18px;min-height:164px}.landing-step h3{font-size:17px}.landing-step p{font-size:12px}.landing-outcome{padding:32px 27px}.landing-project{align-items:flex-start;flex-direction:column}.onboarding-shell{margin:25px auto 50px}.onboarding-intro p{font-size:16px}.card{padding:20px}.project-hero{min-height:0}.landing-actions{gap:17px}}
 @media(max-width:380px){.landing-steps{grid-template-columns:1fr}.landing-step{min-height:126px}.landing-copy{padding:31px 24px}}
 html{scroll-behavior:smooth}::placeholder{color:var(--muted);opacity:.8}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+/* Revisão HIG + carga cognitiva: tarefa acima da dobra, progresso compacto no celular, dicas por etapa */
+.project-hero{min-height:0;padding:clamp(20px,3vw,28px);align-items:center;border-radius:18px;margin-bottom:12px}.project-hero h1{font-size:clamp(26px,3.4vw,36px);margin:6px 0 0}.project-hero p{margin-top:6px}
+.journey-step{padding:6px 2px;min-height:44px;border-radius:12px}button.journey-step{background:none;border:0;font-family:inherit;font-size:13px;line-height:1.3;cursor:pointer}button.journey-step:hover{background:var(--surface2)}button.journey-step:hover .journey-dot{transform:scale(1.08)}.journey-step.viewing .journey-dot{outline:2px solid var(--ink);outline-offset:2px}.journey-step.viewing{color:var(--ink);font-weight:700}div.journey-step{cursor:default}
+.more{border-top:1px solid var(--line);padding-top:6px}.more summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}.more[open] summary{margin-bottom:10px}.more .list{padding-bottom:6px}
+.pos{border-top:1px solid var(--line);padding-top:20px;display:flex;flex-direction:column;gap:12px}.link-inline{background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.journey-compact{display:none}.journey-bar{display:flex;gap:4px;margin-top:8px}.journey-bar span{flex:1;height:5px;border-radius:99px;background:var(--surface2)}.journey-bar span.done{background:var(--ok)}.journey-bar span.current{background:var(--accent)}
+@media(max-width:600px){.journey-steps{display:none}.journey-compact{display:block;margin-top:8px;font-size:15px}}
+.nav-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 16px;margin-bottom:22px}.nav-row .secondary-nav{margin:0}.secondary-nav summary{min-height:44px}.journey button{min-height:44px}
+.link-btn{background:none;border:0;padding:10px 0;min-height:44px;color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.tip-card{background:var(--surface2);border-radius:16px;padding:18px 20px;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between}.tip-card p{max-width:680px}.tip-card b{display:block;margin-bottom:4px}
+.welcome{max-width:760px;margin:24px auto 0}.welcome h3{margin:6px 0 12px}.welcome ol{margin:0;padding-left:22px;display:grid;gap:10px}
+.landing-projects{margin-top:0}
+.item.conv::before{background:var(--ok)}.item.div::before{background:repeating-linear-gradient(90deg,var(--warn) 0 5px,transparent 5px 9px)}
+
+/* Escala tipográfica da HIG (iOS) em todos os aparelhos: a escala do macOS é para apps nativos e fica pequena na web. */
+:root{--t-large:34px;--t-title1:28px;--t-title2:22px;--t-title3:20px;--t-headline:17px;--t-body:17px;--t-callout:16px;--t-subhead:15px;--t-footnote:13px;--t-caption1:12px;--t-caption2:11px}
+body,p,.btn,.opt,.paper,input,select,textarea,.landing-copy p,.landing-reason p,.landing-outcome p,.onboarding-intro p,.home-hero p{font-size:var(--t-body)}
+h1,.landing-copy h1,.onboarding-intro h1,.project-hero h1,.home-hero h1{font-size:var(--t-large);line-height:1.12}
+h2,.landing-reason h2,.landing-outcome h2,.landing-section-head h2{font-size:var(--t-title1);line-height:1.18}
+.question-card h3,.task-card h3,.intro-card h3,.home-project h3,.cnt b{font-size:var(--t-title2);line-height:1.22}
+h3,.landing-step h3,.landing-project h3,.brand b{font-size:var(--t-title3);line-height:1.25}
+.field>label,.q,.tip-card b,.journey-compact b,.review-grid b{font-size:var(--t-headline);font-weight:700}
+.journey-compact{font-size:var(--t-headline)}
+.head p,.onboarding-intro p{font-size:var(--t-callout)}
+.btn.sm,.link-btn,.link-inline,.secondary-nav summary,.more summary,.landing-step p,.landing-project p,.landing-section-head>p,.landing-actions a{font-size:var(--t-subhead)}
+.stage-note,.err,.tok,.mono,.test-controls summary,details.demo summary,#toast div{font-size:var(--t-footnote)}
+.journey-step,button.journey-step{font-size:var(--t-subhead)}
+.chip{font-size:var(--t-footnote)}
+.cnt span,.step-number,.journey-dot{font-size:var(--t-caption1)}
+.brand span,.art-caption,.hu{font-size:var(--t-caption2)}
+.tip-card p{font-size:var(--t-subhead)}
 </style>
 </head><body>
 
@@ -203,8 +224,8 @@ const QK=['contrib','titular','uso'];
 const USO=['Todos','Só os titulares','Ninguém sem acordo'];
 const CATS=['Código','Marca','Design','Conteúdo','Protótipo','Outro'];
 const PH=['coleta','encerrada','decisao','confirmacao','consolidado'];
-const PHN={coleta:'Coleta aberta',encerrada:'Coleta encerrada',decisao:'Em decisão',confirmacao:'Em confirmação',consolidado:'Consolidado'};
-const ST={conv:['Mesma percepção','ok'],div:['Visões diferentes','warn'],pend:['Resposta ausente','']};
+const PHN={coleta:'Coleta aberta',encerrada:'Coleta encerrada',decisao:'Proposta em preparo',confirmacao:'Em confirmação',consolidado:'Consolidado'};
+const ST={conv:['Respostas iguais','ok'],div:['Respostas diferentes','warn'],pend:['Sem resposta','']};
 const SCEN={
  contrib:[['Lista de contribuições como declarada','Cada pessoa mantém o que informou e a equipe registra as descrições lado a lado.'],['Lista ajustada pela equipe','As pessoas conversam, olham as evidências e combinam uma lista única de quem contribuiu.']],
  titular:[['Titularidade de quem contribuiu','Todas as pessoas que contribuíram passam a ser titulares.'],['Titulares escolhidos pela equipe','A equipe define os titulares mesmo que não coincidam com quem contribuiu e registra o motivo.'],['Titularidade em aberto','O item é marcado como sem acordo e o projeto não fica Consolidado enquanto isso valer.']],
@@ -228,7 +249,7 @@ const ansOf=(p,pid,aid)=>p.answers[pid]&&p.answers[pid][aid];
 const log=(p,who,text)=>p.history.unshift({at:Date.now(),who,text});
 const lastV=p=>p.versions[p.versions.length-1];
 const STORAGE='mip-backstage-v1-onboarding';
-function persist(){try{localStorage.setItem(STORAGE,JSON.stringify({people,projects,ui:{me:ui.me,pid:ui.pid,tab:ui.tab,introSeen:ui.introSeen,questionIntro:ui.questionIntro,qasset:ui.qasset,qstep:ui.qstep,theme:ui.theme}}))}catch(e){}}
+function persist(){try{localStorage.setItem(STORAGE,JSON.stringify({people,projects,ui:{me:ui.me,pid:ui.pid,tab:ui.tab,tips:ui.tips,welcome:ui.welcome,introSeen:ui.introSeen,questionIntro:ui.questionIntro,qasset:ui.qasset,qstep:ui.qstep,theme:ui.theme}}))}catch(e){}}
 function restore(){try{const saved=JSON.parse(localStorage.getItem(STORAGE));if(saved&&saved.people&&Array.isArray(saved.projects)){people=saved.people;projects=saved.projects;Object.assign(ui,saved.ui||{});ui.tab=ui.tab==='home'||ui.tab==='novo'?'home':taskFor(cur(),ui.me).tab;if(ui.tab==='resp')focusQuestion(cur(),ui.me)}}catch(e){}}
 function say(t,kind){const el=$('#toast');el.innerHTML='<div class="'+(kind||'')+'">'+esc(t)+'</div>';clearTimeout(tt);tt=setTimeout(()=>{el.innerHTML=''},4500)}
 async function copy(t){try{await navigator.clipboard.writeText(t);say('Texto copiado.')}catch(e){say('Não foi possível copiar. Selecione o texto e copie manualmente.','bad')}}
@@ -240,7 +261,7 @@ function sendAns(p,pid,aid,f,at){p.answers[pid]=p.answers[pid]||{};p.answers[pid
 function seed(){
   people={self:{name:'Você',g:'',email:''}};
   projects=[];
-  ui={me:'self',pid:null,tab:'home',filter:'todos',open:null,err:{},flag:{},verifyText:'',verify:null,refuse:'',cmt:{},novo:{person:'',name:'',ctx:''},inv:'',sug:{name:'',cat:'',desc:''},addA:{name:'',cat:'',desc:''},refSug:{},introSeen:false,questionIntro:{},qstep:0,qasset:null,theme:'light'};
+  ui={me:'self',pid:null,tab:'home',filter:'todos',open:null,err:{},flag:{},verifyText:'',verify:null,refuse:'',cmt:{},novo:{person:'',name:'',ctx:''},inv:'',sug:{name:'',cat:'',desc:''},addA:{name:'',cat:'',desc:''},refSug:{},introSeen:false,questionIntro:{},tips:{},welcome:{},qstep:0,qasset:null,theme:null};
 }
 function seedDemo(){
   people={ana:{name:'Ana',g:'f',email:'ana@email.com'},bruno:{name:'Bruno',g:'m',email:'bruno@email.com'},carla:{name:'Carla',g:'f',email:'carla@email.com'},diego:{name:'Diego',g:'m',email:'diego@email.com'}};
@@ -258,7 +279,7 @@ function seedDemo(){
   sendAns(q,'ana','x1',{contrib:['ana'],titular:['ana'],uso:'Só os titulares',desc:'Compus as três faixas',link:''});
   log(q,'ana','criou o projeto Jogo X');
   p.setupStep='resp';q.setupStep='resp';projects=[p,q];
-  ui={me:'ana',pid:'p1',tab:'home',filter:'todos',open:null,err:{},flag:{},verifyText:'',verify:null,refuse:'',cmt:{},novo:{name:'',ctx:''},inv:'',sug:{name:'',cat:'',desc:''},addA:{name:'',cat:'',desc:''},refSug:{},introSeen:false,questionIntro:{},qstep:0,qasset:null,theme:'light'};
+  ui={me:'ana',pid:'p1',tab:'home',filter:'todos',open:null,err:{},flag:{},verifyText:'',verify:null,refuse:'',cmt:{},novo:{name:'',ctx:''},inv:'',sug:{name:'',cat:'',desc:''},addA:{name:'',cat:'',desc:''},refSug:{},introSeen:false,questionIntro:{},tips:{},welcome:{},qstep:0,qasset:null,theme:null};
 }
 function fillDemo(p){
   sendAns(p,'bruno','a1',{contrib:['ana','carla'],titular:['ana','bruno','carla'],uso:'Só os titulares',desc:'',link:''});
@@ -298,28 +319,29 @@ const head=(t,hs,sub)=>'<div class="head"><h2>'+esc(t)+'</h2>'+(sub?'<p class="m
 const banner=(t,k,btn)=>'<div class="banner '+(k||'')+'"><span>'+t+'</span>'+(btn||'')+'</div>';
 const btn=(act,label,o)=>{o=o||{};return '<button class="btn '+(o.c||'')+'" data-act="'+act+'"'+Object.keys(o.d||{}).map(k=>' data-'+k+'="'+esc(o.d[k])+'"').join('')+(o.dis?' disabled':'')+'>'+label+'</button>'};
 const errm=k=>ui.err[k]?'<div class="err" role="alert">'+esc(ui.err[k])+'</div>':'';
-const naoElig=()=>banner('Você não é elegível nesta rodada. Entrou depois do encerramento da coleta ou foi marcada como não participante.','info');
-const roleTxt=(p,pid)=>p.org===pid?'Organizador(a)':'Integrante';
-function memChip(m){return m.status==='ativo'?(m.elig?chip('Ativo','ok',1):chip('Ativo, não elegível','warn',1)):m.status==='pendente'?chip('Convite pendente','warn',1):chip('Não participante','',1)}
+const naoElig=()=>banner('Você não participa desta coleta: entrou depois que ela foi encerrada ou está fora dela.','info');
+const catChip=c=>c?' <span class="chip">'+esc(c)+'</span>':'';
+const histUI=p=>'<details class="more"><summary>Histórico do projeto</summary><div class="list">'+(p.history.slice(0,8).map(x=>'<div class="li"><span>'+esc(x.who==='sistema'?'Sistema':nm(x.who))+' '+esc(x.text)+'</span><span class="mono muted">'+fmt(x.at)+'</span></div>').join('')||'<span class="muted">Sem registros.</span>')+'</div></details>';
+const roleTxt=(p,pid)=>p.org===pid?'Quem organiza':'Integrante';
+function memChip(m){return m.status==='ativo'?(m.elig?chip('Ativo','ok',1):chip('Entrou após a coleta','warn',1)):m.status==='pendente'?chip('Convite pendente','warn',1):chip('Fora da coleta','',1)}
 
 /* ===== Equipe (HU-01 a HU-05, HU-13) ===== */
 function vEquipe(p){
   const org=p.org===ui.me;
   let h=head('Equipe',  'HU-01 HU-02 HU-03 HU-04 HU-05 HU-13',esc(p.context||'Sem contexto'));
-  if(org&&p.phase==='coleta'&&p.setupStep==='equipe')h+='<div class="task-card"><span class="eyebrow">Primeiro passo</span><h3>Prepare a equipe</h3><p>Confira quem participa e convide quem falta. Você pode voltar a esta lista durante a coleta.</p>'+btn('setupteam','Equipe pronta · organizar ativos',{c:'pri'})+'</div>';
-  if(!p.ack[ui.me])h+=banner('A MIP organiza as decisões da equipe. Ela não substitui contrato, advogado ou registro oficial.','info',btn('ack','Entendi'));
-  h+='<div class="card"><div class="row"><h3>Integrantes</h3>'+chip(elig(p).length+' elegíveis','acc')+'</div><div class="list">';
+  if(org&&p.phase==='coleta'&&p.setupStep==='equipe')h+='<div class="task-card"><h3>Prepare a equipe</h3><p>Confira quem participa e convide quem falta. Você pode voltar a esta lista durante a coleta.</p>'+btn('setupteam','Continuar para Ativos',{c:'pri'})+'</div>';
+  h+='<div class="card"><div class="row"><h3>Integrantes</h3>'+chip(elig(p).length+' participam','acc')+'</div><div class="list">';
   p.members.forEach(m=>{
-    h+='<div class="li"><div class="l"><b>'+esc(nm(m.pid))+'</b><span class="muted" style="font-size:13px">'+roleTxt(p,m.pid)+(people[m.pid].email?' · '+esc(people[m.pid].email):'')+'</span></div><div class="row start">'+memChip(m)+
-      (org&&m.status!=='pendente'&&m.status!=='naopart'?btn('naopart','Marcar como não participante',{c:'sm',d:{pid:m.pid}}):'')+'</div>'+
-      (m.status==='naopart'?'<div class="muted" style="font-size:13px;width:100%">Marcada por '+esc(nm(m.by))+' em '+fmt(m.at)+'. Continua na lista e no memorial, mas não conta como pendência.</div>':'')+'</div>';
+    h+='<div class="li"><div class="l"><b>'+esc(nm(m.pid))+'</b><span class="muted" style="font-size:var(--t-footnote)">'+roleTxt(p,m.pid)+(people[m.pid].email?' · '+esc(people[m.pid].email):'')+'</span></div><div class="row start">'+memChip(m)+
+      (org&&m.pid!==p.org&&m.status!=='pendente'&&m.status!=='naopart'?'<button class="link-inline" style="font-size:var(--t-subhead);min-height:44px" data-act="naopart" data-pid="'+m.pid+'">Remover da coleta</button>':'')+'</div>'+
+      (m.status==='naopart'?'<div class="muted" style="font-size:var(--t-footnote);width:100%">Fora da coleta por decisão de '+esc(nm(m.by))+' em '+fmt(m.at)+'. Continua na lista e no memorial, mas não conta como pendência.</div>':'')+'</div>';
   });
   h+='</div>'+errm('np')+'</div>';
   if(org){
-    h+='<div class="grid"><div class="card"><h3>Convidar por e-mail</h3><div class="field"><label for="inv">E-mail</label><input type="email" id="inv" data-in="inv" value="'+esc(ui.inv)+'" placeholder="nome@email.com"></div>'+errm('inv')+'<div>'+btn('invite','Enviar convite')+'</div>'+(ui.flag.invited?'<div class="muted" style="font-size:13px">'+esc(ui.flag.invited)+'</div>':'')+'</div>'+
-    '<div class="card"><h3>Convidar por link</h3><div class="tok">mip.app/convite/'+esc(p.link.code)+'</div><div class="row start">'+chip(p.link.active?'Link ativo':'Link desativado',p.link.active?'ok':'',1)+btn('toglink',p.link.active?'Desativar link':'Ativar link',{c:'sm'})+'</div>'+errm('link')+'</div></div>';
+    h+='<div class="card"><h3>Convidar pessoas</h3><div class="field"><label for="inv">Por e-mail</label><input type="email" id="inv" data-in="inv" value="'+esc(ui.inv)+'" placeholder="nome@email.com"></div>'+errm('inv')+'<div>'+btn('invite','Enviar convite')+'</div>'+(ui.flag.invited?'<div class="muted" style="font-size:var(--t-footnote)">'+esc(ui.flag.invited)+'</div>':'')+
+    '<div class="q" style="margin-top:6px">Ou compartilhe o link</div><div class="tok">mip.app/convite/'+esc(p.link.code)+'</div><div class="row start">'+chip(p.link.active?'Link ativo':'Link desativado',p.link.active?'ok':'',1)+btn('toglink',p.link.active?'Desativar link':'Ativar link',{c:'sm'})+'</div>'+errm('link')+'</div>';
   }
-  h+='<div class="card"><h3>Histórico do projeto</h3><div class="list">'+(p.history.slice(0,8).map(x=>'<div class="li"><span>'+esc(x.who==='sistema'?'Sistema':nm(x.who))+' '+esc(x.text)+'</span><span class="mono muted">'+fmt(x.at)+'</span></div>').join('')||'<span class="muted">Sem registros.</span>')+'</div></div>';
+  h+=histUI(p);
   return h;
 }
 
@@ -327,28 +349,29 @@ function vEquipe(p){
 function vAtivos(p){
   const org=p.org===ui.me,me=ui.me;
   let h=head('Ativos','HU-06 HU-07 HU-08 HU-09','Liste as criações que a equipe vai discutir. Cada ativo terá três perguntas.');
-  if(!org&&p.phase==='coleta'&&!approved(p).length)h+=banner('Aguardando a organizadora cadastrar os ativos. Você pode sugerir um que considera importante.','info');
-  if(org&&p.phase==='coleta'&&p.setupStep==='ativos')h+='<div class="task-card"><span class="eyebrow">Segundo passo</span><h3>Organize os ativos</h3><p>Inclua os ativos que precisam de uma decisão. Depois, cada pessoa registra sua percepção individualmente.</p>'+(approved(p).length?btn('setupassets','Ativos prontos · responder',{c:'pri'}):'<span class="muted">Cadastre pelo menos um ativo para continuar.</span>')+'</div>';
+  if(!org&&p.phase==='coleta'&&!approved(p).length)h+=banner('Aguardando quem organiza cadastrar os ativos. Você pode sugerir um que considera importante.','info');
+  if(org&&p.phase==='coleta'&&p.setupStep==='ativos')h+='<div class="task-card"><h3>Organize os ativos</h3><p>Inclua os ativos que precisam de uma decisão. Depois, cada pessoa responde individualmente.</p>'+(approved(p).length?btn('setupassets','Continuar para Respostas',{c:'pri'}):'<span class="muted">Cadastre pelo menos um ativo para continuar.</span>')+'</div>';
   h+='<div class="card"><div class="list">';
-  if(!p.assets.length)h+='<span class="muted">Nenhum ativo cadastrado.</span>';
+  if(!p.assets.length)h+='<span class="muted">Nenhum ativo ainda.'+(p.phase==='coleta'?' Use o formulário abaixo para '+(org?'cadastrar':'sugerir')+' o primeiro.':'')+'</span>';
   p.assets.forEach(a=>{
     const n=p.members.filter(m=>ansOf(p,m.pid,a.id)&&ansOf(p,m.pid,a.id).sent).length;
-    h+='<div class="li"><div class="l"><b>'+esc(a.name)+' <span class="chip">'+esc(a.cat)+'</span></b><span class="muted" style="font-size:13px">'+esc(a.desc||'Sem descrição')+'</span>'+
-    (a.st==='sug'?'<span style="font-size:13px">Sugerido por '+esc(nm(a.by))+'. Ainda não aparece no questionário.</span>':'')+
-    (a.st==='rec'?'<span style="font-size:13px">Recusada por '+esc(nm(p.org))+'. Motivo: '+esc(a.reason)+'</span>':'')+'</div><div class="row start">'+
-    (a.st==='ok'?chip('No questionário','ok',1):a.st==='sug'?chip('Sugerido por '+nm(a.by),'warn',1):chip('Recusada por '+nm(p.org),'bad',1))+
-    (org&&p.phase==='coleta'&&a.st==='sug'?btn('aprov','Aprovar',{c:'sm pri',d:{aid:a.id}})+'<input type="text" style="width:190px" placeholder="Motivo da recusa" data-in="refsug" data-a="'+a.id+'" value="'+esc(ui.refSug[a.id]||'')+'">'+btn('recus','Recusar',{c:'sm',d:{aid:a.id}}):'')+
+    h+='<div class="li"><div class="l"><b>'+esc(a.name)+catChip(a.cat)+'</b><span class="muted" style="font-size:var(--t-footnote)">'+esc(a.desc||'Sem descrição')+'</span>'+
+    (a.st==='sug'?'<span style="font-size:var(--t-footnote)">Sugerido por '+esc(nm(a.by))+'. Ainda não entra nas perguntas.</span>':'')+
+    (a.st==='rec'?'<span style="font-size:var(--t-footnote)">Recusado por '+esc(nm(p.org))+'. Motivo: '+esc(a.reason)+'</span>':'')+'</div><div class="row start">'+
+    (a.st==='ok'?chip('Incluído','ok',1):a.st==='sug'?chip('Sugerido por '+nm(a.by),'warn',1):chip('Recusado por '+nm(p.org),'bad',1))+
+    (org&&p.phase==='coleta'&&a.st==='sug'&&ui.flag.rec!==a.id?btn('aprov','Aprovar',{c:'sm pri',d:{aid:a.id}})+btn('recus','Recusar',{c:'sm',d:{aid:a.id}}):'')+
     (org&&p.phase==='coleta'&&a.st==='ok'?btn('del','Excluir',{c:'sm',d:{aid:a.id}}):'')+'</div>'+
     (ui.flag.del===a.id?'<div class="banner warn" style="width:100%"><span>'+n+' resposta'+(n===1?'':'s')+' serão descartadas. Deseja excluir "'+esc(a.name)+'"?</span><span class="row start">'+btn('delok','Confirmar exclusão',{c:'sm bad',d:{aid:a.id}})+btn('delno','Cancelar',{c:'sm'})+'</span></div>':'')+
+    (ui.flag.rec===a.id?'<div class="banner" style="width:100%"><div class="field" style="flex:1;min-width:200px"><label for="rs-'+a.id+'">Motivo da recusa <span class="muted">(opcional)</span></label><input type="text" id="rs-'+a.id+'" data-in="refsug" data-a="'+a.id+'" value="'+esc(ui.refSug[a.id]||'')+'" placeholder="Ex.: já está incluído no Backend"></div><span class="row start">'+btn('recusok','Recusar sugestão',{c:'sm bad',d:{aid:a.id}})+btn('recusno','Cancelar',{c:'sm'})+'</span></div>':'')+
     (ui.err['d'+a.id]?'<div style="width:100%">'+errm('d'+a.id)+'</div>':'')+(ui.err['r'+a.id]?'<div style="width:100%">'+errm('r'+a.id)+'</div>':'')+'</div>';
   });
   h+='</div></div>';
   if(p.phase!=='coleta')return h+banner('A lista de ativos está fechada para edição desde o encerramento da coleta.','info');
   const f=org?ui.addA:ui.sug,k=org?'addA':'sug';
-  h+='<div class="card"><h3>'+(org?'Cadastrar ativo':'Sugerir um ativo que ficou de fora')+'</h3><div class="grid">'+
-   '<div class="field"><label for="fn">Nome</label><input type="text" id="fn" data-in="'+k+'" data-k="name" value="'+esc(f.name)+'">'+errm('fn')+'</div>'+
-   '<div class="field"><label for="fc">Categoria</label><select id="fc" data-in="'+k+'" data-k="cat"><option value="">Escolha</option>'+CATS.map(c=>'<option'+(f.cat===c?' selected':'')+'>'+c+'</option>').join('')+'</select>'+errm('fc')+'</div></div>'+
-   '<div class="field"><label for="fd">Descrição</label><input type="text" id="fd" data-in="'+k+'" data-k="desc" value="'+esc(f.desc)+'"></div><div>'+btn(org?'addasset':'sugasset',org?'Cadastrar ativo':'Enviar sugestão',{c:org&&approved(p).length?'':'pri'})+'</div></div>';
+  h+='<div class="card"><h3>'+(org?'Cadastrar ativo':'Sugerir um ativo que ficou de fora')+'</h3><p class="muted">Basta o nome. Categoria e descrição ajudam a equipe a reconhecer o ativo.</p>'+
+   '<div class="field"><label for="fn">Nome</label><input type="text" id="fn" data-in="'+k+'" data-k="name" value="'+esc(f.name)+'" placeholder="Ex.: Logo, Backend, Trilha sonora" enterkeyhint="done">'+errm('fn')+'</div>'+
+   '<div class="field"><div class="q">Categoria <span class="muted">(opcional)</span></div><div class="opts" role="radiogroup" aria-label="Categoria">'+CATS.map(c=>'<label class="opt"><input type="radio" name="cat-'+k+'" data-in="'+k+'" data-k="cat" value="'+c+'"'+(f.cat===c?' checked':'')+'>'+c+'</label>').join('')+'</div></div>'+
+   '<div class="field"><label for="fd">Descrição <span class="muted">(opcional)</span></label><input type="text" id="fd" data-in="'+k+'" data-k="desc" value="'+esc(f.desc)+'" placeholder="Ex.: logo usado no app e no site"></div><div>'+btn(org?'addasset':'sugasset',org?'Cadastrar ativo':'Enviar sugestão',{c:org&&approved(p).length?'':'pri'})+'</div></div>';
   return h;
 }
 
@@ -356,25 +379,24 @@ function vAtivos(p){
 function ensureAns(p,pid,aid){p.answers[pid]=p.answers[pid]||{};return p.answers[pid][aid]=p.answers[pid][aid]||{draft:{contrib:[],titular:[],uso:'',desc:'',link:''},sent:null}}
 function vResp(p){
   const me=ui.me,m=mem(p,me),as=approved(p),open=p.phase==='coleta';
-  let h=head('Coleta individual','','Registre sua percepção sobre cada ativo. Não existe resposta sugerida.');
+  let h=head('Respostas','','Responda sobre cada ativo. Não existe resposta certa nem sugerida.');
   if(!m||m.status!=='ativo'||!m.elig)return h+naoElig();
-  if(!ui.questionIntro[me])return h+'<div class="intro-card"><div class="intro-art">✳</div><div><h3>Um espaço para a sua perspectiva</h3><p>Você responde individualmente. Suas escolhas ficam ocultas das outras pessoas até o encerramento da coleta. Depois, a equipe poderá comparar as percepções e conversar sobre elas.</p><div class="row start" style="margin-top:16px">'+btn('qintro','Começar',{c:'pri'})+btn('qintro','Pular apresentação')+'</div></div></div>';
   if(!open)h+=banner('A coleta terminou. Suas respostas ficam disponíveis para consulta, sem edição.','info');
   if(!as.length)return h+'<div class="card"><h3>Aguardando ativos</h3><p class="muted">Quem organiza ainda vai definir o que a equipe responderá. Você pode sugerir um ativo que ficou de fora.</p>'+btn('go','Ver ativos',{c:'pri',d:{tab:'ativos'}})+'</div>';
   const done=as.filter(a=>{const x=ansOf(p,me,a.id);return x&&x.sent}).length;
-  h+='<div class="card"><div class="row"><b>'+done+' de '+as.length+' ativos enviados</b><span class="muted">Você pode salvar e voltar depois</span></div><div class="progress"><span style="width:'+(100*done/as.length)+'%"></span></div></div>';
+  if(!ui.qasset||!as.some(a=>a.id===ui.qasset))h+='<div><div class="row"><b>'+done+' de '+as.length+' ativos enviados</b><span class="muted">Você pode salvar e voltar depois</span></div><div class="progress" style="margin-top:8px"><span style="width:'+(100*done/as.length)+'%"></span></div></div>';
   if(ui.flag.qsent)h+=banner('Respostas enviadas para '+esc(p.assets.find(a=>a.id===ui.flag.qsent)?.name||'o ativo')+'. '+(done<as.length?'Continue com o próximo ativo.':'Sua parte nesta coleta terminou.'),'info');
-  if(!ui.qasset||!as.some(a=>a.id===ui.qasset))return h+'<div class="home-grid">'+as.map((a,i)=>{const an=ensureAns(p,me,a.id);return '<div class="card home-project"><span class="eyebrow">Ativo '+(i+1)+' de '+as.length+'</span><h3>'+esc(a.name)+'</h3><p class="muted">'+esc(a.desc||a.cat)+'</p>'+(an.sent?chip('Respostas enviadas','ok',1):chip('A responder','warn',1))+'<div>'+btn('qasset',an.sent?'Consultar respostas':'Responder sobre este ativo',{c:an.sent?'':'pri',d:{aid:a.id}})+'</div></div>'}).join('')+'</div>';
+  if(!ui.qasset||!as.some(a=>a.id===ui.qasset))return h+'<div class="home-grid">'+as.map((a,i)=>{const an=ensureAns(p,me,a.id);return '<div class="card home-project"><h3>'+esc(a.name)+'</h3><p class="muted">'+esc(a.desc||a.cat||'')+'</p>'+(an.sent?chip('Respostas enviadas','ok',1):chip('A responder','warn',1))+'<div>'+btn('qasset',an.sent?'Consultar respostas':'Responder sobre este ativo',{c:an.sent?'':'pri',d:{aid:a.id}})+'</div></div>'}).join('')+'</div>';
   const a=as.find(x=>x.id===ui.qasset),an=ensureAns(p,me,a.id),d=an.draft,s=Math.min(3,Math.max(0,ui.qstep)),q=QK[s],E=elig(p);
-  h+='<div>'+btn('qlist','← Todos os ativos',{c:'sm'})+'</div><div class="card question-card"><div class="row"><div><span class="eyebrow">Ativo '+(as.indexOf(a)+1)+' de '+as.length+'</span><h3>'+esc(a.name)+'</h3><span class="muted">'+esc(a.desc||a.cat)+'</span></div>'+(an.sent?chip('Enviado','ok',1):chip('Rascunho','warn',1))+'</div><div><span class="stage-note">'+(s===3?'Revisão antes do envio':'Pergunta '+(s+1)+' de 3')+'</span><div class="stepper">'+[0,1,2,3].map(i=>'<span class="'+(i<=s?'done':'')+'"></span>').join('')+'</div></div>';
+  h+='<div>'+btn('qlist','← Todos os ativos',{c:'sm'})+'</div><div class="card question-card"><div class="row"><div><h3>'+esc(a.name)+'</h3><span class="muted">'+esc(a.desc||a.cat||'')+'</span></div>'+(an.sent?chip('Enviado','ok',1):chip('Rascunho','warn',1))+'</div><div><span class="stage-note">Ativo '+(as.indexOf(a)+1)+' de '+as.length+' · '+(s===3?'Revisão antes do envio':'Pergunta '+(s+1)+' de 3')+'</span><div class="stepper">'+[0,1,2,3].map(i=>'<span class="'+(i<=s?'done':'')+'"></span>').join('')+'</div></div>';
   if(s<3){
     h+='<div><h3>'+esc(QS[q].label)+'</h3><p class="muted">'+(['Selecione as pessoas que participaram da criação deste ativo.','Escolha quem, na sua visão, deve ser titular deste ativo.','Pense no que deveria acontecer se alguém deixar o projeto.'][s])+'</p></div><div class="opts">';
     if(QS[q].multi)E.forEach(pid=>h+='<label class="opt'+(open?'':' dis')+'"><input type="checkbox" data-ch="ans" data-a="'+a.id+'" data-q="'+q+'" data-v="'+pid+'"'+(d[q].includes(pid)?' checked':'')+(open?'':' disabled')+'>'+esc(nm(pid))+'</label>');
     else USO.forEach(u=>h+='<label class="opt'+(open?'':' dis')+'"><input type="radio" name="uso-'+a.id+'" data-ch="ans" data-a="'+a.id+'" data-q="uso" data-v="'+esc(u)+'"'+(d.uso===u?' checked':'')+(open?'':' disabled')+'>'+esc(u)+'</label>');
     h+='</div>'+errm(a.id+':'+q);
     if(s===0){h+=d.contrib.includes(me)?'<div class="field"><label for="ds">Como você contribuiu?</label><textarea id="ds" data-in="ans" data-a="'+a.id+'" data-k="desc"'+(open?'':' disabled')+'>'+esc(d.desc)+'</textarea>'+errm(a.id+':desc')+'</div>':'';h+='<div class="field"><label for="lk">Link de evidência (opcional)</label><input id="lk" type="text" data-in="ans" data-a="'+a.id+'" data-k="link" placeholder="https://" value="'+esc(d.link)+'"'+(open?'':' disabled')+'>'+errm(a.id+':link')+'</div>'}
-  }else h+='<div><h3>Revise suas respostas</h3><p class="muted">Confira sua percepção antes de enviar. Você poderá alterá-la enquanto a coleta estiver aberta.</p></div><div class="review-grid">'+QK.map(k=>'<div><b>'+esc(QS[k].label)+'</b>'+esc(QS[k].multi?d[k].map(nm).join(', ')||'Não respondida':d[k]||'Não respondida')+'</div>').join('')+(d.contrib.includes(me)?'<div><b>Sua contribuição</b>'+esc(d.desc||'Não descrita')+'</div>':'')+(d.link?'<div><b>Evidência</b>'+esc(d.link)+'</div>':'')+'</div>'+errm(a.id+':contrib')+errm(a.id+':titular')+errm(a.id+':uso')+errm(a.id+':desc')+errm(a.id+':link');
-  h+='<div class="row start">'+(s?btn('qback','Voltar'):btn('qlist','Voltar'))+(open?(s===3?btn('qsend','Enviar respostas',{c:'pri'}):btn('qnext','Continuar',{c:'pri'}))+btn('draft','Salvar rascunho',{d:{aid:a.id}}):s<3?btn('qnext','Próxima pergunta'):btn('qlist','Concluir consulta'))+'</div></div>';
+  }else h+='<div><h3>Revise suas respostas</h3><p class="muted">Confira antes de enviar. Você poderá alterar as respostas enquanto a coleta estiver aberta.</p></div><div class="review-grid">'+QK.map(k=>'<div><b>'+esc(QS[k].label)+'</b>'+esc(QS[k].multi?d[k].map(nm).join(', ')||'Não respondida':d[k]||'Não respondida')+'</div>').join('')+(d.contrib.includes(me)?'<div><b>Sua contribuição</b>'+esc(d.desc||'Não descrita')+'</div>':'')+(d.link?'<div><b>Evidência</b>'+esc(d.link)+'</div>':'')+'</div>'+errm(a.id+':contrib')+errm(a.id+':titular')+errm(a.id+':uso')+errm(a.id+':desc')+errm(a.id+':link');
+  h+='<div class="row start">'+(s?btn('qback','Voltar'):'')+(open?(s===3?btn('qsend','Enviar respostas',{c:'pri'}):btn('qnext','Continuar',{c:'pri'}))+'<span class="muted" style="font-size:var(--t-subhead)">Salvo automaticamente</span>':s<3?btn('qnext','Continuar'):btn('qlist','Concluir'))+'</div></div>';
 
   return h;
 }
@@ -382,14 +404,14 @@ function vResp(p){
 /* ===== Coleta (HU-14, HU-26) ===== */
 function vColeta(p){
   const org=p.org===ui.me,E=elig(p),as=approved(p);
-  let h=head(org?'Acompanhar a coleta':'Aguardando a equipe','','As respostas individuais ficam ocultas até o encerramento. Ausência de resposta nunca conta como concordância.');
+  let h=head('Andamento','','As respostas individuais ficam ocultas até o encerramento. Ausência de resposta nunca conta como concordância.');
   if(!org&&p.phase==='coleta')h+=banner('Você concluiu suas respostas. Quem organiza acompanha as pendências e decide quando encerrar a coleta.','info');
   h+='<div class="card"><div class="list">';
   p.members.forEach(m=>{
     if(m.status==='pendente')return;
     const sent=as.filter(a=>{const x=ansOf(p,m.pid,a.id);return x&&x.sent}).length;
     const isE=E.includes(m.pid);
-    h+='<div class="li"><div class="l"><b>'+esc(nm(m.pid))+'</b><span class="muted" style="font-size:13px">'+(isE?sent+' de '+as.length+' ativos enviados':m.status==='naopart'?'Não participante':'Não elegível nesta rodada')+'</span></div><div class="row start">'+
+    h+='<div class="li"><div class="l"><b>'+esc(nm(m.pid))+'</b><span class="muted" style="font-size:var(--t-footnote)">'+(isE?sent+' de '+as.length+' ativos enviados':m.status==='naopart'?'Fora da coleta':'Entrou após a coleta')+'</span></div><div class="row start">'+
     (!isE?chip('Fora da contagem','',1):sent===as.length&&as.length?chip('Enviado','ok',1):sent?chip('Parcial','warn',1):chip('Pendente','',1))+'</div></div>';
   });
   h+='</div></div>';
@@ -397,35 +419,31 @@ function vColeta(p){
   if(org&&p.phase==='coleta'){
     if(!as.length)h+=banner('Cadastre ao menos um ativo antes de encerrar a coleta.','warn',btn('go','Organizar ativos',{c:'sm',d:{tab:'ativos'}}));
     else if(ui.flag.close){
-      h+=banner(miss.length?miss.map(pid=>{const none=!as.some(a=>{const x=ansOf(p,pid,a.id);return x&&x.sent});return esc(nm(pid))+(none?' não respondeu.':' não respondeu a todos os ativos.')}).join(' ')+' Essas ausências permanecerão pendentes no mapa e não serão tratadas como concordância. Após encerrar, ninguém poderá editar respostas.':'Todos os elegíveis responderam. Encerrar a coleta agora?','warn','<span class="row start">'+btn('closeok','Encerrar coleta',{c:'pri sm'})+btn('closeno','Cancelar',{c:'sm'})+'</span>');
-    }else if(as.length)h+='<div class="task-card"><h3>'+(miss.length?'Ainda faltam respostas':'A coleta está pronta para encerrar')+'</h3><p>'+(miss.length?'Você pode lembrar as pessoas pendentes ou encerrar mesmo assim, registrando as ausências.':'Todas as pessoas elegíveis responderam aos ativos.')+'</p>'+btn('closeask',miss.length?'Revisar encerramento com pendências':'Encerrar coleta e ver percepções',{c:'pri'})+'</div>';
-    if(miss.length){
-      h+='<div class="card"><h3>Lembrar quem ainda não respondeu</h3><div class="row start">'+miss.map(pid=>btn('remind','Enviar lembrete a '+esc(nm(pid)),{c:'sm',d:{pid}})).join('')+btn('remindgrp','Copiar mensagem para o grupo',{c:'sm'})+'</div>'+(ui.flag.grp?'<div class="tok">'+esc(ui.flag.grp)+'</div>':'')+'</div>';
-    }
-  }else if(p.phase!=='coleta')h+=banner('Coleta encerrada. As respostas já aparecem no mapa de divergências.','info',btn('go','Abrir o mapa',{c:'sm',d:{tab:'mapa'}}));
+      h+=banner(miss.length?miss.map(pid=>{const none=!as.some(a=>{const x=ansOf(p,pid,a.id);return x&&x.sent});return esc(nm(pid))+(none?' não respondeu.':' não respondeu a todos os ativos.')}).join(' ')+' Essas ausências aparecerão como “Sem resposta” na Comparação, nunca como concordância. Depois de encerrar, ninguém poderá editar respostas.':'Todas as pessoas responderam. Encerrar a coleta agora?','warn','<span class="row start">'+btn('closeok','Encerrar coleta',{c:'pri sm'})+btn('closeno','Cancelar',{c:'sm'})+'</span>');
+    }else if(as.length)h+='<div class="task-card"><h3>'+(miss.length?'Ainda faltam respostas':'A coleta está pronta para encerrar')+'</h3><p>'+(miss.length?'Você pode lembrar as pessoas pendentes ou encerrar mesmo assim, registrando as ausências.':'Todas as pessoas responderam sobre todos os ativos.')+'</p>'+btn('closeask','Encerrar coleta',{c:'pri'})+(miss.length?'<div class="q" style="margin-top:10px">Lembrar quem ainda não respondeu</div><div class="row start">'+miss.map(pid=>btn('remind','Enviar lembrete a '+esc(nm(pid)),{c:'sm',d:{pid}})).join('')+btn('remindgrp','Copiar mensagem para o grupo',{c:'sm'})+'</div>'+(ui.flag.grp?'<div class="tok">'+esc(ui.flag.grp)+'</div>':''):'')+'</div>';
+  }else if(p.phase!=='coleta')h+=banner('Coleta encerrada. As respostas já podem ser comparadas.','info',btn('go','Comparar respostas',{c:'sm',d:{tab:'mapa'}}));
   return h;
 }
 
 /* ===== Mapa (HU-15 a HU-18) ===== */
 function vMapa(p){
-  let h=head('Mapa de divergências','HU-15 HU-16 HU-17 HU-18','Compare o que cada pessoa declarou antes de construir uma decisão coletiva.');
-  if(p.phase==='coleta')return h+banner('O mapa fica disponível quando a coleta for encerrada.','info');
+  let h=head('Comparação','HU-15 HU-16 HU-17 HU-18','Veja o que cada pessoa respondeu antes de montar a proposta.');
+  if(p.phase==='coleta')return h+banner('A comparação fica disponível quando a coleta for encerrada.','info');
   const E=elig(p);
-  if(p.org===ui.me&&p.phase==='encerrada')h+='<div class="task-card"><h3>Próximo passo: construir a proposta</h3><p>Compare as declarações abaixo e converse com a equipe. Quando estiverem prontos, registre uma proposta para cada ativo.</p>'+btn('startdec','Preparar proposta',{c:'pri'})+'</div>';
-  else if(p.phase==='encerrada')h+=banner('A pessoa organizadora prepara a proposta. Você poderá ler e comentar quando ela estiver disponível.','info');
+  if(p.org===ui.me&&p.phase==='encerrada')h+='<div class="task-card"><h3>Próximo passo: construir a proposta</h3><p>Compare as respostas abaixo e converse com a equipe. Quando estiverem prontos, registre uma proposta para cada ativo.</p>'+btn('startdec','Preparar proposta',{c:'pri'})+'</div>';
+  else if(p.phase==='encerrada')h+=banner('Quem organiza prepara a proposta. Você poderá ler e comentar quando ela estiver disponível.','info');
   if(!E.includes(ui.me)&&mem(p,ui.me)&&mem(p,ui.me).status!=='ativo')return h+naoElig();
   const items=allItems(p),c={conv:0,div:0,pend:0};items.forEach(i=>c[i.status]++);
-  h+='<div class="counters">'+[['todos','Itens',items.length],['conv','Mesma percepção',c.conv],['div','Visões diferentes',c.div],['pend','Sem resposta',c.pend]].map(x=>'<button class="cnt'+(ui.filter===x[0]?' on':'')+'" data-act="filter" data-f="'+x[0]+'"><b>'+x[2]+'</b><span>'+x[1]+'</span></button>').join('')+'</div>';
-  h+='<div class="muted" style="font-size:13px">Cada item representa uma pergunta sobre um ativo. Ausência de resposta não significa concordância.</div>';
+  h+='<div class="counters">'+[['todos','Itens',items.length],['conv','Respostas iguais',c.conv],['div','Respostas diferentes',c.div],['pend','Sem resposta',c.pend]].map(x=>'<button class="cnt'+(ui.filter===x[0]?' on':'')+'" data-act="filter" data-f="'+x[0]+'"><b>'+x[2]+'</b><span>'+x[1]+'</span></button>').join('')+'</div>';
   items.filter(i=>ui.filter==='todos'||i.status===ui.filter).forEach(i=>{
     const a=p.assets.find(x=>x.id===i.aid),op=ui.open===i.key,or=origin(p,i.aid,i.q);
-    h+='<div class="item '+i.status+'"><div class="row"><div class="l"><b>'+esc(a.name)+' × '+QS[i.q].label+'</b>'+(or.length&&!op?'<span class="muted" style="font-size:13px">'+esc(or[0])+'</span>':'')+'</div><div class="row start">'+chip(ST[i.status][0],ST[i.status][1],1)+btn('open',op?'Fechar':'Abrir',{c:'sm',d:{key:i.key}})+'</div></div>';
+    h+='<div class="item '+i.status+'"><div class="row"><div class="l"><b>'+esc(a.name)+' · '+QS[i.q].label+'</b>'+(or.length&&!op?'<span class="muted" style="font-size:var(--t-footnote)">'+esc(or[0])+'</span>':'')+'</div><div class="row start">'+chip(ST[i.status][0],ST[i.status][1],1)+btn('open',op?'Ocultar':'Ver respostas',{c:'sm',d:{key:i.key}})+'</div></div>';
     if(op){
-      h+='<div class="eyebrow">Declarações individuais</div><div class="cmp">'+E.map(pid=>{const an=ansOf(p,pid,i.aid),s=an&&an.sent;
-        return '<div><b>'+esc(nm(pid))+'</b>'+(s?'<span>'+(QS[i.q].multi?(s[i.q].map(nm).join(', ')||'Ninguém'):esc(s[i.q]))+'</span>'+(i.q==='contrib'&&s.contrib.includes(pid)?'<span class="muted" style="font-size:13px">'+esc(s.desc)+'</span>'+(s.link?'<span class="mono">'+esc(s.link)+'</span>':'<span class="muted" style="font-size:13px">Sem link de evidência</span>'):''):'<span class="muted">'+esc(nm(pid))+' não respondeu</span>')+'</div>'}).join('')+'</div>';
+      h+='<b style="font-size:var(--t-subhead)">Respostas de cada pessoa</b><div class="cmp">'+E.map(pid=>{const an=ansOf(p,pid,i.aid),s=an&&an.sent;
+        return '<div><b>'+esc(nm(pid))+'</b>'+(s?'<span>'+(QS[i.q].multi?(s[i.q].map(nm).join(', ')||'Ninguém'):esc(s[i.q]))+'</span>'+(i.q==='contrib'&&s.contrib.includes(pid)?'<span class="muted" style="font-size:var(--t-footnote)">'+esc(s.desc)+'</span>'+(s.link?'<span class="mono">'+esc(s.link)+'</span>':'<span class="muted" style="font-size:var(--t-footnote)">Sem link de evidência</span>'):''):'<span class="muted">'+esc(nm(pid))+' não respondeu</span>')+'</div>'}).join('')+'</div>';
       if(or.length)h+='<div>'+or.map(x=>'<div>• '+esc(x)+'</div>').join('')+'</div>';
       if(i.status==='div'){
-        h+='<div><b style="font-size:14px">Cenários possíveis</b><div class="muted" style="font-size:13px">Textos fixos por tipo de pergunta. Nenhum é recomendado nem vem selecionado.</div></div><div class="cmp">'+SCEN[i.q].map(s=>'<div><b>'+esc(s[0])+'</b><span style="font-size:13px">'+esc(s[1])+'</span></div>').join('')+'</div>';
+        h+='<div><b style="font-size:var(--t-subhead)">Cenários possíveis</b><div class="muted" style="font-size:var(--t-footnote)">Opções para guiar a conversa. Nenhuma é recomendada.</div></div><div class="cmp">'+SCEN[i.q].map(s=>'<div><b>'+esc(s[0])+'</b><span style="font-size:var(--t-footnote)">'+esc(s[1])+'</span></div>').join('')+'</div>';
       }
     }
     h+='</div>';
@@ -438,18 +456,17 @@ function vMapa(p){
 function propOf(p,aid){return p.proposal[aid]=p.proposal[aid]||{titulares:[],uso:'',texto:'',semAcordo:false,saved:false}}
 function vDecisao(p){
   const org=p.org===ui.me,E=elig(p),as=approved(p);
-  let h=head('Proposta de decisão','HU-19 HU-20 HU-21','Compare as declarações no mapa, converse e registre uma proposta. Cada integrante confirma individualmente depois.');
-  if(p.phase==='coleta'||p.phase==='encerrada')return h+banner(p.phase==='coleta'?'A decisão começa depois do encerramento da coleta.':'Inicie a fase de decisão no mapa de divergências.','info');
-  h+='<div>'+btn('go','Consultar declarações no mapa',{c:'sm',d:{tab:'mapa'}})+'</div>';
+  let h=head('Proposta','HU-19 HU-20 HU-21','Com base no que a equipe comparou, registre uma proposta. Cada integrante confirma individualmente depois.');
+  if(p.phase==='coleta'||p.phase==='encerrada')return h+banner(p.phase==='coleta'?'A proposta começa depois do encerramento da coleta.':'Quem organiza inicia a proposta a partir da etapa Comparação.','info');
   const edit=p.phase==='decisao'&&org;
   const focus=as.find(a=>a.id===ui.dasset)||as.find(a=>!propOf(p,a.id).saved)||as[0];
-  if(as.length>1)h+='<div class="asset-switch"><span class="eyebrow">Ativos da proposta</span><div class="row start">'+as.map(a=>btn('dasset',esc(a.name)+(propOf(p,a.id).saved?' ✓':''),{c:'sm'+(focus&&focus.id===a.id?' pri':''),d:{aid:a.id}})).join('')+'</div></div>';
+  if(as.length>1)h+='<div class="row start" role="group" aria-label="Ativos da proposta">'+as.map(a=>btn('dasset',esc(a.name)+(propOf(p,a.id).saved?' ✓':''),{c:'sm'+(focus&&focus.id===a.id?' pri':''),d:{aid:a.id}})).join('')+'</div>';
   if(edit&&as.length){const left=as.filter(a=>!propOf(p,a.id).saved).length;h+='<div class="task-card"><h3>'+(left?'Proposta em elaboração':'Proposta pronta para confirmação')+'</h3><p>'+(left?left+' ativo'+(left===1?' precisa':'s precisam')+' de uma proposta. Salve cada um antes de enviar.':'Revise os ativos e envie a versão para que cada pessoa confirme individualmente.')+'</p>'+(left?'':btn('sendv','Enviar proposta para confirmação',{c:'pri'}))+errm('send')+'</div>'}
   const lv=lastV(p);
-  if(p.phase==='decisao'&&!org)h+=banner('A pessoa organizadora está preparando uma proposta. Leia o que já foi registrado e deixe comentários; a confirmação será individual quando uma versão for enviada.','info');
+  if(p.phase==='decisao'&&!org)h+=banner('Quem organiza está preparando uma proposta. Leia o que já foi registrado e deixe comentários; a confirmação será individual quando uma versão for enviada.','info');
   if(p.phase==='decisao'&&lv){
     const ref=Object.keys(lv.conf).filter(k=>lv.conf[k].v==='no');
-    if(ref.length)h+=banner('A v'+lv.n+' voltou para decisão. '+ref.map(k=>esc(nm(k))+' recusou: "'+esc(lv.conf[k].comment)+'"').join(' '),'bad');
+    if(ref.length)h+=banner('A v'+lv.n+' voltou para ajustes. '+ref.map(k=>esc(nm(k))+' recusou: "'+esc(lv.conf[k].comment)+'"').join(' '),'bad');
   }
   if(p.phase!=='decisao'){
     h+=banner('A proposta está '+(p.phase==='consolidado'?'consolidada':'em confirmação')+'. Editar o texto cria uma nova versão e invalida as confirmações da v'+(lv?lv.n:1)+'.','info',org&&p.phase==='confirmacao'?btn('editask','Editar proposta',{c:'sm'}):'');
@@ -457,17 +474,17 @@ function vDecisao(p){
   }
   as.filter(a=>focus&&a.id===focus.id).forEach(a=>{
     const pr=propOf(p,a.id);
-    h+='<div class="card"><div class="row"><h3>'+esc(a.name)+' <span class="chip">'+esc(a.cat)+'</span></h3>'+(pr.semAcordo?chip('Sem acordo','bad',1):pr.saved?chip('Redigida por '+nm(pr.by)+' em '+fmt(pr.at),'ok',1):chip('Não redigida','',1))+'</div>';
-    h+='<div class="banner info"><span><b>Declarações individuais:</b> '+esc(ST[itemStatus(p,a.id,'titular').status][0])+' sobre titularidade. <b>Decisão da equipe:</b> '+(pr.saved?(pr.semAcordo?'sem acordo':esc(pr.titulares.map(nm).join(', '))):'ainda não proposta')+'.</span>'+btn('go','Ver declarações',{c:'sm',d:{tab:'mapa'}})+'</div>';
+    h+='<div class="card"><div class="row"><h3>'+esc(a.name)+catChip(a.cat)+'</h3>'+(pr.semAcordo?chip('Sem acordo','bad',1):pr.saved?chip('Proposta salva','ok',1):chip('Sem proposta','',1))+'</div>';
+    h+='<p class="muted" style="font-size:var(--t-subhead)">Titularidade nas respostas individuais: '+esc(ST[itemStatus(p,a.id,'titular').status][0].toLowerCase())+'. <button class="link-inline" data-act="go" data-tab="mapa">Ver na Comparação</button></p>';
     if(edit){
-      h+='<p class="stage-note">Proposta da equipe para este ativo · diferente das declarações individuais</p>';
+      h+='<p class="stage-note">Proposta da equipe · não altera as respostas individuais</p>';
       h+='<div class="field"><div class="q">Titulares</div><div class="opts">'+E.map(pid=>'<label class="opt"><input type="checkbox" data-ch="prop" data-a="'+a.id+'" data-q="titulares" data-v="'+pid+'"'+(pr.titulares.includes(pid)?' checked':'')+'>'+esc(nm(pid))+'</label>').join('')+'</div></div>'+
       '<div class="field"><div class="q">Regra de uso depois da saída</div><div class="opts">'+USO.map(u=>'<label class="opt"><input type="radio" name="pu-'+a.id+'" data-ch="prop" data-a="'+a.id+'" data-q="uso" data-v="'+esc(u)+'"'+(pr.uso===u?' checked':'')+'>'+u+'</label>').join('')+'</div></div>'+
-      '<div class="field"><label for="pt-'+a.id+'">Texto da decisão</label><textarea id="pt-'+a.id+'" data-in="prop" data-a="'+a.id+'" data-k="texto">'+esc(pr.texto)+'</textarea></div>'+
+      '<div class="field"><label for="pt-'+a.id+'">Texto da proposta</label><textarea id="pt-'+a.id+'" data-in="prop" data-a="'+a.id+'" data-k="texto">'+esc(pr.texto)+'</textarea></div>'+
       '<label class="opt" style="align-self:flex-start"><input type="checkbox" data-ch="prop" data-a="'+a.id+'" data-q="sem"'+(pr.semAcordo?' checked':'')+'>Marcar titularidade como "Sem acordo"</label>'+errm('p'+a.id)+'<div>'+btn('saveprop',pr.saved?'Salvar alterações':'Salvar proposta deste ativo',{c:pr.saved?'sm':'pri sm',d:{aid:a.id}})+'</div>';
     }else{
-      h+='<p class="stage-note">Proposta da equipe</p>';h+=pr.saved||pr.semAcordo?'<div class="cmp"><div><b>Titulares</b><span>'+(pr.semAcordo?'Sem acordo':esc(pr.titulares.map(nm).join(', ')))+'</span></div><div><b>Regra de uso</b><span>'+esc(pr.uso||'Não definida')+'</span></div><div><b>Texto</b><span>'+esc(pr.texto||'Sem texto')+'</span></div></div>':'<span class="muted">A organizadora ainda não redigiu este ativo.</span>';
-      if(p.phase==='decisao'&&!org)h+='<div class="muted" style="font-size:13px">A pessoa organizadora redige a proposta. Você pode comentar antes da confirmação.</div>';
+      h+='<p class="stage-note">Proposta da equipe</p>';h+=pr.saved||pr.semAcordo?'<div class="cmp"><div><b>Titulares</b><span>'+(pr.semAcordo?'Sem acordo':esc(pr.titulares.map(nm).join(', ')))+'</span></div><div><b>Regra de uso</b><span>'+esc(pr.uso||'Não definida')+'</span></div><div><b>Texto</b><span>'+esc(pr.texto||'Sem texto')+'</span></div></div>':'<span class="muted">Ainda não há proposta para este ativo.</span>';
+      if(p.phase==='decisao'&&!org)h+='<div class="muted" style="font-size:var(--t-footnote)">Quem organiza redige a proposta. Você pode comentar antes da confirmação.</div>';
     }
     const cs=p.comments.filter(c=>c.aid===a.id);
     h+='<div class="list">'+cs.map(c=>'<div class="li"><span><b>'+esc(nm(c.pid))+':</b> '+esc(c.text)+'</span><span class="mono muted">'+fmt(c.at)+'</span></div>').join('')+'</div>';
@@ -479,30 +496,30 @@ function vDecisao(p){
 }
 
 /* ===== Confirmação (HU-21 a HU-23) ===== */
-function verCard(p,v,curr){
+function verCard(p,v,curr,extra){
   const E=elig(p);
   let h='<div class="card"><div class="row"><h3>Versão v'+v.n+'</h3><div class="row start">'+(curr?chip('Versão atual','acc',1):chip('Versão antiga','',1))+'<span class="mono muted">'+fmt(v.at)+'</span></div></div>';
-  h+='<div class="list">'+Object.keys(v.snap).map(aid=>{const s=v.snap[aid];return '<div class="li"><div class="l"><b>'+esc(s.name)+' <span class="chip">'+esc(s.cat)+'</span></b><span style="font-size:14px">'+(s.semAcordo?'Titularidade sem acordo':'Titulares: '+esc(s.titulares.map(nm).join(', '))+'. Uso: '+esc(s.uso)+'.')+'</span>'+(s.texto?'<span class="muted" style="font-size:13px">'+esc(s.texto)+'</span>':'')+'</div></div>'}).join('')+'</div>';
-  h+='<div class="cmp">'+E.map(pid=>{const c=v.conf[pid];return '<div><b>'+esc(nm(pid))+'</b>'+(c?(c.v==='ok'?chip('Confirmou','ok',1):chip('Recusou','bad',1))+(c.comment?'<span style="font-size:13px">'+esc(c.comment)+'</span>':'')+'<span class="mono muted">'+fmt(c.at)+'</span>':chip('Pendente','',1))+'</div>'}).join('')+'</div>';
+  h+='<div class="list">'+Object.keys(v.snap).map(aid=>{const s=v.snap[aid];return '<div class="li"><div class="l"><b>'+esc(s.name)+catChip(s.cat)+'</b><span style="font-size:var(--t-subhead)">'+(s.semAcordo?'Titularidade sem acordo':'Titulares: '+esc(s.titulares.map(nm).join(', '))+'. Uso: '+esc(s.uso)+'.')+'</span>'+(s.texto?'<span class="muted" style="font-size:var(--t-footnote)">'+esc(s.texto)+'</span>':'')+'</div></div>'}).join('')+'</div>';
+  h+='<div class="cmp">'+E.map(pid=>{const c=v.conf[pid];return '<div><b>'+esc(nm(pid))+'</b>'+(c?(c.v==='ok'?chip('Confirmou','ok',1):chip('Recusou','bad',1))+(c.comment?'<span style="font-size:var(--t-footnote)">'+esc(c.comment)+'</span>':'')+'<span class="mono muted">'+fmt(c.at)+'</span>':chip('Pendente','',1))+'</div>'}).join('')+'</div>';
   if(!curr)h+='<p class="stage-note">Versão anterior, disponível apenas para consulta.</p>';
-  return h+'</div>';
+  return h+(extra||'')+'</div>';
 }
 function vConf(p){
   let h=head('Confirmação','HU-21 HU-22 HU-23','Leia a versão atual antes de confirmar ou recusar. A decisão é individual e silêncio não conta como confirmação.');
   const lv=lastV(p);
-  if(!lv)return h+banner('Ainda não existe versão para confirmar. Quem organiza envia a proposta na etapa Decisão.','info');
+  if(!lv)return h+banner('Ainda não existe versão para confirmar. Quem organiza envia a proposta na etapa Proposta.','info');
   const E=elig(p),me=ui.me,c=lv.conf[me];
-  if(p.phase==='consolidado')h+=banner('Todos os elegíveis confirmaram a v'+lv.n+'. O memorial está disponível.','info',btn('go','Ver memorial',{c:'pri sm',d:{tab:'memorial'}}));
+  if(p.phase==='consolidado')h+=banner('Todas as pessoas confirmaram a v'+lv.n+'. O memorial está disponível.','info',btn('go','Ver memorial',{c:'pri sm',d:{tab:'memorial'}}));
   const sem=Object.values(lv.snap).some(s=>s.semAcordo);
-  if(p.phase==='confirmacao'&&E.every(x=>lv.conf[x]&&lv.conf[x].v==='ok')&&sem)h+=banner('Todos confirmaram, mas há item sem acordo. O projeto não pode ficar Consolidado.','warn',p.org===me?btn('editask','Voltar para decisão',{c:'sm'}):'');
+  if(p.phase==='confirmacao'&&E.every(x=>lv.conf[x]&&lv.conf[x].v==='ok')&&sem)h+=banner('Todos confirmaram, mas há item sem acordo. O projeto não pode ficar Consolidado.','warn',p.org===me?btn('editask','Reabrir proposta',{c:'sm'}):'');
   if(ui.flag.edit&&p.phase==='confirmacao')h+=banner('Editar criará a v'+(lv.n+1)+' e invalidará as confirmações da v'+lv.n+'.','warn','<span class="row start">'+btn('editok','Continuar e editar',{c:'pri sm'})+btn('editno','Cancelar',{c:'sm'})+'</span>');
-  h+=verCard(p,lv,true);
+  const pos=p.phase==='confirmacao'&&E.includes(me)&&!c?'<div class="pos"><h3>Seu posicionamento</h3>'+(ui.flag.refusing?'<div class="field"><label for="rf">Por que você recusa?</label><textarea id="rf" data-in="refuse" placeholder="Explique o que precisa mudar na proposta">'+esc(ui.refuse)+'</textarea>'+errm('refuse')+'</div><div class="row start">'+btn('refuse','Enviar recusa',{c:'bad',d:{n:lv.n}})+btn('refuseno','Cancelar')+'</div>':'<p class="muted">Confirme se a proposta representa o que a equipe combinou. Se algo precisar mudar, recuse e explique o motivo.</p><div class="row start">'+btn('conf','Confirmar v'+lv.n,{c:'pri',d:{n:lv.n}})+btn('refuse','Recusar',{d:{n:lv.n}})+'</div>')+'</div>':'';
+  h+=verCard(p,lv,true,pos);
   if(p.phase==='confirmacao'){
     if(!E.includes(me))h+=naoElig();
     else if(c)h+=banner('Sua confirmação da v'+lv.n+' foi registrada. Aguarde a posição das demais pessoas; ausência de resposta não significa concordância.','info');
-    else h+='<div class="card"><h3>Seu posicionamento sobre a v'+lv.n+'</h3><div class="field"><label for="rf">Motivo (obrigatório para recusar)</label><textarea id="rf" data-in="refuse">'+esc(ui.refuse)+'</textarea>'+errm('refuse')+'</div><div class="row start">'+btn('conf','Confirmar v'+lv.n,{c:'pri',d:{n:lv.n}})+btn('refuse','Recusar',{c:'bad',d:{n:lv.n}})+'</div></div>';
   }
-  if(p.versions.length>1)h+='<h3 style="margin-top:6px">Versões anteriores</h3>'+p.versions.slice(0,-1).reverse().map(v=>verCard(p,v,false)).join('');
+  if(p.versions.length>1)h+='<details class="more"><summary>Versões anteriores ('+(p.versions.length-1)+')</summary><div class="sec">'+p.versions.slice(0,-1).reverse().map(v=>verCard(p,v,false)).join('')+'</div></details>';
   return h;
 }
 
@@ -512,10 +529,10 @@ function memorialBody(p,at){
   L.push('MEMORIAL DE DECISÕES');L.push('Projeto: '+p.name+' ('+(p.context||'sem contexto')+')');
   L.push('Estado: '+(cons?'Consolidado':'Não consolidado'));L.push('Versão da proposta: v'+v.n);L.push('Gerado em: '+fmt(at));L.push('');
   L.push('PESSOAS');
-  p.members.forEach(m=>L.push('- '+nm(m.pid)+', '+roleTxt(p,m.pid).toLowerCase()+(m.status==='naopart'?' (Não participante)':m.status==='pendente'?' (Convite pendente)':!m.elig?' (não elegível nesta rodada)':'')));
+  p.members.forEach(m=>L.push('- '+nm(m.pid)+', '+roleTxt(p,m.pid).toLowerCase()+(m.status==='naopart'?' (fora da coleta)':m.status==='pendente'?' (Convite pendente)':!m.elig?' (entrou após a coleta)':'')));
   L.push('');L.push('ATIVOS, CONTRIBUIÇÕES E DECISÕES');
   approved(p).forEach(a=>{
-    L.push('');L.push(a.name+' ('+a.cat+')');
+    L.push('');L.push(a.name+(a.cat?' ('+a.cat+')':''));
     E.forEach(pid=>{const x=ansOf(p,pid,a.id),s=x&&x.sent;if(s&&s.contrib.includes(pid)){L.push('  Contribuição de '+nm(pid)+': '+s.desc);L.push('  Evidência: '+(s.link||'não informada'))}});
     const s=v.snap[a.id];
     if(s){L.push('  Decisão: '+(s.semAcordo?'SEM ACORDO na titularidade':'titulares '+s.titulares.map(nm).join(', ')+'; uso após a saída: '+s.uso));if(s.texto)L.push('  Texto: '+s.texto)}
@@ -533,30 +550,42 @@ function vMemorial(p){
   let h=head('Memorial','HU-24 HU-25','O documento reúne só os dados deste projeto.');
   if(!lastV(p))return h+banner('O memorial fica disponível depois do envio da primeira versão para confirmação.','info');
   const ms=p.memorials;
-  h+='<div class="card"><div class="row"><h3>Memorial de '+esc(p.name)+'</h3>'+chip(p.phase==='consolidado'?'Consolidado':'Não consolidado',p.phase==='consolidado'?'ok':'warn',1)+'</div><div class="muted" style="font-size:13px">Registro preparatório das decisões da equipe. Não substitui contrato ou registro oficial.</div><div>'+btn('genmem',ms.length?'Gerar nova cópia':'Gerar memorial agora',{c:ms.length?'':'pri'})+'</div></div>';
+  h+='<div class="card"><div class="row"><h3>Memorial de '+esc(p.name)+'</h3>'+chip(p.phase==='consolidado'?'Consolidado':'Não consolidado',p.phase==='consolidado'?'ok':'warn',1)+'</div><div class="muted" style="font-size:var(--t-footnote)">Registro preparatório das decisões da equipe. Não substitui contrato ou registro oficial.</div><div>'+btn('genmem',ms.length?'Gerar nova cópia':'Gerar memorial agora',{c:ms.length?'':'pri'})+'</div></div>';
   if(ms.length){
     const m=ms[0];
-    h+='<div class="paper">'+esc(m.body)+'\n\nCódigo de verificação (SHA-256): '+m.hash+'</div><div class="row start">'+btn('copymem','Copiar texto do memorial',{c:'sm'})+'<span class="muted" style="font-size:13px">'+ms.length+' memorial'+(ms.length>1?'is':'')+' gerado'+(ms.length>1?'s':'')+' neste projeto</span></div>';
+    h+='<div class="paper">'+esc(m.body)+'\n\nCódigo de verificação (SHA-256): '+m.hash+'</div><div class="row start">'+btn('copymem','Copiar texto do memorial',{c:'sm'})+'<span class="muted" style="font-size:var(--t-footnote)">'+ms.length+' memorial'+(ms.length>1?'is':'')+' gerado'+(ms.length>1?'s':'')+' neste projeto</span></div>';
   }
-  h+='<div class="card"><h3>Verificar integridade</h3><div class="muted" style="font-size:13px">Cole o texto do memorial. A MIP confere o código com os memoriais que gerou.</div><textarea id="vt" data-in="vtext" style="min-height:110px">'+esc(ui.verifyText)+'</textarea><div class="row start">'+btn('verify','Verificar',{c:'sm'})+'</div>'+(ui.verify?banner(esc(ui.verify.msg),ui.verify.ok?'info':'bad'):'')+'</div>';
+  h+='<details class="more"'+(ui.verifyText||ui.verify?' open':'')+'><summary>Verificar se um memorial foi alterado</summary><div class="sec" style="gap:12px"><div class="muted" style="font-size:var(--t-subhead)">Cole o texto do memorial. A MIP confere o código com os memoriais que gerou.</div><textarea id="vt" data-in="vtext" style="min-height:110px">'+esc(ui.verifyText)+'</textarea><div class="row start">'+btn('verify','Verificar',{c:'sm'})+'</div>'+(ui.verify?banner(esc(ui.verify.msg),ui.verify.ok?'info':'bad'):'')+'</div></details>';
   return h;
 }
 
 /* ===== Geral ===== */
-const JOURNEY=[['equipe','Equipe'],['ativos','Ativos'],['resp','Respostas'],['coleta','Coleta'],['mapa','Conversa'],['decisao','Proposta'],['conf','Confirmação'],['memorial','Memorial']];
+const JOURNEY=[['equipe','Equipe'],['ativos','Ativos'],['resp','Respostas'],['coleta','Andamento'],['mapa','Comparação'],['decisao','Proposta'],['conf','Confirmação'],['memorial','Memorial']];
+const TIPS={
+ equipe:'Reúna todas as pessoas que participaram da criação. Só quem estiver no projeto antes do fim da coleta responde nesta coleta.',
+ ativos:'Ativo é tudo o que a equipe criou e quer decidir: código, logo, textos, design. Basta o nome; a descrição ajuda os outros a reconhecer.',
+ resp:'São 3 perguntas por ativo, uma por tela. Ninguém vê suas respostas até o fim da coleta, e você pode mudá-las enquanto ela estiver aberta.',
+ coleta:'Mostra quem já respondeu, sem revelar as respostas. Quem organiza decide quando encerrar. Quem não respondeu fica como pendente, nunca como concordância.',
+ mapa:'Cada item junta uma pergunta sobre um ativo. "Respostas iguais": todos marcaram o mesmo. "Respostas diferentes": vale conversar. Abra o item para ver o que cada pessoa disse.',
+ decisao:'Quem organiza escreve uma proposta para cada ativo, com base na conversa. Todas as pessoas podem comentar antes do envio.',
+ conf:'Cada pessoa confirma ou recusa a versão atual. Uma recusa devolve a proposta para ajuste, e o próximo envio cria uma nova versão (v2, v3…).',
+ memorial:'O memorial reúne as decisões em um texto. O código de verificação mostra se alguém alterou o texto depois de gerado.'
+};
+function tipUI(){const k=ui.me+':'+ui.tab,t=TIPS[ui.tab];if(!t||ui.tips[k])return '';return '<div class="tip-card"><p><b>Como funciona: '+esc((JOURNEY.find(x=>x[0]===ui.tab)||[0,''])[1])+'</b>'+esc(t)+'</p>'+btn('tipok','Entendi',{c:'sm',d:{tab:ui.tab}})+'</div>'}
+function vWelcome(p){return '<div class="intro-card welcome"><div class="intro-art">✳</div><div><h3>Como o Backstage funciona</h3><ol><li><b>Cada pessoa responde em particular.</b> Ninguém vê suas respostas até o fim da coleta.</li><li><b>A equipe compara e conversa.</b> As diferenças aparecem lado a lado.</li><li><b>Todos confirmam a proposta.</b> As decisões ficam registradas no memorial.</li></ol><p class="muted" style="margin-top:14px;font-size:var(--t-subhead)">A MIP organiza as decisões da equipe. Ela não substitui contrato, advogado ou registro oficial.</p><div class="row start" style="margin-top:18px">'+btn('welcome','Entendi, ver minha tarefa',{c:'pri'})+'</div></div></div>'}
 function taskFor(p,pid=ui.me){
   const m=mem(p,pid),org=p.org===pid,as=approved(p);
   if(!m||m.status==='pendente')return{tab:'equipe',label:'Aceitar convite',note:'Entre no projeto para ver suas tarefas.'};
   if(p.phase==='coleta'){
     if(org&&(p.setupStep==='equipe'||!p.setupStep&&!p.assets.length))return{tab:'equipe',label:'Preparar equipe',note:'Confira os integrantes e convites antes de listar os ativos.'};
     if(org&&(p.setupStep==='ativos'||!as.length))return{tab:'ativos',label:'Organizar ativos',note:'Defina o que a equipe vai discutir.'};
-    if(!as.length)return{tab:'ativos',label:'Aguardar ativos',note:'A organizadora prepara a lista. Você pode sugerir um ativo.'};
-    if(!m.elig)return{tab:'coleta',label:'Acompanhar projeto',note:'Você não participa das respostas desta rodada.'};
+    if(!as.length)return{tab:'ativos',label:'Aguardar ativos',note:'Quem organiza prepara a lista. Você pode sugerir um ativo.'};
+    if(!m.elig)return{tab:'coleta',label:'Acompanhar projeto',note:'Você não participa desta coleta.'};
     const left=as.filter(a=>{const x=ansOf(p,pid,a.id);return !x||!x.sent});
-    if(m.elig&&left.length)return{tab:'resp',label:'Continuar questionário',note:left.length+' ativo'+(left.length===1?'':'s')+' aguardando suas respostas.'};
+    if(m.elig&&left.length)return{tab:'resp',label:'Continuar respostas',note:left.length+' ativo'+(left.length===1?'':'s')+' aguardando suas respostas.'};
     return{tab:'coleta',label:org?'Acompanhar coleta':'Acompanhar equipe',note:org?'Veja quem respondeu e decida quando encerrar.':'Suas respostas foram enviadas. Aguarde a equipe.'};
   }
-  if(p.phase==='encerrada')return{tab:'mapa',label:org?'Analisar respostas':'Ver percepções da equipe',note:'Compare as declarações e converse sobre as diferenças.'};
+  if(p.phase==='encerrada')return{tab:'mapa',label:org?'Analisar respostas':'Ver respostas da equipe',note:'Compare as respostas e converse sobre as diferenças.'};
   if(p.phase==='decisao')return{tab:'decisao',label:org?'Preparar proposta':'Revisar proposta',note:org?'Registre uma proposta para cada ativo.':'Leia e comente enquanto a proposta é preparada.'};
   if(p.phase==='confirmacao'){const v=lastV(p),c=v&&v.conf[pid];return{tab:'conf',label:c||!m.elig?'Acompanhar confirmações':'Confirmar proposta',note:c?'Sua posição foi registrada. Aguarde as demais pessoas.':'Leia a versão atual e registre sua posição.'}}
   return{tab:'memorial',label:'Ver memorial',note:'Consulte o registro das decisões da equipe.'};
@@ -564,49 +593,52 @@ function taskFor(p,pid=ui.me){
 const projectNext=p=>{const t=taskFor(p);return[t.label,t.tab]};
 function focusQuestion(p,pid=ui.me){const next=approved(p).find(a=>!ansOf(p,pid,a.id)?.sent);if(next&&(!ui.qasset||ansOf(p,pid,ui.qasset)?.sent||!approved(p).some(a=>a.id===ui.qasset))){ui.qasset=next.id;ui.qstep=0}}
 function journeyIndex(p,pid=ui.me){return Math.max(0,JOURNEY.findIndex(x=>x[0]===taskFor(p,pid).tab))}
-function journeyUI(p){const current=journeyIndex(p);return '<div class="journey-progress" aria-label="Progresso da jornada"><span class="eyebrow">Jornada do projeto</span><div class="journey-steps">'+JOURNEY.map((x,i)=>'<div class="journey-step '+(i<current?'done':i===current?'current':'future')+'"><span class="journey-dot">'+(i<current?'✓':i+1)+'</span><span>'+x[1]+'</span></div>').join('')+'</div></div>'}
-function vProjeto(p){const n=projectNext(p),as=approved(p),E=elig(p);return head('Visão do projeto','','Acompanhe o próximo passo da equipe.')+'<div class="grid"><div class="card"><span class="eyebrow">Etapa atual</span><h3>'+esc(PHN[p.phase])+'</h3><p class="muted">'+(p.phase==='coleta'?'Cada pessoa responde em particular. Depois do encerramento, a equipe poderá comparar as respostas.':p.phase==='consolidado'?'A equipe confirmou a proposta atual. O memorial registra as decisões.':'Abra a próxima etapa para acompanhar as decisões.')+'</p><div>'+btn('go',n[0],{c:'pri',d:{tab:n[1]}})+'</div></div><div class="card"><span class="eyebrow">Neste projeto</span><div class="list"><div class="li"><span>Participantes da rodada</span><b>'+E.length+'</b></div><div class="li"><span>Ativos no questionário</span><b>'+as.length+'</b></div><div class="li"><span>Seu papel</span><b>'+roleTxt(p,ui.me)+'</b></div></div></div></div>'}
+function journeyUI(p){const current=journeyIndex(p),viewing=JOURNEY.findIndex(x=>x[0]===ui.tab),prev=viewing>0?JOURNEY[viewing-1]:null;return '<nav class="journey-progress" aria-label="Etapas do projeto"><div class="journey-steps">'+JOURNEY.map((x,i)=>{const cls='journey-step '+(i<current?'done':i===current?'current':'future')+(i===viewing?' viewing':''),inner='<span class="journey-dot">'+(i<current?'✓':i+1)+'</span><span>'+x[1]+'</span>';return i<=current?'<button class="'+cls+'" data-act="go" data-tab="'+x[0]+'"'+(i===viewing?' aria-current="step"':'')+' aria-label="'+x[1]+(i<current?', concluída':', etapa atual')+'">'+inner+'</button>':'<div class="'+cls+'" aria-label="'+x[1]+', ainda não disponível">'+inner+'</div>'}).join('')+'</div><div class="journey-compact"><b>Etapa '+(current+1)+' de '+JOURNEY.length+'</b> · '+JOURNEY[current][1]+'<div class="journey-bar" aria-hidden="true">'+JOURNEY.map((x,i)=>'<span class="'+(i<current?'done':i===current?'current':'')+'"></span>').join('')+'</div>'+(prev&&viewing<=current?'<button class="link-btn" data-act="go" data-tab="'+prev[0]+'">← Voltar para '+prev[1]+'</button>':'')+'</div></nav>'}
 const HOME_STEPS=[
   ['Equipe','Reúna as pessoas que participam do projeto.'],
   ['Ativos','Liste o que a equipe criou e quer discutir.'],
   ['Respostas','Cada pessoa registra sua perspectiva em particular.'],
-  ['Coleta','Acompanhe as respostas e encerre quando fizer sentido.'],
-  ['Divergências','Veja pontos em comum, diferenças e ausências.'],
-  ['Decisão','Converse e escreva uma proposta para cada ativo.'],
+  ['Andamento','Veja quem já respondeu e encerre a coleta quando fizer sentido.'],
+  ['Comparação','Veja pontos em comum, diferenças e ausências.'],
+  ['Proposta','Converse e escreva uma proposta para cada ativo.'],
   ['Confirmação','Cada integrante confirma ou recusa a versão atual.'],
   ['Memorial','Guarde um registro preparatório das decisões.']
 ];
 function vHome(){
-  const mine=projects.filter(p=>mem(p,ui.me));
-  let h='<main class="landing"><section class="landing-hero"><div class="landing-copy"><span class="eyebrow">MIP / BACKSTAGE</span><h1>O que a equipe cria merece uma conversa clara desde o começo.</h1><p>O Backstage ajuda vocês a reconhecer contribuições, conversar sobre titularidade e registrar decisões com transparência.</p><div class="landing-actions">'+(mine.length?btn('openproject','Continuar minha jornada',{c:'pri',d:{pid:mine[0].id}}):btn('go','Começar minha jornada',{c:'pri',d:{tab:'novo'}}))+'<a href="#etapas">Conhecer as etapas ↓</a></div></div><div class="landing-art" aria-hidden="true"><span class="art-orbit orbit-one"></span><span class="art-orbit orbit-two"></span><span class="art-core">mip.</span><span class="art-caption">criar · conversar · decidir</span></div></section>';
-  h+='<section class="landing-reason"><span class="eyebrow">POR QUE COMEÇAR AGORA</span><h2>Boas decisões começam com perspectivas visíveis.</h2><p>Em projetos colaborativos, cada pessoa pode entender de um jeito quem criou, quem deve ser titular e como o trabalho poderá ser usado no futuro. Conversar cedo ajuda a evitar suposições e a documentar o que a equipe realmente decidiu.</p></section>';
-  h+='<section id="etapas" class="landing-journey"><div class="landing-section-head"><div><span class="eyebrow">O CAMINHO</span><h2>Oito passos, uma conversa de cada vez.</h2></div><p>Você avança com orientação. Quando depender de outras pessoas, o Backstage mostra o que está pendente.</p></div><div class="landing-steps">'+HOME_STEPS.map((x,i)=>'<div class="landing-step"><span class="step-number">'+String(i+1).padStart(2,'0')+'</span><div><h3>'+x[0]+'</h3><p>'+x[1]+'</p></div></div>').join('')+'</div></section>';
-  h+='<section class="landing-outcome"><span class="eyebrow">AO FINAL</span><h2>Um memorial das decisões da equipe.</h2><p>Um registro das contribuições, da proposta, das confirmações e dos pontos que ainda precisem de acordo. Ele prepara a conversa para formalização futura, sem substituir um contrato ou registro oficial.</p>'+(mine.length?btn('openproject','Continuar minha jornada',{c:'pri',d:{pid:mine[0].id}}):btn('go','Começar minha jornada',{c:'pri',d:{tab:'novo'}}))+'</section>';
-  if(mine.length)h+='<section class="landing-projects"><div class="landing-section-head"><div><span class="eyebrow">SEUS PROJETOS</span><h2>Retome de onde parou.</h2></div>'+btn('go','Criar outro projeto',{d:{tab:'novo'}})+'</div><div class="landing-project-list">'+mine.map(p=>{const t=taskFor(p);return '<div class="landing-project"><div><h3>'+esc(p.name)+'</h3><p>'+esc(t.note)+'</p></div>'+btn('openproject',t.label,{c:'pri',d:{pid:p.id}})+'</div>'}).join('')+'</div></section>';
+  const mine=projects.filter(p=>mem(p,ui.me)),cta=btn('go','Começar minha jornada',{c:'pri',d:{tab:'novo'}});
+  let h='<main class="landing">';
+  if(mine.length)h+='<section class="landing-projects"><div class="landing-section-head"><div><h2>Retome de onde parou.</h2></div>'+btn('go','Criar outro projeto',{d:{tab:'novo'}})+'</div><div class="landing-project-list">'+mine.map(p=>{const t=taskFor(p);return '<div class="landing-project"><div><h3>'+esc(p.name)+'</h3><p>'+esc(t.note)+'</p></div>'+btn('openproject',t.label,{c:'pri',d:{pid:p.id}})+'</div>'}).join('')+'</div></section>';
+  h+='<section class="landing-hero"><div class="landing-copy"><h1>O que a equipe cria merece uma conversa clara desde o começo.</h1><p>O Backstage ajuda vocês a reconhecer contribuições, conversar sobre titularidade e registrar decisões com transparência.</p><div class="landing-actions">'+(mine.length?'':cta)+'<a href="#etapas">Conhecer as etapas ↓</a></div></div><div class="landing-art" aria-hidden="true"><span class="art-orbit orbit-one"></span><span class="art-orbit orbit-two"></span><span class="art-core">mip.</span><span class="art-caption">criar · conversar · decidir</span></div></section>';
+  h+='<section class="landing-reason"><h2>Boas decisões começam com perspectivas visíveis.</h2><p>Em projetos colaborativos, cada pessoa pode entender de um jeito quem criou, quem deve ser titular e como o trabalho poderá ser usado no futuro. Conversar cedo ajuda a evitar suposições e a documentar o que a equipe realmente decidiu.</p></section>';
+  h+='<section id="etapas" class="landing-journey"><div class="landing-section-head"><div><h2>Oito passos, uma conversa de cada vez.</h2></div><p>Você avança com orientação. Quando depender de outras pessoas, o Backstage mostra o que está pendente.</p></div><div class="landing-steps">'+HOME_STEPS.map((x,i)=>'<div class="landing-step"><span class="step-number">'+String(i+1).padStart(2,'0')+'</span><div><h3>'+x[0]+'</h3><p>'+x[1]+'</p></div></div>').join('')+'</div></section>';
+  h+='<section class="landing-outcome"><h2>Um memorial das decisões da equipe.</h2><p>Um registro das contribuições, da proposta, das confirmações e dos pontos que ainda precisem de acordo. Ele prepara a conversa para formalização futura, sem substituir um contrato ou registro oficial.</p>'+(mine.length?'':cta)+'</section>';
   return h+'</main>';
 }
 function header(){
-  return '<div class="top"><button class="brand brand-button" data-act="go" data-tab="home" aria-label="Ir para a Home"><b>MIP</b><span>Backstage</span></button><div class="ctrls"><button class="btn sm theme-toggle" data-act="theme" aria-label="'+(ui.theme==='dark'?'Ativar versão clara':'Ativar versão escura')+'" aria-pressed="'+(ui.theme==='dark')+'">'+(ui.theme==='dark'?'☼ Versão clara':'◐ Versão escura')+'</button><button class="btn sm" data-act="go" data-tab="home">Home</button></div></div>';
+  return '<div class="top"><button class="brand brand-button" data-act="go" data-tab="home" aria-label="Ir para o início"><b>MIP</b><span>Backstage</span></button></div>';
 }
 function render(){
-  if(document.documentElement)document.documentElement.dataset.theme=ui.theme==='dark'?'dark':'light';
   const p=cur(),m=p&&mem(p,ui.me);let h=header();
   if(ui.tab==='home')h+=vHome();
   else if(ui.tab==='novo')h+=vNovo();
   else if(!m)h+='<div class="card"><h2>Você não tem acesso a este projeto</h2><p class="muted">Nenhum dado deste projeto é exibido.</p>'+btn('openlink','Abrir link de convite',{c:'pri sm',d:{who:ui.me}})+errm('link')+'</div>';
   else if(m.status==='pendente')h+='<div class="card"><h2>Convite para '+esc(p.name)+'</h2><p class="muted">Aceite para ver o projeto. As respostas individuais ficam ocultas durante a coleta.</p>'+btn('accept','Aceitar convite',{c:'pri',d:{pid:ui.me}})+'</div>';
   else{
-    const next=projectNext(p),T=[['projeto','Projeto'],...JOURNEY];
-    h+='<div class="project-hero"><div><span class="eyebrow">'+esc(roleTxt(p,ui.me))+' · '+esc(PHN[p.phase])+'</span><h1>'+esc(p.name)+'</h1><p class="muted">'+esc(taskFor(p).note)+'</p></div>'+(ui.tab===next[1]?chip('Etapa atual','acc',1):btn('go','Voltar à tarefa atual',{d:{tab:next[1]}}))+'</div>';
-    h+=journeyUI(p)+(ui.notice?banner(esc(ui.notice),'info'):'')+'<details class="secondary-nav"><summary>Consultar outras etapas do projeto</summary><nav class="journey" aria-label="Navegação de consulta">'+T.map(t=>'<button class="'+(ui.tab===t[0]?'on':'')+'" data-act="go" data-tab="'+t[0]+'">'+t[1]+'</button>').join('')+'</nav></details><div class="sec">';
-    h+=({projeto:vProjeto,equipe:vEquipe,ativos:vAtivos,resp:vResp,coleta:vColeta,mapa:vMapa,decisao:vDecisao,conf:vConf,memorial:vMemorial}[ui.tab]||vEquipe)(p);
-    h+='</div>';
+    const next=projectNext(p),onTask=ui.tab===next[1];
+    h+='<div class="project-hero"><div><h1>'+esc(p.name)+'</h1><p class="muted">'+(p.org===ui.me?'Você organiza':'Você participa')+' · '+esc(PHN[p.phase])+'</p>'+(onTask?'':'<p class="muted">'+esc(taskFor(p).note)+'</p>')+'</div>'+(onTask?chip('Tarefa atual','acc',1):btn('go','Voltar à tarefa atual',{d:{tab:next[1]}}))+'</div>';
+    if(!ui.welcome[p.id+':'+ui.me])h+=vWelcome(p);
+    else{
+      h+=journeyUI(p)+(ui.notice?banner(esc(ui.notice),'info'):'')+'<div class="nav-row">'+(TIPS[ui.tab]&&ui.tips[ui.me+':'+ui.tab]?'<button class="link-btn" style="margin-left:auto" data-act="tipshow" data-tab="'+ui.tab+'">Como funciona esta etapa?</button>':'')+'</div><div class="sec">'+tipUI();
+      h+=({equipe:vEquipe,ativos:vAtivos,resp:vResp,coleta:vColeta,mapa:vMapa,decisao:vDecisao,conf:vConf,memorial:vMemorial}[ui.tab]||vEquipe)(p);
+      h+='</div>';
+    }
   }
   $('#app').innerHTML=h+demo();
+  if(ui.focus){const el=document.getElementById(ui.focus);ui.focus=null;if(el)el.focus()}
   persist();
 }
 function vNovo(){
-  return '<div class="onboarding-shell"><div class="onboarding-intro"><span class="eyebrow">ETAPA 01 / EQUIPE</span><h1>Vamos começar pelo seu projeto.</h1><p>Dê um nome ao projeto e diga como prefere ser chamado. Na próxima tela, você poderá reunir a equipe.</p></div><div class="onboarding-form"><div class="field"><label for="person">Seu nome</label><input type="text" id="person" data-in="novo" data-k="person" value="'+esc(ui.novo.person||'')+'" placeholder="Como a equipe conhece você?" autocomplete="name">'+errm('person')+'</div><div class="field"><label for="pn">Nome do projeto</label><input type="text" id="pn" data-in="novo" data-k="name" value="'+esc(ui.novo.name)+'" placeholder="Ex.: Nosso aplicativo">'+errm('pn')+'</div><div class="field"><label for="pc">Breve contexto <span class="muted">(opcional)</span></label><input type="text" id="pc" data-in="novo" data-k="ctx" value="'+esc(ui.novo.ctx)+'" placeholder="O que sua equipe está criando?"></div><div class="onboarding-actions">'+btn('mkproj','Criar projeto e organizar equipe',{c:'pri'})+btn('go','Voltar à apresentação',{d:{tab:'home'}})+'</div></div></div>';
+  return '<div class="onboarding-shell"><div class="onboarding-intro"><h1>Vamos começar pelo seu projeto.</h1><p>Dê um nome ao projeto e diga como prefere ser chamado. Na próxima tela, você poderá reunir a equipe.</p></div><div class="onboarding-form"><div class="field"><label for="person">Seu nome</label><input type="text" id="person" data-in="novo" data-k="person" value="'+esc(ui.novo.person||'')+'" placeholder="Como a equipe conhece você?" autocomplete="name">'+errm('person')+'</div><div class="field"><label for="pn">Nome do projeto</label><input type="text" id="pn" data-in="novo" data-k="name" value="'+esc(ui.novo.name)+'" placeholder="Ex.: Nosso aplicativo">'+errm('pn')+'</div><div class="field"><label for="pc">Breve contexto <span class="muted">(opcional)</span></label><input type="text" id="pc" data-in="novo" data-k="ctx" value="'+esc(ui.novo.ctx)+'" placeholder="O que sua equipe está criando?"></div><div class="onboarding-actions">'+btn('mkproj','Criar projeto',{c:'pri'})+btn('go','Voltar à apresentação',{d:{tab:'home'}})+'</div></div></div>';
 }
 function demo(){
   const p=cur(),mine=projects.filter(x=>mem(x,ui.me)&&mem(x,ui.me).status!=='pendente');return '<details class="demo"><summary>Ferramentas de teste · simulação</summary><p class="muted" style="margin:8px 0">Use estas ações para preparar cenários dos testes de usabilidade. Elas não fazem parte da jornada do participante.</p><div class="row start"><label>Ver como <select id="who" data-ch="who">'+Object.keys(people).map(k=>'<option value="'+k+'"'+(ui.me===k?' selected':'')+'>'+esc(people[k].name)+'</option>').join('')+'</select></label><label>Projeto <select id="proj" data-ch="proj">'+(mine.some(x=>x.id===ui.pid)?'':'<option value="'+ui.pid+'" selected>Endereço aberto</option>')+mine.map(x=>'<option value="'+x.id+'"'+(ui.pid===x.id?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label></div><div class="row start" style="margin-top:10px">'+btn('demo-load','Carregar cenário simulado',{c:'sm'})+btn('demo-fill','Preencher respostas de exemplo',{c:'sm',dis:!p||p.id!=='p1'})+btn('demo-skip','Abrir fase de decisão',{c:'sm',dis:!p||p.id!=='p1'})+btn('demo-reset','Reiniciar demonstração',{c:'sm bad'})+'</div><div class="row start" style="margin-top:10px">'+(p?p.members.filter(m=>m.status==='pendente').map(m=>btn('accept','Aceitar convite como '+nm(m.pid),{c:'sm',d:{pid:m.pid}})).join('')+['diego','bruno','carla'].map(w=>btn('openlink','Testar link como '+nm(w),{c:'sm',d:{who:w}})).join(''):'')+'</div><div class="row start" style="margin-top:10px">'+btn('otheredit','Testar edição de resposta alheia',{c:'sm'})+btn('tryedit','Testar edição após coleta',{c:'sm'})+btn('tryprop','Testar edição da proposta',{c:'sm'})+(p&&p.memorials.length?btn('pasteorig','Inserir memorial original',{c:'sm'})+btn('pastealt','Inserir memorial alterado',{c:'sm'}):'')+'</div></details>';
@@ -616,13 +648,15 @@ function demo(){
 function act(a,d){
   const p=cur(),me=ui.me;ui.err={};ui.notice='';
   switch(a){
-  case 'theme':ui.theme=ui.theme==='dark'?'light':'dark';break;
+  case 'tipok':ui.tips[me+':'+d.tab]=true;break;
+  case 'tipshow':delete ui.tips[me+':'+d.tab];break;
+  case 'welcome':ui.welcome[p.id+':'+me]=true;break;
   case 'go':ui.tab=d.tab;ui.flag={};if(d.tab==='novo'&&!ui.novo.person&&nm(me)!=='Você')ui.novo.person=nm(me);if(d.tab==='resp')focusQuestion(p,me);break;
   case 'intro':ui.introSeen=true;break;
   case 'openproject':{const changed=ui.pid!==d.pid;ui.pid=d.pid;ui.tab=taskFor(projects.find(x=>x.id===d.pid),me).tab;if(changed){ui.qasset=null;ui.qstep=0}if(ui.tab==='resp')focusQuestion(projects.find(x=>x.id===d.pid),me);break}
   case 'qintro':ui.questionIntro[me]=true;break;
   case 'setupteam':if(p.org===me&&p.phase==='coleta'){p.setupStep='ativos';ui.tab='ativos';ui.notice='Equipe preparada. Agora organize os ativos.'}break;
-  case 'setupassets':if(p.org===me&&p.phase==='coleta'&&approved(p).length){p.setupStep='resp';ui.tab='resp';focusQuestion(p,me);ui.notice='Ativos organizados. Registre agora sua percepção individual.'}break;
+  case 'setupassets':if(p.org===me&&p.phase==='coleta'&&approved(p).length){p.setupStep='resp';ui.tab='resp';focusQuestion(p,me);ui.notice='Ativos organizados. Agora registre suas respostas.'}break;
   case 'dasset':ui.dasset=d.aid;break;
   case 'qasset':ui.qasset=d.aid;ui.qstep=0;ui.flag={};break;
   case 'qlist':ui.qasset=null;ui.qstep=0;ui.flag={};break;
@@ -640,27 +674,29 @@ function act(a,d){
     if(pid&&mem(p,pid)){ui.err.inv='Esta pessoa já faz parte do projeto';break}
     if(!pid){pid=e.split('@')[0].replace(/[^a-z0-9]/g,'')||rid();const nmx=pid.charAt(0).toUpperCase()+pid.slice(1);people[pid]={name:nmx,g:'m',email:e}}
     p.members.push({pid,status:'pendente',elig:true});log(p,me,'convidou '+e);ui.flag.invited=nm(pid)+' aparece como convite pendente até aceitar.';ui.inv='';break}
-  case 'accept':{const m=mem(p,d.pid);m.status='ativo';m.elig=p.phase==='coleta';log(p,d.pid,'aceitou o convite'+(m.elig?'':' depois do encerramento da coleta e não é elegível nesta rodada'));if(d.pid===me){ui.tab=taskFor(p,me).tab;if(ui.tab==='resp')focusQuestion(p,me);ui.notice='Convite aceito. Esta é sua próxima tarefa no projeto.'}say(nm(d.pid)+' agora está Ativo.');break}
+  case 'accept':{const m=mem(p,d.pid);m.status='ativo';m.elig=p.phase==='coleta';log(p,d.pid,'aceitou o convite'+(m.elig?'':' depois do encerramento da coleta e não participa dela'));if(d.pid===me){ui.tab=taskFor(p,me).tab;if(ui.tab==='resp')focusQuestion(p,me);ui.notice='Convite aceito. Esta é sua próxima tarefa no projeto.'}say(nm(d.pid)+' agora está Ativo.');break}
   case 'toglink':p.link.active=!p.link.active;log(p,me,p.link.active?'ativou o link de convite':'desativou o link de convite');break;
   case 'openlink':{
     if(!p.link.active){ui.err.link='Este convite não está mais ativo';break}
     const who=d.who;if(mem(p,who)){ui.me=who;ui.tab=taskFor(p,who).tab;if(ui.tab==='resp')focusQuestion(p,who);say(nm(who)+' já é integrante. Nenhum integrante duplicado foi criado.');break}
-    p.members.push({pid:who,status:'ativo',elig:p.phase==='coleta'});log(p,who,'entrou pelo link de convite');ui.me=who;ui.tab=taskFor(p,who).tab;if(ui.tab==='resp')focusQuestion(p,who);ui.notice='Você entrou no projeto. Veja sua tarefa atual.';say(nm(who)+' entrou no projeto como Ativo'+(p.phase==='coleta'?'.':', mas não é elegível nesta rodada.'));break}
+    p.members.push({pid:who,status:'ativo',elig:p.phase==='coleta'});log(p,who,'entrou pelo link de convite');ui.me=who;ui.tab=taskFor(p,who).tab;if(ui.tab==='resp')focusQuestion(p,who);ui.notice='Você entrou no projeto. Veja sua tarefa atual.';say(nm(who)+' entrou no projeto como Ativo'+(p.phase==='coleta'?'.':', mas não participa desta coleta.'));break}
   case 'naopart':{
-    if(d.pid===p.org){ui.err.np='Quem organiza não pode ser marcado como não participante';break}
+    if(d.pid===p.org){ui.err.np='Quem organiza não pode sair da coleta';break}
     const m=mem(p,d.pid);m.status='naopart';m.by=me;m.at=Date.now();
     Object.values(p.proposal).forEach(pr=>{pr.titulares=pr.titulares.filter(x=>x!==d.pid)});
-    log(p,me,'marcou '+nm(d.pid)+' como não participante');break}
+    log(p,me,'tirou '+nm(d.pid)+' da coleta');break}
   case 'addasset':{
     if(p.phase!=='coleta'||p.org!==me)break;
-    const f=ui.addA;if(!f.name.trim()){ui.err.fn='Informe o nome do ativo';break}if(!f.cat){ui.err.fc='Escolha uma categoria';break}
-    p.assets.push({id:'a'+rid(),name:f.name.trim(),cat:f.cat,desc:f.desc.trim(),st:'ok'});log(p,me,'cadastrou o ativo '+f.name.trim());ui.addA={name:'',cat:'',desc:''};say('Ativo cadastrado. Ele já aparece no questionário de todos.');break}
+    const f=ui.addA;if(!f.name.trim()){ui.err.fn='Informe o nome do ativo';break}
+    p.assets.push({id:'a'+rid(),name:f.name.trim(),cat:f.cat,desc:f.desc.trim(),st:'ok'});log(p,me,'cadastrou o ativo '+f.name.trim());ui.addA={name:'',cat:'',desc:''};ui.focus='fn';say('Ativo cadastrado. Ele já entra nas perguntas de todos.');break}
   case 'sugasset':{
     const f=ui.sug;if(p.phase!=='coleta'){ui.err.fn='A coleta já foi encerrada';break}
-    if(!f.name.trim()){ui.err.fn='Informe o nome do ativo';break}if(!f.cat){ui.err.fc='Escolha uma categoria';break}
-    p.assets.push({id:'a'+rid(),name:f.name.trim(),cat:f.cat,desc:f.desc.trim(),st:'sug',by:me});log(p,me,'sugeriu o ativo '+f.name.trim());ui.sug={name:'',cat:'',desc:''};say('Sugestão enviada para '+nm(p.org)+'.');break}
+    if(!f.name.trim()){ui.err.fn='Informe o nome do ativo';break}
+    p.assets.push({id:'a'+rid(),name:f.name.trim(),cat:f.cat,desc:f.desc.trim(),st:'sug',by:me});log(p,me,'sugeriu o ativo '+f.name.trim());ui.sug={name:'',cat:'',desc:''};ui.focus='fn';say('Sugestão enviada para '+nm(p.org)+'.');break}
   case 'aprov':{if(p.phase!=='coleta'||p.org!==me)break;const x=p.assets.find(y=>y.id===d.aid);x.st='ok';log(p,me,'aprovou o ativo '+x.name);break}
-  case 'recus':{if(p.phase!=='coleta'||p.org!==me)break;const x=p.assets.find(y=>y.id===d.aid);x.st='rec';x.reason=(ui.refSug[d.aid]||'').trim()||'Sem motivo informado';log(p,me,'recusou o ativo '+x.name);break}
+  case 'recus':ui.flag.rec=d.aid;ui.focus='rs-'+d.aid;break;
+  case 'recusno':ui.flag={};break;
+  case 'recusok':{if(p.phase!=='coleta'||p.org!==me)break;ui.flag={};const x=p.assets.find(y=>y.id===d.aid);x.st='rec';x.reason=(ui.refSug[d.aid]||'').trim()||'Sem motivo informado';log(p,me,'recusou o ativo '+x.name);break}
   case 'del':{
     if(p.phase!=='coleta'){ui.err['d'+d.aid]='Ativos não podem ser excluídos depois do encerramento da coleta';break}
     const n=p.members.filter(m=>ansOf(p,m.pid,d.aid)&&ansOf(p,m.pid,d.aid).sent).length;
@@ -673,16 +709,16 @@ function act(a,d){
   case 'otheredit':say('Ação negada: você só pode alterar as suas próprias respostas.','bad');break;
   case 'closeask':ui.flag.close=true;break;
   case 'closeno':ui.flag={};break;
-  case 'closeok':if(p.org!==me||p.phase!=='coleta'||!approved(p).length||!ui.flag.close)break;p.phase='encerrada';log(p,me,'encerrou a coleta');ui.flag={};ui.tab='mapa';ui.notice='Coleta encerrada. Compare as declarações e prepare a conversa.';say('Coleta encerrada. O mapa de divergências está aberto.');break;
+  case 'closeok':if(p.org!==me||p.phase!=='coleta'||!approved(p).length||!ui.flag.close)break;p.phase='encerrada';log(p,me,'encerrou a coleta');ui.flag={};ui.tab='mapa';ui.notice='Coleta encerrada. Compare as respostas e prepare a conversa.';say('Coleta encerrada. Compare as respostas da equipe.');break;
   case 'remind':say('Lembrete enviado por e-mail para '+nm(d.pid)+'. O e-mail traz só o link do projeto.');break;
   case 'remindgrp':{const E=elig(p),as=approved(p);const miss=E.filter(pid=>as.some(a=>{const x=ansOf(p,pid,a.id);return !(x&&x.sent)})).map(nm);ui.flag.grp='Pessoal, faltam respostas na MIP: '+miss.join(', ')+'. Acesse mip.app/p/'+p.id;copy(ui.flag.grp);break}
-  case 'startdec':if(p.org!==me||p.phase!=='encerrada')break;p.phase='decisao';log(p,me,'iniciou a fase de decisão');ui.tab='decisao';ui.notice='Agora registre uma proposta para cada ativo.';break;
+  case 'startdec':if(p.org!==me||p.phase!=='encerrada')break;p.phase='decisao';log(p,me,'começou a preparar a proposta');ui.tab='decisao';ui.notice='Agora registre uma proposta para cada ativo.';break;
   case 'saveprop':{
     if(p.org!==me||p.phase!=='decisao')break;
     const pr=propOf(p,d.aid);
-    if(!pr.semAcordo&&(!pr.titulares.length||!pr.uso||!pr.texto.trim())){ui.err['p'+d.aid]='Defina titulares, regra de uso e texto da decisão, ou marque "Sem acordo".';break}
+    if(!pr.semAcordo&&(!pr.titulares.length||!pr.uso||!pr.texto.trim())){ui.err['p'+d.aid]='Defina titulares, regra de uso e texto da proposta, ou marque "Sem acordo".';break}
     pr.saved=true;pr.by=me;pr.at=Date.now();ui.dasset=approved(p).find(a=>!propOf(p,a.id).saved)?.id||d.aid;ui.notice=approved(p).every(a=>propOf(p,a.id).saved)?'Todas as propostas foram salvas. Envie a versão para confirmação.':'Proposta salva. Continue com o próximo ativo.';log(p,me,'registrou a proposta de '+p.assets.find(x=>x.id===d.aid).name);say(pr.semAcordo?'Item registrado como sem acordo. O projeto não poderá ficar Consolidado enquanto ele valer.':'Proposta salva.');break}
-  case 'tryprop':say('Ação negada: só a organizadora altera a proposta. Use o comentário.','bad');break;
+  case 'tryprop':say('Ação negada: só quem organiza altera a proposta. Use o comentário.','bad');break;
   case 'comment':{const t=(ui.cmt[d.aid]||'').trim();if(!t){say('Escreva o comentário antes de enviar.','bad');break}p.comments.push({aid:d.aid,pid:me,text:t,at:Date.now()});ui.cmt[d.aid]='';say('Comentário registrado. A proposta não foi alterada.');break}
   case 'sendv':{
     if(p.org!==me||p.phase!=='decisao')break;
@@ -693,13 +729,15 @@ function act(a,d){
   case 'editno':ui.flag={};break;
   case 'editok':{if(p.org!==me||p.phase!=='confirmacao')break;p.phase='decisao';ui.flag={};log(p,me,'reabriu a proposta; o próximo envio criará a v'+(p.versions.length+1));ui.tab='decisao';break}
   case 'oldconf':{const lv=lastV(p);say('Ação negada: a versão atual é a v'+lv.n+'. Você foi levado a ela.','bad');break}
+  case 'refuseno':ui.flag={};ui.refuse='';break;
   case 'conf':case 'refuse':{
+    if(a==='refuse'&&!ui.flag.refusing){ui.flag.refusing=true;ui.focus='rf';break}
     const lv=lastV(p);if(+d.n!==lv.n||p.phase!=='confirmacao'){say('Ação negada: só é possível se posicionar sobre a versão atual.','bad');break}
     if(lv.conf[me]){say('Você já se posicionou sobre esta versão.','bad');break}
-    if(!elig(p).includes(me)){say('Você não é elegível para confirmar nesta rodada.','bad');break}
+    if(!elig(p).includes(me)){say('Você não participa desta coleta e não confirma a proposta.','bad');break}
     if(a==='refuse'){
       if(!ui.refuse.trim()){ui.err.refuse='Explique o motivo da recusa';break}
-      lv.conf[me]={v:'no',comment:ui.refuse.trim(),at:Date.now()};p.phase='decisao';ui.tab='decisao';ui.notice='Recusa registrada. A proposta voltou para revisão de quem organiza.';ui.refuse='';log(p,me,'recusou a v'+lv.n);say('Recusa registrada. O projeto voltou para Em decisão.');break}
+      lv.conf[me]={v:'no',comment:ui.refuse.trim(),at:Date.now()};p.phase='decisao';ui.tab='decisao';ui.notice='Recusa registrada. A proposta voltou para revisão de quem organiza.';ui.refuse='';ui.flag={};log(p,me,'recusou a v'+lv.n);say('Recusa registrada. A proposta voltou para ajustes.');break}
     lv.conf[me]={v:'ok',comment:'',at:Date.now()};log(p,me,'confirmou a v'+lv.n);
     if(elig(p).every(x=>lv.conf[x]&&lv.conf[x].v==='ok')&&!Object.values(lv.snap).some(s=>s.semAcordo)){p.phase='consolidado';ui.tab='memorial';ui.notice='A equipe confirmou a proposta. O memorial pode ser gerado agora.';say('Todos confirmaram a v'+lv.n+'. O projeto está Consolidado.')}else{ui.notice='Sua confirmação foi registrada. Aguarde as demais pessoas.';say('Confirmação registrada.')}break}
   case 'genmem':genMem(p);return;
@@ -767,6 +805,8 @@ document.addEventListener('change',e=>{
 });
 document.addEventListener('input',e=>{const t=e.target;if(t.dataset.in==='addA'||t.dataset.in==='sug'){}});
 document.addEventListener('change',e=>{const t=e.target;if(t.dataset.in==='addA'||t.dataset.in==='sug'){ui[t.dataset.in][t.dataset.k]=t.value}});
+
+document.addEventListener('keydown',e=>{const t=e.target;if(e.key==='Enter'&&t.id==='fn'&&(t.dataset.in==='addA'||t.dataset.in==='sug')){e.preventDefault();act(t.dataset.in==='addA'?'addasset':'sugasset',{})}});
 
 seed();restore();render();
 </script>
