@@ -1033,7 +1033,8 @@ function decItem(p,a,q,pr,edit,agreed){
 }
 /* Decisões: uma visão geral por ativo e, para quem organiza, um passo a passo com um ponto por tela. */
 const decPts=(p,a)=>['notas'].concat(decQs(a)).filter(q=>itemStatus(p,a.id,q).status!=='conv');
-const dsteps=(p,a)=>decPts(p,a).concat('review');
+/* Pontos divergentes vêm primeiro; os demais continuam editáveis antes da revisão. */
+const dsteps=(p,a)=>{const diff=decPts(p,a);return diff.concat(decQs(a).filter(q=>!diff.includes(q)),'review')};
 function decPick(q,pr){return isP(q)?(pr.v[q]||[]).map(nm).join(', '):pr.v[q]||''}
 function vDecidir(p){
   const org=p.org===ui.me,E=elig(p),as=approved(p),lv=lastV(p);
@@ -1049,15 +1050,16 @@ function vDecidir(p){
   if(ui.flag.dsaved)h+=banner('Decisões de '+esc(p.assets.find(a=>a.id===ui.flag.dsaved)?.name||'')+' salvas.','info');
   const done=as.filter(a=>propOf(p,a.id).saved).length,left=as.filter(a=>!propOf(p,a.id).saved);
   const semN=as.filter(a=>propOf(p,a.id).saved&&propOf(p,a.id).semAcordo);
+  const pctN=as.filter(a=>propOf(p,a.id).saved&&propOf(p,a.id).v.divisao==='Ainda não, precisamos negociar');
   h+='<div><div class="row"><b>Criações revisadas: '+done+' de '+as.length+'</b>'+(semN.length?'<span class="muted">'+semN.length+' sem acordo</span>':'')+'</div><div class="progress" style="margin-top:8px"><span style="width:'+(as.length?100*done/as.length:0)+'%"></span></div></div>';
   h+='<div class="g-list">'+as.map(a=>{const n=decPts(p,a).length,pr=propOf(p,a.id);
-    const st=pr.ajuste&&!pr.saved?chip('Pedido de ajuste','bad',1):pr.semAcordo&&pr.saved?chip('Sem acordo','bad',1):pr.saved?chip('Decidido','ok',1):chip('A decidir','warn',1);
+    const st=pr.ajuste&&!pr.saved?chip('Pedido de ajuste','bad',1):pr.semAcordo&&pr.saved?chip('Sem acordo','bad',1):pr.saved&&pr.v.divisao==='Ainda não, precisamos negociar'?chip('Percentuais pendentes','warn',1):pr.saved?chip('Decidido','ok',1):chip('A decidir','warn',1);
     const b=edit?btn('dstart',pr.saved?'Revisar':pr.ajuste?'Ajustar':'Decidir',{c:'sm',d:{aid:a.id}}):btn('dasset',ui.dasset===a.id?'Fechar':'Ver',{c:'sm',d:{aid:ui.dasset===a.id?'':a.id}});
     return '<div class="g-row"><div class="g-l"><b>'+esc(a.name)+'</b><span>'+esc(a.cat||'Criação')+' · '+(n?n+(n>1?' pontos com diferença':' ponto com diferença'):'todos concordaram')+'</span>'+(pr.ajuste&&!pr.saved?'<span>'+esc(nm(pr.ajuste.by))+': "'+esc(pr.ajuste.comment)+'"</span>':'')+'</div><div class="g-r">'+st+b+'</div></div>'}).join('')+'</div>';
   /* Quem não organiza (ou depois do envio) vê o resumo do ativo escolhido. */
   const a=!edit&&as.find(x=>x.id===ui.dasset);
   if(a)h+=decSummary(p,a);
-  if(edit){h+=errm('send');if(left.length)setBar(done?'Falta'+(left.length>1?'m ':' ')+left.length+(left.length>1?' criações':' criação')+'.':'Decida uma criação por vez, um ponto por tela.',btn('dstart',(propOf(p,left[0].id).ajuste?'Ajustar ':'Decidir ')+esc(left[0].name),{c:'pri',d:{aid:left[0].id}}));else setBar(semN.length?semN.map(a=>esc(a.name)).join(', ')+' vai como sem acordo. A equipe pode confirmar o resto, mas o acordo só fecha quando '+(semN.length>1?'eles forem decididos':'ele for decidido')+'.':'Todas as criações estão decididas.',btn('sendv','Enviar proposta para todos confirmarem',{c:'pri'}),semN.length?'warn':'')}
+  if(edit){h+=errm('send');if(left.length)setBar(done?'Falta'+(left.length>1?'m ':' ')+left.length+(left.length>1?' criações':' criação')+'.':'Decida uma criação por vez, um ponto por tela.',btn('dstart',(propOf(p,left[0].id).ajuste?'Ajustar ':'Decidir ')+esc(left[0].name),{c:'pri',d:{aid:left[0].id}}));else setBar(semN.length?semN.map(a=>esc(a.name)).join(', ')+' vai como sem acordo.':pctN.length?'Percentuais de '+pctN.map(a=>esc(a.name)).join(', ')+' ficam pendentes no memorial.':'Todas as criações estão revisadas.',btn('sendv','Enviar proposta para todos confirmarem',{c:'pri'}),semN.length||pctN.length?'warn':'')}
   return h;
 }
 function decSummary(p,a){
@@ -1080,7 +1082,8 @@ function vDecideFocus(p){
     const pts=decPts(p,a),same=['notas'].concat(decQs(a)).filter(k=>!pts.includes(k));
     const row=(k,go)=>'<'+(go?'button class="qs-rrow" data-act="dgo" data-s="'+S.indexOf(k)+'"':'div class="qs-rrow"')+'><b>'+esc(QS[k].short)+'</b><span>'+esc(k==='notas'?partTxt(partOf(p,a.id)):decPick(k,pr)||'Falta decidir')+'</span>'+(go?'<i>Mudar</i>':'')+'</'+(go?'button':'div')+'>';
     c+='<div class="qs-head"><h1 class="qs-title" id="qs-title" tabindex="-1">Decisões de '+esc(a.name)+'</h1><p class="qs-hint">'+(pts.length?'Confira antes de salvar. Clique num ponto para mudar.':'Todos responderam igual. Confira e salve.')+'</p></div>'+
-      '<div class="qs-review">'+(pts.length?'<div class="qs-sec"><p>Decididos agora</p><div class="qs-list">'+pts.map(k=>row(k,true)).join('')+'</div></div>':'')+(same.length?'<div class="qs-sec"><p>Todos concordaram</p><div class="qs-list">'+same.map(k=>row(k,false)).join('')+'</div></div>':'')+'</div>'+
+      '<div class="qs-review">'+(pts.length?'<div class="qs-sec"><p>Pontos com respostas diferentes</p><div class="qs-list">'+pts.map(k=>row(k,k!=='notas')).join('')+'</div></div>':'')+(same.length?'<div class="qs-sec"><p>Respostas iguais — você também pode mudar a proposta</p><div class="qs-list">'+same.map(k=>row(k,k!=='notas')).join('')+'</div></div>':'')+'</div>'+
+      (pr.v.divisao==='Ainda não, precisamos negociar'?'<p class="qs-hint">Os percentuais ainda não foram combinados? Você pode salvar a proposta assim; o memorial mostrará essa pendência. Para informar percentuais, clique em “Percentuais combinados” acima e escolha “Sim”.</p>':'')+
       '<div class="qs-field"><label for="ext-'+a.id+'">Titular pretendido fora da equipe (se houver)</label><input id="ext-'+a.id+'" type="text" data-in="prop" data-a="'+a.id+'" data-k="externo" value="'+esc(pr.externo||'')+'" placeholder="Pessoa, empresa ou instituição"></div>'+
       (pr.v.divisao==='Sim, a equipe combinou percentuais'?'<div class="qs-field"><p class="qs-sub">Percentuais acordados para a titularidade pretendida</p><p class="qs-hint">A soma deve ser 100%. Estes números não são calculados pelas avaliações de contribuição.</p>'+((pr.v.titular||[]).concat(pr.externo?['__externo__']:[]).map(pid=>'<label class="qs-row" for="pct-'+a.id+'-'+pid+'"><span>'+esc(pid==='__externo__'?pr.externo:nm(pid))+'</span><input id="pct-'+a.id+'-'+pid+'" type="number" min="0" max="100" step="0.01" data-in="pct" data-a="'+a.id+'" data-pid="'+pid+'" value="'+esc((pr.percentual||{})[pid]??'')+'" style="width:110px"> %</label>').join(''))+'</div>':'')+
       '<div class="qs-field"><label for="pt-'+a.id+'">Quer explicar alguma decisão ou registrar algo pendente? (opcional)</label><p class="qs-hint">As escolhas acima já estão registradas. Escreva aqui apenas o motivo de alguma escolha ou algo que ainda precisa ser conferido, como um contrato ou uma autorização. Se não houver nada a acrescentar, deixe em branco.</p><textarea id="pt-'+a.id+'" data-in="prop" data-a="'+a.id+'" data-k="texto" placeholder="Ex.: O logo pode ir ao portfólio após autorização de Ana. Falta conferir a licença da fonte.">'+esc(pr.texto)+'</textarea></div>'+
@@ -1444,7 +1447,6 @@ function act(a,d){
     const pr=propOf(p,d.aid);
     const a=p.assets.find(x=>x.id===d.aid),miss=decQs(a).filter(q=>isP(q)?!(pr.v[q]||[]).length&&!(q==='titular'&&pr.externo?.trim()):!pr.v[q]);
     if(!pr.semAcordo&&miss.length){ui.err['p'+d.aid]='Falta preencher: '+miss.map(q=>QS[q].short).join(', ')+'. Ou marque que ainda não há acordo.';break}
-    if(!pr.semAcordo&&pr.v.divisao==='Ainda não, precisamos negociar'){ui.err['p'+d.aid]='Percentuais pendentes: marque a criação como sem acordo ou registre os percentuais combinados.';break}
     if(!pr.semAcordo&&pr.v.divisao==='Sim, a equipe combinou percentuais'){
       const ps=(pr.v.titular||[]).concat(pr.externo?.trim()?['__externo__']:[]),vals=ps.map(pid=>Number((pr.percentual||{})[pid]));
       if(!ps.length||ps.some(pid=>(pr.percentual||{})[pid]===''||(pr.percentual||{})[pid]===undefined)||vals.some(n=>!Number.isFinite(n)||n<0||n>100)||Math.abs(vals.reduce((a,b)=>a+b,0)-100)>0.001){ui.err['p'+d.aid]='Informe percentuais válidos para todos os titulares pretendidos, somando 100%.';break}
