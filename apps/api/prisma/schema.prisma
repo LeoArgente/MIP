@@ -1,0 +1,209 @@
+// Banco de dados da MIP (PostgreSQL).
+// As respostas e a proposta guardam JSON com o mesmo formato do protótipo,
+// para que as regras em @mip/domain funcionem igual no servidor e no navegador.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String
+  seenWelcome Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  sessions      Session[]
+  memberships   Member[]
+  organizes     Project[]      @relation("Organizer")
+  answers       Answer[]
+  comments      Comment[]
+  confirmations Confirmation[]
+}
+
+/// Link de acesso por e-mail (guardamos só o hash do token).
+model LoginToken {
+  id        String    @id @default(cuid())
+  email     String
+  name      String?
+  tokenHash String    @unique
+  next      String?
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Project {
+  id           String   @id @default(cuid())
+  name         String
+  context      String   @default("")
+  orgId        String
+  org          User     @relation("Organizer", fields: [orgId], references: [id])
+  /// coleta | encerrada | decisao | confirmacao | consolidado
+  phase        String   @default("coleta")
+  /// equipe | ativos | resp
+  setupStep    String   @default("equipe")
+  inviteCode   String   @unique
+  inviteActive Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  members   Member[]
+  assets    Asset[]
+  answers   Answer[]
+  proposals Proposal[]
+  versions  Version[]
+  comments  Comment[]
+  history   HistoryEntry[]
+  memorials Memorial[]
+}
+
+model Member {
+  id        String    @id @default(cuid())
+  projectId String
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// ativo | pendente | naopart
+  status    String    @default("ativo")
+  /// Responde nesta rodada (entrou antes do fim das respostas)
+  elig      Boolean   @default(true)
+  removedBy String?
+  removedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([projectId, userId])
+}
+
+/// Criação (ativo) do projeto.
+model Asset {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  type        String
+  cat         String
+  desc        String   @default("")
+  link        String   @default("")
+  /// ok | sug | rec
+  status      String   @default("ok")
+  suggestedBy String?
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  answers   Answer[]
+  proposal  Proposal?
+  comments  Comment[]
+}
+
+model Answer {
+  id        String    @id @default(cuid())
+  projectId String
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assetId   String
+  asset     Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  draft     Json      @default("{}")
+  sent      Json?
+  sentAt    DateTime?
+  /// Tela em que a pessoa parou (para "Continuar")
+  step      Int       @default(0)
+  updatedAt DateTime  @updatedAt
+
+  @@unique([assetId, userId])
+}
+
+/// Proposta de quem organiza para uma criação.
+model Proposal {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assetId   String   @unique
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  /// { v, externo, percentual, texto, semAcordo, saved, by, at, ajuste }
+  data      Json
+  updatedAt DateTime @updatedAt
+}
+
+/// Versão enviada para confirmação (cópia congelada da proposta).
+model Version {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  n         Int
+  snap      Json
+  createdAt DateTime @default(now())
+
+  confirmations Confirmation[]
+
+  @@unique([projectId, n])
+}
+
+model Confirmation {
+  id        String   @id @default(cuid())
+  versionId String
+  version   Version  @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// ok | no
+  value     String
+  comment   String   @default("")
+  /// Criações em que a pessoa pediu ajuste (na recusa)
+  assets    Json     @default("[]")
+  createdAt DateTime @default(now())
+
+  @@unique([versionId, userId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assetId   String
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String
+  createdAt DateTime @default(now())
+}
+
+model HistoryEntry {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// null = sistema
+  userId    String?
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([projectId, createdAt])
+}
+
+/// Registro do acordo gerado, com o código de verificação.
+model Memorial {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  body      String
+  hash      String
+  createdAt DateTime @default(now())
+
+  @@index([hash])
+}

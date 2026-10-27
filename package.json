@@ -1,0 +1,24 @@
+{
+  "name": "mip",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "tokens": "npm run build -w @mip/tokens",
+    "dev": "npm run tokens && concurrently -n api,web -c blue,green \"npm run dev -w @mip/api\" \"npm run dev -w @mip/web\"",
+    "build": "npm run tokens && npm run build -w @mip/web && npm run db:generate -w @mip/api",
+    "start": "npm run start -w @mip/api",
+    "db:migrate": "npm run db:migrate -w @mip/api",
+    "db:seed": "npm run db:seed -w @mip/api",
+    "test": "npm test -w @mip/domain"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

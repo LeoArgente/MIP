@@ -1,0 +1,24 @@
+{
+  "name": "@mip/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "prisma migrate deploy && node src/server.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "node prisma/seed.js",
+    "test": "node --test test/*.test.js",
+    "mail:test": "node scripts/mail-test.js"
+  },
+  "dependencies": {
+    "@mip/domain": "*",
+    "@prisma/client": "^6.6.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "prisma": "^6.6.0"
+  }
+}

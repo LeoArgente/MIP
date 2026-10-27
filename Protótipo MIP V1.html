@@ -691,6 +691,29 @@ h1,h2,h3{font-family:var(--f-display)}
 .back-btn{font-weight:500}
 .mono,.tok,.hu{font-family:var(--f-body);font-variant-numeric:tabular-nums}
 .brand b{font:700 20px/1 var(--f-display);letter-spacing:-.01em}
+/* Revisão: colunas que encolhem; no celular, uma coluna e valor abaixo do rótulo. */
+.qs-review{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.qs-review>*,.qs-stack>*{min-width:0}
+@media (max-width:720px){
+  .qs-review{grid-template-columns:minmax(0,1fr)}
+  .qs-rrow{flex-wrap:wrap;row-gap:2px;align-items:baseline}
+  .qs-rrow b{max-width:none;flex:1 1 auto;order:1}
+  .qs-rrow i{order:2}
+  .qs-rrow span{order:3;flex:1 1 100%;text-align:left;white-space:normal;overflow:visible}
+}
+@media (max-width:560px){
+  .ver-kv{grid-template-columns:minmax(0,1fr)}
+  .ver-kv dt{padding:10px 0 0}
+  .ver-kv dd{padding:0 0 10px;border-top:0}
+  .list .li>.row.start{width:100%}
+}
+/* Telas de uma coluna centralizadas; a barra do projeto acompanha a coluna. */
+.page.solo.read{justify-content:center}
+.back-nav:has(~ .page.solo.read){padding-inline:max(0px,calc((100% - 820px) / 2))}
+/* Troca de pessoa no topo (ferramenta de teste). */
+.top{max-width:none}
+.who-top{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
+.who-top select{min-height:36px;padding:4px 28px 4px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--line);color:var(--ink);font:500 14px var(--f-body)}
 </style>
 </head><body>
 
@@ -1315,10 +1338,10 @@ function vHome(){
   return h+'</main>';
 }
 function header(){
-  return '<div class="top"><button class="brand brand-button" data-act="go" data-tab="home" aria-label="Ir para o início"><b>MIP</b></button></div>';
+  return '<div class="top"><button class="brand brand-button" data-act="go" data-tab="home" aria-label="Ir para o início"><b>MIP</b></button>'+(TESTE?'<label class="who-top">Ver como <select data-ch="who" aria-label="Ver o protótipo como">'+Object.keys(people).map(k=>'<option value="'+k+'"'+(ui.me===k?' selected':'')+'>'+esc(people[k].name)+'</option>').join('')+'</select></label>':'')+'</div>';
 }
-/* Ferramentas de teste só aparecem no endereço com ?teste (ou #teste). */
-const TESTE=/teste/i.test(location.search+location.hash);
+/* Ferramentas de teste aparecem sempre; no endereço com ?sessao (sessões com usuários) elas somem. */
+const TESTE=!/sessao/i.test(location.search+location.hash);
 function render(){
   /* A coleta só termina por ação explícita de quem organiza. */
   ui.tab=normTab(ui.tab);
