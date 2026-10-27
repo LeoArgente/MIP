@@ -104,8 +104,10 @@ app.get('/api/projects', auth, wrap(async (req, res) => {
     const p = await load(prisma, projectId);
     if (!p) continue;
     const v = viewFor(p, req.user.id), qpos = Object.fromEntries(Object.entries(p.answers[req.user.id] || {}).map(([aid, an]) => [aid, an.step]));
-    out.push({ id: p.id, name: p.name, phase: p.phase, phaseName: PHN[p.phase], task: taskFor(v, req.user.id, qpos) });
+    const lastAt = Math.max(p.createdAt || 0, ...p.history.map(h => h.at));
+    out.push({ id: p.id, name: p.name, context: p.context, phase: p.phase, phaseName: PHN[p.phase], org: p.org === req.user.id, orgName: p.people[p.org]?.name, people: p.members.filter(m => m.status === 'ativo').length, assets: p.assets.filter(a => a.st === 'ok').length, lastAt, task: taskFor(v, req.user.id, qpos) });
   }
+  out.sort((a, b) => b.lastAt - a.lastAt);
   res.json(out);
 }));
 
