@@ -701,44 +701,50 @@ h1,h2,h3{font-family:var(--f-display)}
 /* ===== Constantes ===== */
 /* Perguntas: kind 'people' = escolher pessoas da equipe; senão, uma opção de opts. dec = entra na proposta. */
 const QS={
- notas:{label:'Quanto cada pessoa fez nesta criação?',hint:'Inclua você. Não precisa ser exato.',kind:'scores',short:'Contribuição'},
- titular:{label:'Quem deve ser dono desta criação?',hint:'O dono decide como a criação pode ser usada.',kind:'people',short:'Donos',dec:true},
- divisao:{label:'Se houver mais de um dono, como dividir?',opts:['Partes iguais','Conforme a contribuição','Prefiro conversar com a equipe'],short:'Divisão entre donos',dec:true},
+ notas:{label:'Como você percebe a participação de cada pessoa?',hint:'É uma percepção, não um cálculo de propriedade.',kind:'scores',short:'Participação percebida'},
+ origem:{label:'Qual é a origem desta criação?',opts:['Criada neste projeto','Criada antes do projeto','Inclui material de terceiros','Origem mista','Não sei'],short:'Origem',dec:true},
+ titularAtual:{label:'Qual é a situação da titularidade hoje?',opts:['Há titularidade documentada','Há indicação, sem documento','Há direitos de terceiros','Ainda não sabemos'],short:'Titularidade atual',dec:true},
+ titular:{label:'Quem a equipe pretende indicar como titular?',hint:'Esta intenção não comprova a titularidade atual nem transfere direitos.',kind:'people',short:'Titularidade pretendida',dec:true},
+ divisao:{label:'Há percentuais de titularidade combinados?',opts:['Sim, a equipe combinou percentuais','Ainda não, precisamos negociar','Não se aplica a esta criação'],short:'Percentuais combinados',dec:true},
  uso:{label:'Quem sair do projeto pode continuar usando esta criação?',hint:'Pense em alguém que deixa a equipe depois.',opts:['Qualquer pessoa que participou','Só quem for dono','Ninguém, sem um novo acordo da equipe'],short:'Uso após a saída',dec:true},
  comercial:{label:'Pode ser vendido ou gerar dinheiro?',opts:['Sim','Só com acordo de todos os donos','Não'],short:'Uso comercial',dec:true},
  portfolio:{label:'Quem pode mostrar no portfólio?',opts:['Todos que criaram','Toda a equipe','Só com autorização dos donos'],short:'Portfólio',dec:true},
- licenca:{label:'O código pode ser aberto ao público?',opts:['Sim, código aberto','Não, código fechado','Ainda não sei'],short:'Código aberto',dec:true},
+ licenca:{label:'Em que condição o código pode ser publicado?',opts:['Após revisar dependências e licenças','Somente com autorização dos titulares','Não publicar por enquanto'],short:'Publicação do código',dec:true},
+ marcaRegistro:{label:'O nome ou a marca já foi verificado para uso?',opts:['Sim, com evidência','Ainda precisa de busca ou registro','Há conflito ou uso de terceiro'],short:'Situação da marca',dec:true},
+ terceiros:{label:'Há conteúdo de terceiros que exige autorização?',opts:['Não identificamos','Sim, autorização documentada','Sim, autorização pendente','Ainda não sabemos'],short:'Direitos de terceiros',dec:true},
+ audioDireitos:{label:'Vozes, samples e gravações têm autorização?',opts:['Não se aplica','Sim, com autorização documentada','Autorização pendente','Ainda não sabemos'],short:'Autorizações de áudio',dec:true},
+ invDivulgacao:{label:'Há alguma condição antes de divulgar a invenção?',opts:['Pode divulgar após decisão da equipe','Avaliar proteção e confidencialidade antes','Há obrigação com terceiro','Ainda não sabemos'],short:'Divulgação da invenção',dec:true},
  remix:{label:'Outras pessoas podem adaptar esta criação?',hint:'Ex.: editar, remixar ou criar novas versões a partir dele.',opts:['Sim, livremente','Só com autorização dos donos','Não'],short:'Adaptações',dec:true}
 };
-const QBASE=['notas','titular','divisao','uso','comercial','portfolio'];
+const QBASE=['notas','origem','titularAtual','titular','divisao','uso','comercial','portfolio'];
 /* Tipos de ativo: cada um pode acrescentar uma pergunta própria (extra). */
 const TYPES=[
  {k:'codigo',n:'Código',ex:'App, site, script',ph:'Ex.: Backend, App do aluno',extra:'licenca'},
- {k:'marca',n:'Marca',ex:'Nome, logo, slogan',ph:'Ex.: Logo, Nome do app',extra:null},
- {k:'design',n:'Design',ex:'Telas, ilustrações, layout',ph:'Ex.: Telas do app',extra:'remix'},
- {k:'conteudo',n:'Texto ou mídia',ex:'Textos, vídeos, fotos',ph:'Ex.: Roteiro, Fotos do evento',extra:'remix'},
- {k:'audio',n:'Música e áudio',ex:'Trilha, efeitos, voz',ph:'Ex.: Trilha sonora',extra:'remix'},
- {k:'invencao',n:'Invenção',ex:'Produto, protótipo, processo',ph:'Ex.: Sensor de umidade',extra:null},
+ {k:'marca',n:'Marca',ex:'Nome, logo, slogan',ph:'Ex.: Logo, Nome do app',extra:'marcaRegistro'},
+ {k:'design',n:'Design',ex:'Telas, ilustrações, layout',ph:'Ex.: Telas do app',extra:'terceiros'},
+ {k:'conteudo',n:'Texto ou mídia',ex:'Textos, vídeos, fotos',ph:'Ex.: Roteiro, Fotos do evento',extra:'terceiros'},
+ {k:'audio',n:'Música e áudio',ex:'Trilha, efeitos, voz',ph:'Ex.: Trilha sonora',extra:'audioDireitos'},
+ {k:'invencao',n:'Invenção',ex:'Produto, protótipo, processo',ph:'Ex.: Sensor de umidade',extra:'invDivulgacao'},
  {k:'outro',n:'Outro',ex:'Qualquer outra criação',ph:'Ex.: Planilha de dados',extra:null}
 ];
 const typeOf=a=>TYPES.find(t=>t.k===(a&&a.type));
 const qsFor=a=>{const t=typeOf(a);return t&&t.extra?QBASE.concat(t.extra):QBASE};
 const decQs=a=>qsFor(a).filter(q=>QS[q].dec);
 const isP=q=>QS[q].kind==='people';
-const GRP=q=>['notas','desc'].includes(q)?'Contribuição':['titular','divisao'].includes(q)?'Donos':'Uso';
+const GRP=q=>['notas','desc','origem','titularAtual'].includes(q)?'Origem e situação atual':['titular','divisao'].includes(q)?'Titularidade pretendida':'Uso e condições';
 /* Respostas em 3 telas por criação. */
-const GROUPS={contrib:['notas','desc'],donos:['titular','divisao'],uso:['uso','comercial','portfolio','licenca','remix']},GNAME={contrib:'Contribuição',donos:'Donos',uso:'Uso'};
+const GROUPS={contrib:['notas','desc','origem','titularAtual'],donos:['titular','divisao'],uso:['uso','comercial','portfolio','licenca','remix','marcaRegistro','terceiros','audioDireitos','invDivulgacao']},GNAME={contrib:'Contribuição e origem',donos:'Titularidade pretendida',uso:'Uso e condições'};
 const stepOf=q=>Object.keys(GROUPS).find(g=>GROUPS[g].includes(q));
 /* Quanto cada pessoa fez: 4 níveis no lugar de nota de 0 a 10 (a conta usa os valores). */
 const LV=[[0,'Nada'],[3,'Pouco'],[6,'Parte'],[10,'Muito']];
 const lvOf=n=>LV.reduce((b,x)=>Math.abs(x[0]-n)<Math.abs(b[0]-n)?x:b)[0];
 const lvName=n=>LV.find(x=>x[0]===lvOf(+n))[1];
 const PH=['coleta','encerrada','decisao','confirmacao','consolidado'];
-const PHN={coleta:'Respondendo',encerrada:'Respostas encerradas',decisao:'Decidindo',confirmacao:'Em confirmação',consolidado:'Acordo fechado'};
+const PHN={coleta:'Respondendo',encerrada:'Respostas encerradas',decisao:'Decidindo',confirmacao:'Em confirmação',consolidado:'Proposta confirmada'};
 const ST={conv:['Respostas iguais','ok'],div:['Respostas diferentes','warn'],pend:['Ainda não respondeu','']};
 const SCEN={
- notas:[['Contribuição pela média das respostas','Cada pessoa fica com a contribuição calculada pela média das respostas da equipe.'],['Contribuição combinada pela equipe','Vocês conversam, olham as evidências e combinam outros percentuais, registrando o motivo.']],
- titular:[['Donos são quem criou','Todas as pessoas que criaram passam a ser donas.'],['Donos escolhidos pela equipe','A equipe define os donos, mesmo que não sejam todos que criaram, e registra o motivo.'],['Donos ainda em aberto','A criação fica sem acordo e o acordo não fecha enquanto isso valer.']],
+ notas:[['Comparar percepções','As respostas ajudam a identificar divergências sobre a participação. Não geram percentuais.'],['Registrar evidências','Converse sobre relatos e links antes de decidir a titularidade pretendida.']],
+ titular:[['Titularidade pretendida','Registre quem a equipe pretende indicar e o fundamento.'],['Situação atual separada','Confira documentos e possíveis direitos de terceiros antes de formalizar.'],['Ponto em aberto','Marque a criação como sem acordo e descreva a pendência.']],
  uso:[['Qualquer pessoa que participou','Quem sai continua podendo usar a criação, mesmo sem ser dono.'],['Só quem for dono','Quem sai sem ser dono deixa de usar a criação.'],['Ninguém, sem um novo acordo','Depois da saída, qualquer uso exige um novo acordo da equipe.']]
 };
 const LIMITS='Este registro reúne as decisões da equipe para uma formalização futura. Ele não substitui contrato, advogado ou registro oficial.';
@@ -765,7 +771,8 @@ const hasNota=(n,pid)=>n[pid]!==undefined&&n[pid]!==''&&!isNaN(+n[pid]);
 const contribOf=d=>Object.keys(notasOf(d)).filter(k=>+notasOf(d)[k]>0);
 const shares=n=>{const ks=Object.keys(n),tot=ks.reduce((s,k)=>s+(+n[k]||0),0),o={};ks.forEach(k=>o[k]=tot?Math.round(100*(+n[k]||0)/tot):0);return o};
 function partOf(p,aid){const E=elig(p),avg={};E.forEach(t=>{const xs=E.map(pid=>notasOf(ansOf(p,pid,aid)?.sent)[t]).filter(x=>x!==undefined&&x!=='').map(Number);avg[t]=xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:0});return{avg,share:shares(avg)}}
-const partTxt=pt=>Object.keys(pt.share).filter(k=>pt.avg[k]>0).map(k=>nm(k)+' '+pt.share[k]+'%').join(' · ')||'Sem respostas';
+const partTxt=pt=>Object.keys(pt.avg).filter(k=>pt.avg[k]>0).map(k=>nm(k)+': '+lvName(pt.avg[k]).toLowerCase()).join(' · ')||'Sem participação informada';
+const pctTxt=s=>s.v?.divisao==='Sim, a equipe combinou percentuais'?(s.v.titular||[]).concat(s.externo?['__externo__']:[]).map(pid=>(pid==='__externo__'?s.externo:nm(pid))+': '+(s.percentual||{})[pid]+'%').join(' · '):'Não acordados';
 const fmtAns=(q,v)=>q==='notas'?(Object.keys(v||{}).filter(k=>hasNota(v,k)).map(k=>nm(k)+': '+lvName(v[k]).toLowerCase()).join(' · ')||'Sem respostas'):isP(q)?((v||[]).map(nm).join(', ')||'Ninguém marcado'):(v||'Não respondida');
 let BAR='',SIDE='';
 /* Coluna lateral das telas do projeto (status e contexto); a barra de ações também vai para ela. */
@@ -786,7 +793,7 @@ function seed(){
   projects=[];
   ui={me:'self',pid:null,tab:'home',filter:'todos',open:null,err:{},flag:{},verifyText:'',verify:null,refuse:'',cmt:{},novo:{person:'',name:'',ctx:''},inv:'',sug:{name:'',type:'',desc:''},addA:{name:'',type:'',desc:''},refSug:{},introSeen:false,questionIntro:{},tips:{},welcome:{},qstep:0,qasset:null,theme:null};
 }
-const ANS=o=>Object.assign({divisao:'Partes iguais',uso:'Só quem for dono',comercial:'Só com acordo de todos os donos',portfolio:'Todos que criaram',licenca:'Ainda não sei',remix:'Só com autorização dos donos',desc:'',link:''},o);
+const ANS=o=>Object.assign({origem:'Criada neste projeto',titularAtual:'Ainda não sabemos',titularAtualNome:'',titularAtualBase:'',divisao:'Ainda não, precisamos negociar',uso:'Só quem for dono',comercial:'Só com acordo de todos os donos',portfolio:'Todos que criaram',licenca:'Não publicar por enquanto',marcaRegistro:'Ainda precisa de busca ou registro',terceiros:'Não identificamos',audioDireitos:'Não se aplica',invDivulgacao:'Ainda não sabemos',remix:'Só com autorização dos donos',desc:'',link:''},o);
 function seedDemo(){
   people={ana:{name:'Ana',g:'f',email:'ana@email.com'},bruno:{name:'Bruno',g:'m',email:'bruno@email.com'},carla:{name:'Carla',g:'f',email:'carla@email.com'},diego:{name:'Diego',g:'m',email:'diego@email.com'}};
   const p=mkProject('p1','App Rotas','Projeto da disciplina','ana');
@@ -819,8 +826,8 @@ function itemStatus(p,aid,q){
     const spread=E.some(t=>{const xs=vals.filter(x=>hasNota(x.v,t)).map(x=>+x.v[t]);return xs.length>1&&Math.max(...xs)-Math.min(...xs)>2});
     return{status:spread?'div':(!vals.length||vals.length<E.length?'pend':'conv'),vals,missing:E.filter(pid=>!vals.find(x=>x.pid===pid))}}
   const E=elig(p),vals=[];
-  E.forEach(pid=>{const a=ansOf(p,pid,aid);if(a&&a.sent)vals.push({pid,v:a.sent[q]})});
-  const set=new Set(vals.map(x=>norm(x.v,q)));
+  E.forEach(pid=>{const a=ansOf(p,pid,aid);if(a&&a.sent)vals.push({pid,v:a.sent[q],ext:q==='titular'?(a.sent.titularExterno||''):''})});
+  const set=new Set(vals.map(x=>norm(x.v,q)+(q==='titular'?'|'+x.ext.trim().toLowerCase():'')));
   const status=set.size>1?'div':(vals.length===0||vals.length<E.length?'pend':'conv');
   return{status,vals,missing:E.filter(pid=>!vals.find(x=>x.pid===pid))};
 }
@@ -948,19 +955,21 @@ function vQuestion(p){
   const copyUI=gk=>{if(!open)return'';const src=as.filter(x=>x.id!==a.id).map(x=>({x,v:ansOf(p,me,x.id)?.sent})).filter(o=>o.v&&GROUPS[gk].some(q=>qs.includes(q)&&o.v[q]!==undefined&&(isP(q)?(o.v[q]||[]).length:o.v[q])));if(!src.length)return'';const o=src[src.length-1];return '<div class="qs-copy"><span>Vale o mesmo que em '+esc(o.x.name)+'?</span>'+btn('qcopy','Usar as mesmas respostas',{c:'sm',d:{from:o.x.id,g:gk}})+'</div>'};
   if(g==='review'){
     const row=k=>'<button class="qs-rrow" data-act="qgo" data-s="'+S.indexOf(stepOf(k))+'"><b>'+esc(k==='desc'?'Sua contribuição':QS[k].short)+'</b><span>'+esc(k==='desc'?(d.desc||'Não descrita'):fmtAns(k,d[k]))+'</span><i>'+(open?'Editar':'Ver')+'</i></button>';
-    const sec=gk=>{const ks=GROUPS[gk].filter(k=>k==='desc'?+notasOf(d)[me]>0:qs.includes(k));return ks.length?'<div class="qs-sec"><p>'+GNAME[gk]+'</p><div class="qs-list">'+ks.map(row).join('')+'</div></div>':''};
-    c+='<div class="qs-head"><h1 class="qs-title" id="qs-title" tabindex="-1">'+(an.sent||!open?'Suas respostas':'Revise e envie')+'</h1>'+(open?'<p class="qs-hint">Clique numa resposta para mudar. Você pode editar até a última pessoa enviar.</p>':'')+'</div>'+
-      '<div class="qs-review">'+sec('contrib')+'<div class="qs-stack">'+sec('donos')+sec('uso')+'</div></div>';
+    const sec=gk=>{const ks=GROUPS[gk].filter(k=>k==='desc'?+notasOf(d)[me]>0:qs.includes(k));return ks.length?'<div class="qs-sec"><p>'+GNAME[gk]+'</p><div class="qs-list">'+ks.map(row).join('')+(gk==='contrib'?'<div class="qs-rrow"><b>Titular indicado hoje</b><span>'+esc(d.titularAtualNome||'Não informado')+'</span></div><div class="qs-rrow"><b>Base ou documento</b><span>'+esc(d.titularAtualBase||'Não informado')+'</span></div>':'')+'</div></div>':''};
+    c+='<div class="qs-head"><h1 class="qs-title" id="qs-title" tabindex="-1">'+(an.sent||!open?'Suas respostas':'Revise e envie')+'</h1>'+(open?'<p class="qs-hint">Clique numa resposta para mudar. Você pode editar até quem organiza encerrar as respostas.</p>':'')+'</div>'+
+      '<div class="qs-review">'+sec('contrib')+'<div class="qs-stack">'+sec('donos')+(d.titularExterno?'<div class="qs-rrow"><b>Titular pretendido fora da equipe</b><span>'+esc(d.titularExterno)+'</span></div>':'')+sec('uso')+'</div></div>';
   }else if(g==='contrib'){
-    const n=notasOf(d),sh=shares(Object.fromEntries(Object.entries(n).filter(([k,v])=>hasNota(n,k))));
+    const n=notasOf(d);
     c+='<div class="qs-head"><p class="qs-step">Parte 1 de 3 · '+GNAME[g]+'</p><h1 class="qs-title" id="qs-title" tabindex="-1">Quanto cada pessoa fez em '+esc(a.name)+'?</h1><p class="qs-hint">Inclua você. Não precisa ser exato: escolha o que mais se aproxima.</p></div>'+
-      '<div class="lv-list">'+E.map(pid=>'<div class="lv-row" role="radiogroup" aria-label="Quanto '+esc(nm(pid))+' fez"><span class="lv-name">'+esc(nm(pid))+(pid===me?' (você)':'')+'</span><span class="lv-seg">'+LV.map(([v,t])=>'<label class="lv-opt'+(open?'':' dis')+'"><input type="radio" name="lv-'+a.id+'-'+pid+'" data-ch="nota" data-a="'+a.id+'" data-v="'+pid+'" data-n="'+v+'"'+(hasNota(n,pid)&&lvOf(n[pid])===v?' checked':'')+dis+'><span>'+t+'</span></label>').join('')+'</span><span class="qs-pct">'+(hasNota(n,pid)?sh[pid]+'%':'')+'</span></div>').join('')+'</div>'+errm(a.id+':notas');
+      '<div class="lv-list">'+E.map(pid=>'<div class="lv-row" role="radiogroup" aria-label="Participação percebida de '+esc(nm(pid))+'"><span class="lv-name">'+esc(nm(pid))+(pid===me?' (você)':'')+'</span><span class="lv-seg">'+LV.map(([v,t])=>'<label class="lv-opt'+(open?'':' dis')+'"><input type="radio" name="lv-'+a.id+'-'+pid+'" data-ch="nota" data-a="'+a.id+'" data-v="'+pid+'" data-n="'+v+'"'+(hasNota(n,pid)&&lvOf(n[pid])===v?' checked':'')+dis+'><span>'+t+'</span></label>').join('')+'</span></div>').join('')+'</div>'+errm(a.id+':notas');
     if(+n[me]>0)c+='<fieldset class="qs-q"><legend class="qs-sub"><label for="ds">O que você fez?</label></legend><p class="qs-hint">Uma ou duas frases bastam. Isso entra no registro do acordo.</p><textarea id="ds" data-in="ans" data-a="'+a.id+'" data-k="desc" placeholder="Ex.: Desenhei o logo e escolhi as cores"'+dis+'>'+esc(d.desc)+'</textarea>'+errm(a.id+':desc')+
       '<label for="lk" class="qs-hint" style="margin-top:8px;display:block">Link de evidência (opcional)</label><input id="lk" type="text" data-in="ans" data-a="'+a.id+'" data-k="link" placeholder="https://" value="'+esc(d.link)+'"'+dis+'>'+errm(a.id+':link')+'</fieldset>';
+    c+=block('origem')+block('titularAtual')+'<div class="qs-q"><label class="qs-sub" for="ta-nome">Quem é indicado como titular hoje? <span class="muted">(se souber)</span></label><input id="ta-nome" type="text" data-in="ans" data-a="'+a.id+'" data-k="titularAtualNome" value="'+esc(d.titularAtualNome||'')+'" placeholder="Nome da pessoa, organização ou terceiro"'+dis+'><label class="qs-sub" for="ta-base">Qual documento ou fato sustenta essa indicação? <span class="muted">(se houver)</span></label><input id="ta-base" type="text" data-in="ans" data-a="'+a.id+'" data-k="titularAtualBase" value="'+esc(d.titularAtualBase||'')+'" placeholder="Contrato, registro, licença ou relato"'+dis+'></div>';
   }else{
-    const t={donos:'Quem é dono de '+esc(a.name)+'?',uso:'Como '+esc(a.name)+' pode ser usado?'}[g];
+    const t={donos:'Quem a equipe pretende indicar como titular de '+esc(a.name)+'?',uso:'Como '+esc(a.name)+' pode ser usado?'}[g];
     c+='<div class="qs-head"><p class="qs-step">Parte '+(s+1)+' de 3 · '+GNAME[g]+'</p><h1 class="qs-title" id="qs-title" tabindex="-1">'+t+'</h1>'+'</div>'+copyUI(g)+
       GROUPS[g].filter(q=>qs.includes(q)).map(block).join('');
+    if(g==='donos')c+='<div class="qs-q"><label class="qs-sub" for="tit-ext">Titular pretendido fora da equipe <span class="muted">(se houver)</span></label><input id="tit-ext" type="text" data-in="ans" data-a="'+a.id+'" data-k="titularExterno" value="'+esc(d.titularExterno||'')+'" placeholder="Pessoa, empresa ou instituição"'+dis+'></div>';
   }
   const back=s?btn('qback','Voltar'):'';
   const pri=open?(g==='review'?btn('qsend',an.sent?'Salvar alterações':'Enviar respostas',{c:'pri'}):btn('qnext',s===nq-1?'Revisar respostas':'Continuar',{c:'pri'})):(g==='review'?btn('qlist','Concluir',{c:'pri'}):btn('qnext','Próxima',{c:'pri'}));
@@ -974,7 +983,7 @@ function vQuestion(p){
 function vColeta(p){
   const org=p.org===ui.me,E=elig(p),as=approved(p);
   let h=head('Andamento','','Veja quem já respondeu. O conteúdo das respostas fica oculto até o fim.');
-  if(!org&&p.phase==='coleta')h+=banner('As decisões abrem quando todos responderem. Quem organiza também pode encerrar antes.','info');
+  if(!org&&p.phase==='coleta')h+=banner('Quem organiza encerra as respostas explicitamente, mesmo quando todos já responderam.','info');
   h+='<div class="card"><div class="list">';
   p.members.forEach(m=>{
     if(m.status==='pendente')return;
@@ -1000,7 +1009,7 @@ function vColeta(p){
    Mostra primeiro só os pontos em que as respostas diferem, sem dizer quem respondeu o quê.
    O que todos responderam igual já entra na proposta e fica num bloco recolhido, editável por quem organiza. */
 function propOf(p,aid){
-  if(!p.proposal[aid]){const a=p.assets.find(x=>x.id===aid),v={};decQs(a).forEach(q=>{const r=itemStatus(p,aid,q);v[q]=r.status==='conv'&&r.vals.length?clone(r.vals[0].v):(isP(q)?[]:'')});p.proposal[aid]={v,texto:'',semAcordo:false,saved:false}}
+  if(!p.proposal[aid]){const a=p.assets.find(x=>x.id===aid),v={};decQs(a).forEach(q=>{const r=itemStatus(p,aid,q);v[q]=r.status==='conv'&&r.vals.length?clone(r.vals[0].v):(isP(q)?[]:'')});const own=itemStatus(p,aid,'titular');p.proposal[aid]={v,externo:own.status==='conv'&&own.vals.length?own.vals[0].ext:'',percentual:{},texto:'',semAcordo:false,saved:false}}
   return p.proposal[aid];
 }
 const decLine=s=>s.semAcordo?'Ainda sem acordo':s.qs.map(q=>QS[q].short+': '+fmtAns(q,s.v[q])).join(' · ');
@@ -1009,14 +1018,14 @@ const diffCount=p=>approved(p).reduce((s,a)=>s+['notas'].concat(decQs(a)).filter
 function distRows(p,aid,q){
   const r=itemStatus(p,aid,q),n=r.vals.length;
   if(q==='notas')return elig(p).map(t=>{const xs=r.vals.filter(x=>hasNota(x.v,t)).map(x=>+x.v[t]);if(!xs.length)return[nm(t),'sem respostas'];const lo=Math.min(...xs),hi=Math.max(...xs);return[nm(t),lvName(lo)===lvName(hi)?lvName(lo):'de '+lvName(lo).toLowerCase()+' a '+lvName(hi).toLowerCase()]});
-  if(isP(q))return elig(p).map(t=>[nm(t),r.vals.filter(x=>(x.v||[]).includes(t)).length+' de '+n+' marcaram']);
+  if(isP(q))return elig(p).map(t=>[nm(t),r.vals.filter(x=>(x.v||[]).includes(t)).length+' de '+n+' marcaram']).concat(q==='titular'?r.vals.filter(x=>x.ext).map(x=>['Titular fora da equipe indicado',x.ext]):[]);
   const c={};r.vals.forEach(x=>{if(x.v)c[x.v]=(c[x.v]||0)+1});return Object.keys(c).map(o=>[o,c[o]+(c[o]>1?' pessoas':' pessoa')]);
 }
 function decItem(p,a,q,pr,edit,agreed){
   const r=itemStatus(p,a.id,q),E=elig(p);
   let h='<div class="dec"><p class="dec-q">'+esc(QS[q].label)+'</p>';
   if(!agreed){h+='<dl class="kv">'+distRows(p,a.id,q).map(x=>'<dt>'+esc(x[0])+'</dt><dd>'+esc(x[1])+'</dd>').join('')+'</dl>';if(r.missing.length)h+='<p class="muted">'+r.missing.length+(r.missing.length>1?' pessoas ainda não responderam.':' pessoa ainda não respondeu.')+'</p>'}
-  if(q==='notas')h+=(agreed?'<p class="dec-res">Contribuição pela média das respostas: '+esc(partTxt(partOf(p,a.id)))+'</p>':'<p class="muted">A contribuição de cada pessoa aparece ao lado. Se a equipe combinar outra divisão, registre nas observações.</p>');
+  if(q==='notas')h+=(agreed?'<p class="dec-res">Participação percebida: '+esc(partTxt(partOf(p,a.id)))+'</p>':'<p class="muted">As percepções ajudam a conversa; não calculam percentuais de titularidade.</p>');
   else if(edit)h+='<div class="dec-field"><p class="dec-l">Decisão da equipe</p><div class="opts">'+(isP(q)?E.map(pid=>'<label class="opt"><input type="checkbox" data-ch="prop" data-a="'+a.id+'" data-q="'+q+'" data-v="'+pid+'"'+((pr.v[q]||[]).includes(pid)?' checked':'')+'>'+esc(nm(pid))+'</label>'):QS[q].opts.map(u=>'<label class="opt"><input type="radio" name="pv-'+a.id+'-'+q+'" data-ch="prop" data-a="'+a.id+'" data-q="'+q+'" data-v="'+esc(u)+'"'+(pr.v[q]===u?' checked':'')+'>'+esc(u)+'</label>')).join('')+'</div></div>';
   else h+='<p class="dec-res">'+(pr.saved||agreed?'Decisão: '+esc(fmtAns(q,pr.v[q])):'Decisão ainda não registrada.')+'</p>';
   if(!agreed&&SCEN[q])h+='<details class="dec-more"><summary>Ideias para a conversa</summary><dl class="kv">'+SCEN[q].map(s=>'<dt>'+esc(s[0])+'</dt><dd>'+esc(s[1])+'</dd>').join('')+'</dl></details>';
@@ -1054,7 +1063,7 @@ function vDecidir(p){
 function decSummary(p,a){
   const pr=propOf(p,a.id),pts=decPts(p,a),qs=['notas'].concat(decQs(a)),E=elig(p);
   const row=q=>'<dt>'+esc(QS[q].short)+'</dt><dd>'+esc(q==='notas'?partTxt(partOf(p,a.id)):pr.saved||!pts.includes(q)?fmtAns(q,pr.v[q]):'A decidir')+'</dd>';
-  let h='<div class="card"><div class="row"><h3>'+esc(a.name)+'</h3>'+(pr.semAcordo&&pr.saved?chip('Sem acordo','bad',1):'')+'</div><dl class="kv">'+qs.map(row).join('')+'</dl>'+(pr.texto?'<p><b>Observações:</b> '+esc(pr.texto)+'</p>':'');
+  let h='<div class="card"><div class="row"><h3>'+esc(a.name)+'</h3>'+(pr.semAcordo&&pr.saved?chip('Sem acordo','bad',1):'')+'</div><dl class="kv">'+qs.map(row).join('')+(pr.externo?'<dt>Titular pretendido fora da equipe</dt><dd>'+esc(pr.externo)+'</dd>':'')+'<dt>Percentuais acordados</dt><dd>'+esc(pctTxt(pr))+'</dd></dl>'+(pr.texto?'<p><b>Explicações e pendências:</b> '+esc(pr.texto)+'</p>':'');
   const cs=p.comments.filter(c=>c.aid===a.id);
   if(cs.length)h+='<div class="list">'+cs.map(c=>'<div class="li"><span><b>'+esc(nm(c.pid))+':</b> '+esc(c.text)+'</span><span class="mono muted">'+fmt(c.at)+'</span></div>').join('')+'</div>';
   if(E.includes(ui.me)&&(p.phase==='decisao'||p.phase==='confirmacao'))h+='<div class="field"><label for="cm-'+a.id+'">Comentar sobre '+esc(a.name)+'</label><input type="text" id="cm-'+a.id+'" data-in="cmt" data-a="'+a.id+'" value="'+esc(ui.cmt[a.id]||'')+'" placeholder="Escreva um comentário para a equipe"></div><div>'+btn('comment','Enviar comentário',{c:'sm',d:{aid:a.id}})+'</div>';
@@ -1072,17 +1081,20 @@ function vDecideFocus(p){
     const row=(k,go)=>'<'+(go?'button class="qs-rrow" data-act="dgo" data-s="'+S.indexOf(k)+'"':'div class="qs-rrow"')+'><b>'+esc(QS[k].short)+'</b><span>'+esc(k==='notas'?partTxt(partOf(p,a.id)):decPick(k,pr)||'Falta decidir')+'</span>'+(go?'<i>Mudar</i>':'')+'</'+(go?'button':'div')+'>';
     c+='<div class="qs-head"><h1 class="qs-title" id="qs-title" tabindex="-1">Decisões de '+esc(a.name)+'</h1><p class="qs-hint">'+(pts.length?'Confira antes de salvar. Clique num ponto para mudar.':'Todos responderam igual. Confira e salve.')+'</p></div>'+
       '<div class="qs-review">'+(pts.length?'<div class="qs-sec"><p>Decididos agora</p><div class="qs-list">'+pts.map(k=>row(k,true)).join('')+'</div></div>':'')+(same.length?'<div class="qs-sec"><p>Todos concordaram</p><div class="qs-list">'+same.map(k=>row(k,false)).join('')+'</div></div>':'')+'</div>'+
-      '<div class="qs-field"><label for="pt-'+a.id+'">Observações (opcional)</label><textarea id="pt-'+a.id+'" data-in="prop" data-a="'+a.id+'" data-k="texto" placeholder="Ex.: Ana fica com 60% por ter feito o conceito">'+esc(pr.texto)+'</textarea></div>'+
+      '<div class="qs-field"><label for="ext-'+a.id+'">Titular pretendido fora da equipe (se houver)</label><input id="ext-'+a.id+'" type="text" data-in="prop" data-a="'+a.id+'" data-k="externo" value="'+esc(pr.externo||'')+'" placeholder="Pessoa, empresa ou instituição"></div>'+
+      (pr.v.divisao==='Sim, a equipe combinou percentuais'?'<div class="qs-field"><p class="qs-sub">Percentuais acordados para a titularidade pretendida</p><p class="qs-hint">A soma deve ser 100%. Estes números não são calculados pelas avaliações de contribuição.</p>'+((pr.v.titular||[]).concat(pr.externo?['__externo__']:[]).map(pid=>'<label class="qs-row" for="pct-'+a.id+'-'+pid+'"><span>'+esc(pid==='__externo__'?pr.externo:nm(pid))+'</span><input id="pct-'+a.id+'-'+pid+'" type="number" min="0" max="100" step="0.01" data-in="pct" data-a="'+a.id+'" data-pid="'+pid+'" value="'+esc((pr.percentual||{})[pid]??'')+'" style="width:110px"> %</label>').join(''))+'</div>':'')+
+      '<div class="qs-field"><label for="pt-'+a.id+'">Quer explicar alguma decisão ou registrar algo pendente? (opcional)</label><p class="qs-hint">As escolhas acima já estão registradas. Escreva aqui apenas o motivo de alguma escolha ou algo que ainda precisa ser conferido, como um contrato ou uma autorização. Se não houver nada a acrescentar, deixe em branco.</p><textarea id="pt-'+a.id+'" data-in="prop" data-a="'+a.id+'" data-k="texto" placeholder="Ex.: O logo pode ir ao portfólio após autorização de Ana. Falta conferir a licença da fonte.">'+esc(pr.texto)+'</textarea></div>'+
       '<label class="qs-row multi"><input type="checkbox" data-ch="prop" data-a="'+a.id+'" data-q="sem"'+(pr.semAcordo?' checked':'')+'><span>A equipe ainda não chegou a um acordo sobre '+esc(a.name)+'</span></label>'+errm('p'+a.id);
     const cs=p.comments.filter(x=>x.aid===a.id);
     if(cs.length)c+='<div class="qs-sec"><p>Comentários da equipe</p>'+cs.map(x=>'<p class="qs-hint"><b>'+esc(nm(x.pid))+':</b> '+esc(x.text)+'</p>').join('')+'</div>';
   }else{
     const r=itemStatus(p,a.id,q),n=r.vals.length;
-    c+='<div class="qs-head"><p class="qs-step">Ponto '+(s+1)+' de '+nq+' · '+GRP(q)+'</p><h1 class="qs-title" id="qs-title" tabindex="-1">'+esc(QS[q].label)+'</h1><p class="qs-hint">'+(q==='notas'?'As respostas variaram. A contribuição usa a média do que todos disseram.':isP(q)?'Os números mostram quantas pessoas marcaram cada nome. Marque quem a equipe decidiu.':'Os números mostram quantas pessoas escolheram cada opção. Marque o que a equipe decidiu.')+'</p></div>';
-    if(q==='notas'){const pt=partOf(p,a.id);
-      c+='<div class="qs-list">'+E.map(t=>{const xs=r.vals.filter(x=>hasNota(x.v,t)).map(x=>+x.v[t]),lo=Math.min(...xs),hi=Math.max(...xs);return '<div class="qs-row dec-row"><span>'+esc(nm(t))+'<small>'+(xs.length?(lvName(lo)===lvName(hi)?'todos disseram: '+lvName(lo).toLowerCase():'de '+lvName(lo).toLowerCase()+' a '+lvName(hi).toLowerCase()):'sem respostas')+'</small></span><span class="dec-bar"><i style="width:'+pt.share[t]+'%"></i></span><b class="dec-n">'+pt.share[t]+'%</b></div>'}).join('')+'</div><p class="qs-foot">Se a equipe combinar outra divisão, escreva nas observações, na revisão.</p>';
+    c+='<div class="qs-head"><p class="qs-step">Ponto '+(s+1)+' de '+nq+' · '+GRP(q)+'</p><h1 class="qs-title" id="qs-title" tabindex="-1">'+esc(QS[q].label)+'</h1><p class="qs-hint">'+(q==='notas'?'As respostas variaram. Elas mostram percepções, sem definir percentuais ou direitos.':isP(q)?'Os números mostram quantas pessoas marcaram cada nome. Marque o que a equipe decidiu.':'Os números mostram quantas pessoas escolheram cada opção. Marque o que a equipe decidiu.')+'</p></div>';
+    if(q==='notas'){
+      c+='<div class="qs-list">'+E.map(t=>{const xs=r.vals.filter(x=>hasNota(x.v,t)).map(x=>+x.v[t]),lo=Math.min(...xs),hi=Math.max(...xs);return '<div class="qs-row dec-row"><span>'+esc(nm(t))+'<small>'+(xs.length?(lvName(lo)===lvName(hi)?'todos disseram: '+lvName(lo).toLowerCase():'de '+lvName(lo).toLowerCase()+' a '+lvName(hi).toLowerCase()):'sem respostas')+'</small></span></div>'}).join('')+'</div><p class="qs-foot">Estas percepções não definem percentuais nem titularidade.</p>';
     }else if(isP(q)){
       c+='<div class="qs-list" role="group" aria-labelledby="qs-title">'+E.map(pid=>{const k=r.vals.filter(x=>(x.v||[]).includes(pid)).length;return '<label class="qs-row multi dec-row"><input type="checkbox" data-ch="prop" data-a="'+a.id+'" data-q="'+q+'" data-v="'+pid+'"'+((pr.v[q]||[]).includes(pid)?' checked':'')+'><span>'+esc(nm(pid))+'</span><span class="dec-bar"><i style="width:'+(n?100*k/n:0)+'%"></i></span><b class="dec-n">'+k+' de '+n+'</b></label>'}).join('')+'</div><p class="qs-foot">Pode marcar mais de uma pessoa.</p>';
+      if(q==='titular')c+='<div class="qs-field"><label for="ext-step-'+a.id+'">Titular pretendido fora da equipe (se houver)</label><input id="ext-step-'+a.id+'" type="text" data-in="prop" data-a="'+a.id+'" data-k="externo" value="'+esc(pr.externo||'')+'" placeholder="Pessoa, empresa ou instituição"></div>';
     }else{
       c+='<div class="qs-list" role="radiogroup" aria-labelledby="qs-title">'+QS[q].opts.map(u=>{const k=r.vals.filter(x=>x.v===u).length;return '<label class="qs-row dec-row"><input type="radio" name="pv-'+a.id+'-'+q+'" data-ch="prop" data-a="'+a.id+'" data-q="'+q+'" data-v="'+esc(u)+'"'+(pr.v[q]===u?' checked':'')+'><span>'+esc(u)+'</span><span class="dec-bar"><i style="width:'+(n?100*k/n:0)+'%"></i></span><b class="dec-n">'+k+' de '+n+'</b></label>'}).join('')+'</div>';
     }
@@ -1100,12 +1112,12 @@ function vDecideFocus(p){
 /* ===== Confirmação (HU-21 a HU-23) ===== */
 function verCard(p,v,curr,extra){
   const E=elig(p),pv=curr&&p.versions.find(x=>x.n===v.n-1);
-  const chg=(aid,q)=>{if(!pv)return false;const a=pv.snap[aid],b=v.snap[aid];if(!a)return true;if(q==='semAcordo')return !!a.semAcordo!==!!b.semAcordo;if(q==='part')return partTxt(a.part)!==partTxt(b.part);return fmtAns(q,a.v[q])!==fmtAns(q,b.v[q])};
+  const chg=(aid,q)=>{if(!pv)return false;const a=pv.snap[aid],b=v.snap[aid];if(!a)return true;if(q==='semAcordo')return !!a.semAcordo!==!!b.semAcordo;if(q==='part')return partTxt(a.part)!==partTxt(b.part);if(q==='pct')return pctTxt(a)!==pctTxt(b);if(q==='externo')return (a.externo||'')!==(b.externo||'');return fmtAns(q,a.v[q])!==fmtAns(q,b.v[q])};
   const mk=x=>x?' <span class="chg">mudou</span>':'';
-  const nChg=pv?Object.keys(v.snap).reduce((t,aid)=>t+(chg(aid,'semAcordo')?1:v.snap[aid].qs.filter(q=>chg(aid,q)).length),0):0;
+  const nChg=pv?Object.keys(v.snap).reduce((t,aid)=>t+(chg(aid,'semAcordo')?1:v.snap[aid].qs.filter(q=>chg(aid,q)).length+(chg(aid,'pct')?1:0)+(chg(aid,'externo')?1:0)),0):0;
   let h='<div class="card"><div class="row"><h3>Proposta '+v.n+'</h3><div class="row start">'+(curr?chip('Atual','acc',1):chip('Anterior','',1))+'<span class="mono muted">'+fmt(v.at)+'</span></div></div>';
   if(pv)h+='<p class="stage-note">'+(nChg?nChg+(nChg>1?' pontos mudaram':' ponto mudou')+' desde a proposta '+pv.n+'.':'Nada mudou desde a proposta '+pv.n+'.')+'</p>';
-  h+='<div class="list">'+Object.keys(v.snap).map(aid=>{const s=v.snap[aid];return '<div class="li"><div class="l"><b>'+esc(s.name)+catChip(s.cat)+'</b>'+(s.semAcordo?'<span style="font-size:var(--t-subhead)">Ainda sem acordo'+mk(chg(aid,'semAcordo'))+'</span>':'<dl class="kv ver-kv">'+(s.part?'<dt>Contribuição</dt><dd>'+esc(partTxt(s.part))+'</dd>':'')+s.qs.map(q=>'<dt>'+esc(QS[q].short)+'</dt><dd>'+esc(fmtAns(q,s.v[q]))+mk(chg(aid,q))+'</dd>').join('')+'</dl>')+(s.texto?'<span class="muted" style="font-size:var(--t-footnote)">'+esc(s.texto)+'</span>':'')+'</div></div>'}).join('')+'</div>';
+  h+='<div class="list">'+Object.keys(v.snap).map(aid=>{const s=v.snap[aid];return '<div class="li"><div class="l"><b>'+esc(s.name)+catChip(s.cat)+'</b>'+(s.semAcordo?'<span style="font-size:var(--t-subhead)">Ainda sem acordo'+mk(chg(aid,'semAcordo'))+'</span>':'<dl class="kv ver-kv">'+(s.part?'<dt>Participação percebida</dt><dd>'+esc(partTxt(s.part))+'</dd>':'')+s.qs.map(q=>'<dt>'+esc(QS[q].short)+'</dt><dd>'+esc(fmtAns(q,s.v[q]))+mk(chg(aid,q))+'</dd>').join('')+(s.externo?'<dt>Titular pretendido fora da equipe</dt><dd>'+esc(s.externo)+mk(chg(aid,'externo'))+'</dd>':'')+'<dt>Percentuais acordados</dt><dd>'+esc(pctTxt(s))+mk(chg(aid,'pct'))+'</dd></dl>')+(s.texto?'<span class="muted" style="font-size:var(--t-footnote)">'+esc(s.texto)+'</span>':'')+'</div></div>'}).join('')+'</div>';
   if(!curr)h+='<div class="cmp">'+E.map(pid=>{const c=v.conf[pid];return '<div><b>'+esc(nm(pid))+'</b>'+(c?(c.v==='ok'?chip('Confirmou','ok',1):chip('Recusou','bad',1))+(c.comment?'<span style="font-size:var(--t-footnote)">'+esc(c.comment)+'</span>':'')+'<span class="mono muted">'+fmt(c.at)+'</span>':chip('Pendente','',1))+'</div>'}).join('')+'</div>';
   if(!curr)h+='<p class="stage-note">Versão anterior, disponível apenas para consulta.</p>';
   return h+(extra||'')+'</div>';
@@ -1136,26 +1148,54 @@ function vConf(p){
 
 /* ===== Memorial (HU-24, HU-25) ===== */
 function memorialBody(p,at){
-  const v=lastV(p),cons=p.phase==='consolidado',L=[],E=elig(p);
-  L.push('REGISTRO DO ACORDO');L.push('Projeto: '+p.name+' ('+(p.context||'sem contexto')+')');
-  L.push('Estado: '+(cons?'Acordo fechado':'Acordo em aberto'));L.push('Proposta: '+v.n);L.push('Gerado em: '+fmt(at));L.push('');
-  L.push('PESSOAS');
-  p.members.forEach(m=>L.push('- '+nm(m.pid)+', '+roleTxt(p,m.pid).toLowerCase()+(m.status==='naopart'?' (não respondeu)':m.status==='pendente'?' (Convite pendente)':!m.elig?' (entrou depois das respostas)':'')));
-  L.push('');L.push('CRIAÇÕES, CONTRIBUIÇÕES E DECISÕES');
+  const v=lastV(p),L=[],E=elig(p),allOk=E.every(pid=>v.conf[pid]?.v==='ok');
+  L.push('MEMORIAL DE CONTRIBUIÇÕES E DECISÕES');
+  L.push('Projeto: '+p.name+' ('+(p.context||'sem contexto')+')');
+  L.push('Situação da proposta '+v.n+': '+(allOk?'confirmada por todos':'em confirmação'));
+  L.push('Gerado em: '+fmt(at));L.push('');
+  L.push('PARTICIPANTES');
+  p.members.forEach(m=>L.push('- '+nm(m.pid)+', '+roleTxt(p,m.pid).toLowerCase()+(m.status==='naopart'?' (não respondeu)':m.status==='pendente'?' (convite pendente)':!m.elig?' (entrou depois das respostas)':'')));
+  L.push('');L.push('SITUAÇÃO POR CRIAÇÃO');
   approved(p).forEach(a=>{
-    L.push('');L.push(a.name+(a.cat?' ('+a.cat+')':''));
-    E.forEach(pid=>{const x=ansOf(p,pid,a.id),s=x&&x.sent;if(s&&contribOf(s).includes(pid)){L.push('  Contribuição de '+nm(pid)+': '+s.desc);L.push('  Evidência: '+(s.link||'não informada'))}});
-    if(a.link)L.push('  Link da criação: '+a.link);
-    const s=v.snap[a.id];
-    if(s&&s.part)L.push('  Contribuição (média das respostas): '+partTxt(s.part));
-    if(s){if(s.semAcordo)L.push('  Decisão: SEM ACORDO');else{L.push('  Decisão:');s.qs.forEach(q=>L.push('  - '+(q==='titular'?'Donos':QS[q].short)+': '+fmtAns(q,s.v[q])))}if(s.texto)L.push('  Observações: '+s.texto)}
+    const x=v.snap[a.id];if(!x)return;
+    L.push('');L.push(a.name+' ('+(a.cat||'criação')+')');
+    if(x.desc)L.push('  Descrição: '+x.desc);
+    if(x.link)L.push('  Link da criação: '+x.link);
+    L.push('  Estado da decisão: '+(x.semAcordo?'SEM ACORDO':'proposta registrada'));
+    L.push('  Participação percebida: '+(x.part?partTxt(x.part):'não informada')+'. Não define titularidade ou quotas.');
+    L.push('  Relatos individuais sobre origem e titularidade atual:');
+    (x.relatos||[]).forEach(r=>{
+      L.push('  - '+nm(r.pid)+': '+(r.respondido?'respondeu':'não respondeu'));
+      if(r.respondido){
+        L.push('    Origem declarada: '+(r.origem||'não informada'));
+        L.push('    Titularidade atual declarada: '+(r.titularAtual||'não informada'));
+        L.push('    Titular indicado hoje: '+(r.titularAtualNome||'não informado'));
+        if(r.titularExterno)L.push('    Titular pretendido fora da equipe, segundo esta pessoa: '+r.titularExterno);
+        L.push('    Base ou documento: '+(r.titularAtualBase||'não informado'));
+        L.push('    Contribuição descrita: '+(r.desc||'não descrita'));
+        L.push('    Evidência: '+(r.evidencia||'não informada'));
+      }
+    });
+    L.push('  Decisões e condições propostas:');
+    (x.qs||[]).forEach(q=>L.push('  - '+QS[q].short+': '+fmtAns(q,x.v[q])));
+    if(x.externo)L.push('  - Titular pretendido fora da equipe: '+x.externo);
+    L.push('  Percentuais de titularidade combinados: '+pctTxt(x));
+    if(x.texto)L.push('  Explicações e pendências anotadas: '+x.texto);
+    const pend=[];
+    if(x.semAcordo)pend.push('decisão da criação ainda sem acordo');
+    if(x.v.divisao==='Ainda não, precisamos negociar')pend.push('percentuais ainda não negociados');
+    if(x.v.titularAtual==='Ainda não sabemos')pend.push('titularidade atual a verificar');
+    if(x.v.origem==='Não sei')pend.push('origem a verificar');
+    if(x.v.terceiros==='Sim, autorização pendente'||x.v.terceiros==='Ainda não sabemos')pend.push('direitos de terceiros a verificar');
+    if(x.v.audioDireitos==='Autorização pendente'||x.v.audioDireitos==='Ainda não sabemos')pend.push('autorizações de áudio a verificar');
+    if(x.v.marcaRegistro==='Ainda precisa de busca ou registro'||x.v.marcaRegistro==='Há conflito ou uso de terceiro')pend.push('situação da marca a verificar');
+    if(x.v.invDivulgacao==='Ainda não sabemos'||x.v.invDivulgacao==='Avaliar proteção e confidencialidade antes')pend.push('condições de divulgação a definir');
+    L.push('  Pendências identificadas: '+(pend.join('; ')||'nenhuma marcada na proposta'));
   });
   L.push('');L.push('CONFIRMAÇÕES DA PROPOSTA '+v.n);
-  E.forEach(pid=>{const c=v.conf[pid];L.push('- '+nm(pid)+': '+(c?(c.v==='ok'?'confirmou':'recusou ('+c.comment+')')+' em '+fmt(c.at):'ainda não se posicionou')) });
+  E.forEach(pid=>{const c=v.conf[pid];L.push('- '+nm(pid)+': '+(c?(c.v==='ok'?'confirmou':'recusou ('+c.comment+')')+' em '+fmt(c.at):'ainda não se posicionou'))});
   const ref=[];p.versions.forEach(x=>Object.keys(x.conf).forEach(k=>{if(x.conf[k].v==='no')ref.push('- '+nm(k)+' recusou a proposta '+x.n+': '+x.conf[k].comment)}));
-  if(ref.length){L.push('');L.push('RECUSAS REGISTRADAS');ref.forEach(r=>L.push(r))}
-  const sem=Object.keys(v.snap).filter(k=>v.snap[k].semAcordo).map(k=>v.snap[k].name);
-  if(sem.length){L.push('');L.push('CRIAÇÕES SEM ACORDO');sem.forEach(s=>L.push('- '+s))}
+  if(ref.length){L.push('');L.push('RECUSAS E AJUSTES ANTERIORES');ref.forEach(r=>L.push(r))}
   L.push('');L.push(LIMITS);
   return L.join('\n');
 }
@@ -1163,7 +1203,7 @@ function vMemorial(p){
   let h=head('Registro do acordo','','Reúne as decisões da equipe neste projeto.');
   if(!lastV(p))return h+banner('O registro do acordo fica disponível depois do envio da primeira proposta.','info');
   const ms=p.memorials;
-  h+='<div class="card"><div class="row"><h3>Registro do acordo de '+esc(p.name)+'</h3>'+chip(p.phase==='consolidado'?'Acordo fechado':'Acordo em aberto',p.phase==='consolidado'?'ok':'warn',1)+'</div><div class="muted" style="font-size:var(--t-footnote)">Registro preparatório das decisões da equipe. Não substitui contrato ou registro oficial.</div></div>';
+  h+='<div class="card"><div class="row"><h3>Memorial de '+esc(p.name)+'</h3>'+chip(p.phase==='consolidado'?'Proposta confirmada':'Proposta em aberto',p.phase==='consolidado'?'ok':'warn',1)+'</div><div class="muted" style="font-size:var(--t-footnote)">Registro preparatório das decisões da equipe. Não substitui contrato ou registro oficial.</div></div>';
   if(ms.length){
     const m=ms[0];
     h+='<div class="paper">'+esc(m.body)+'\n\nCódigo de verificação (SHA-256): '+m.hash+'</div>';
@@ -1210,7 +1250,7 @@ function taskFor(p,pid=ui.me){
   if(p.phase==='confirmacao'){const v=lastV(p),c=v&&v.conf[pid],sem=Object.values(v.snap).filter(s=>s.semAcordo).map(s=>s.name);
     if(sem.length&&elig(p).every(x=>v.conf[x]&&v.conf[x].v==='ok'))return org?{tab:'conf',label:'Falta acordo em '+sem.join(', '),note:'Todos confirmaram o resto. Quando a equipe decidir, reabra a proposta e registre a decisão.',cta:'Reabrir proposta'}:{tab:'proj',label:'Falta acordo em '+sem.join(', '),note:'Todos confirmaram o resto. Quando a equipe decidir, '+nm(p.org)+' envia uma nova proposta.'};
     return c||!m.elig?{tab:'proj',label:'Você está em dia',note:'Sua posição foi registrada. Aguarde as demais pessoas.'}:{tab:'conf',label:'Confirmar a proposta',note:'Leia a proposta e diga se ela representa o que a equipe combinou.',cta:'Ler proposta'}}
-  return{tab:'memorial',label:'Acordo fechado',note:'Todas as pessoas confirmaram. O registro do acordo está pronto.',cta:'Ver registro do acordo'};
+  return{tab:'memorial',label:'Proposta confirmada',note:'Todas as pessoas confirmaram. O memorial está pronto.',cta:'Ver memorial'};
 }
 function focusQuestion(p,pid=ui.me){const next=approved(p).find(a=>!ansOf(p,pid,a.id)?.sent);if(next&&(!ui.qasset||ansOf(p,pid,ui.qasset)?.sent||!approved(p).some(a=>a.id===ui.qasset))){ui.qasset=next.id;ui.qstep=(ui.qpos||{})[pid+':'+next.id]||0}}
 function secInfo(p,k){
@@ -1219,7 +1259,7 @@ function secInfo(p,k){
   if(k==='ativos'){const sg=p.assets.filter(a=>a.st==='sug').length;return{on:true,s:as.length+(as.length===1?' criação':' criações')+(sg?' · '+sg+(sg>1?' sugestões':' sugestão')+' para avaliar':'')}}
   if(k==='resp'){if(!m.elig)return{on:false,s:'Você não responde desta vez'};if(!as.length)return{on:false,s:'Depois do cadastro das criações'};const d=as.filter(a=>ansOf(p,me,a.id)?.sent).length;return{on:true,s:d===as.length?'Enviadas':d+' de '+as.length+' criações respondidas'}}
   if(k==='coleta'){const done=E.filter(x=>as.length&&as.every(a=>ansOf(p,x,a.id)?.sent)).length;return{on:true,s:p.phase==='coleta'?done+' de '+E.length+' pessoas concluíram':'Respostas encerradas'}}
-  if(k==='decidir'){if(p.phase==='coleta')return{on:false,s:'Abre quando todos responderem'};const n=diffCount(p);return{on:true,s:n?n+(n>1?' pontos com diferença':' ponto com diferença'):'Todos concordaram'}}
+  if(k==='decidir'){if(p.phase==='coleta')return{on:false,s:'Abre após o encerramento da coleta'};const n=diffCount(p);return{on:true,s:n?n+(n>1?' pontos com diferença':' ponto com diferença'):'Todos concordaram'}}
   if(k==='conf'){if(!lv)return{on:false,s:'Quando a proposta for enviada'};return{on:true,s:Object.values(lv.conf).filter(c=>c.v==='ok').length+' de '+E.length+' confirmaram'}}
   return lv?{on:true,s:p.phase==='consolidado'?'Pronto':'Prévia disponível'}:{on:false,s:'Quando a proposta for enviada'};
 }
@@ -1231,7 +1271,7 @@ function teamUI(p){
   return '<section class="side-card"><div class="row"><h3>Equipe</h3><span class="muted">'+E.length+' respondem</span></div><div class="team">'+rows+'</div></section>';
 }
 function nextUI(p){
-  const txt={coleta:'Quando todos responderem, as decisões abrem sozinhas. A equipe decide só os pontos em que as respostas diferem.',encerrada:'A equipe decide os pontos em que as respostas diferem e envia a proposta.',decisao:'Quando as decisões forem enviadas, cada pessoa confirma a proposta.',confirmacao:'Com todas as confirmações, o acordo fecha e o registro fica pronto.',consolidado:'O acordo está fechado. Copie o registro para guardar com a equipe.'}[p.phase];
+  const txt={coleta:'Depois das respostas, quem organiza encerra a coleta e a equipe revisa os pontos com diferenças.',encerrada:'A equipe decide os pontos em que as respostas diferem e envia a proposta.',decisao:'Quando as decisões forem enviadas, cada pessoa confirma a proposta.',confirmacao:'Após as confirmações, o memorial registra decisões e pendências por criação.',consolidado:'A proposta foi confirmada. Copie o memorial para guardar com a equipe.'}[p.phase];
   return '<section class="side-card"><h3>O que vem depois</h3><p class="muted">'+esc(txt)+'</p></section>';
 }
 function vHub(p){
@@ -1277,7 +1317,7 @@ function header(){
 /* Ferramentas de teste só aparecem no endereço com ?teste (ou #teste). */
 const TESTE=/teste/i.test(location.search+location.hash);
 function render(){
-  {const q=cur();if(q&&mem(q,ui.me))autoClose(q)}
+  /* A coleta só termina por ação explícita de quem organiza. */
   ui.tab=normTab(ui.tab);
   const p=cur(),m=p&&mem(p,ui.me);let h=header();
   const fq=!!p&&ui.tab!=='home'&&ui.tab!=='novo'&&(inQuestion(p)||inDecide(p));
@@ -1341,12 +1381,12 @@ function act(a,d){
   case 'qgo':ui.qstep=+d.s;ui.scrollQ=true;break;
   case 'qnext':{const a=approved(p).find(x=>x.id===ui.qasset),an=ensureAns(p,me,ui.qasset),dr=an.draft,S=steps(a,dr),q=S[ui.qstep],k=ui.qasset+':';
     if(p.phase==='coleta'){
-      if(q==='contrib'){if(!elig(p).every(pid=>hasNota(notasOf(dr),pid)))ui.err[k+'notas']='Escolha quanto cada pessoa fez';if(+notasOf(dr)[me]>0&&!(dr.desc||'').trim())ui.err[k+'desc']='Conte em uma frase o que você fez';if((dr.link||'').trim()&&!/^https?:\/\/\S+$/i.test(dr.link.trim()))ui.err[k+'link']='Informe um link válido, começando com http'}
-      else if(q!=='review')GROUPS[q].filter(x=>qsFor(a).includes(x)).forEach(x=>{if(isP(x)?!(dr[x]||[]).length:!dr[x])ui.err[k+x]='Escolha uma opção'});
+      if(q==='contrib'){if(!elig(p).every(pid=>hasNota(notasOf(dr),pid)))ui.err[k+'notas']='Escolha quanto cada pessoa fez';if(+notasOf(dr)[me]>0&&!(dr.desc||'').trim())ui.err[k+'desc']='Conte em uma frase o que você fez';if(!dr.origem)ui.err[k+'origem']='Informe a origem';if(!dr.titularAtual)ui.err[k+'titularAtual']='Informe a situação atual';if((dr.link||'').trim()&&!/^https?:\/\/\S+$/i.test(dr.link.trim()))ui.err[k+'link']='Informe um link válido, começando com http'}
+      else if(q!=='review')GROUPS[q].filter(x=>qsFor(a).includes(x)).forEach(x=>{if(isP(x)?!(dr[x]||[]).length&&!(x==='titular'&&(dr.titularExterno||'').trim()):!dr[x])ui.err[k+x]='Escolha uma opção ou informe titular fora da equipe'});
       if(Object.keys(ui.err).length){say('Falta responder nesta tela.','bad');break}
     }
     ui.qstep=Math.min(S.length-1,ui.qstep+1);ui.scrollQ=true;break}
-  case 'qsend':{const aid=ui.qasset;if(sendAnswer(p,aid)){const remaining=approved(p).find(a=>!ansOf(p,me,a.id)?.sent);ui.flag.qsent=aid;if(remaining){ui.qasset=remaining.id;ui.qstep=(ui.qpos||{})[me+':'+remaining.id]||0;ui.scrollQ=true}else{ui.qasset=null;ui.qstep=0;ui.tab='proj';ui.notice='Pronto! Suas respostas foram enviadas.';autoClose(p)}}break}
+  case 'qsend':{const aid=ui.qasset;if(sendAnswer(p,aid)){const remaining=approved(p).find(a=>!ansOf(p,me,a.id)?.sent);ui.flag.qsent=aid;if(remaining){ui.qasset=remaining.id;ui.qstep=(ui.qpos||{})[me+':'+remaining.id]||0;ui.scrollQ=true}else{ui.qasset=null;ui.qstep=0;ui.tab='proj';ui.notice='Pronto! Suas respostas foram enviadas. Quem organiza encerra a coleta explicitamente.'}}break}
   case 'mine':ui.tab='home';break;
   case 'ack':p.ack[me]=true;break;
   case 'filter':ui.filter=d.f;break;
@@ -1402,15 +1442,20 @@ function act(a,d){
   case 'saveprop':{
     if(p.org!==me||p.phase!=='decisao')break;
     const pr=propOf(p,d.aid);
-    const a=p.assets.find(x=>x.id===d.aid),miss=decQs(a).filter(q=>isP(q)?!(pr.v[q]||[]).length:!pr.v[q]);
+    const a=p.assets.find(x=>x.id===d.aid),miss=decQs(a).filter(q=>isP(q)?!(pr.v[q]||[]).length&&!(q==='titular'&&pr.externo?.trim()):!pr.v[q]);
     if(!pr.semAcordo&&miss.length){ui.err['p'+d.aid]='Falta preencher: '+miss.map(q=>QS[q].short).join(', ')+'. Ou marque que ainda não há acordo.';break}
+    if(!pr.semAcordo&&pr.v.divisao==='Ainda não, precisamos negociar'){ui.err['p'+d.aid]='Percentuais pendentes: marque a criação como sem acordo ou registre os percentuais combinados.';break}
+    if(!pr.semAcordo&&pr.v.divisao==='Sim, a equipe combinou percentuais'){
+      const ps=(pr.v.titular||[]).concat(pr.externo?.trim()?['__externo__']:[]),vals=ps.map(pid=>Number((pr.percentual||{})[pid]));
+      if(!ps.length||ps.some(pid=>(pr.percentual||{})[pid]===''||(pr.percentual||{})[pid]===undefined)||vals.some(n=>!Number.isFinite(n)||n<0||n>100)||Math.abs(vals.reduce((a,b)=>a+b,0)-100)>0.001){ui.err['p'+d.aid]='Informe percentuais válidos para todos os titulares pretendidos, somando 100%.';break}
+    }
     pr.saved=true;pr.by=me;pr.at=Date.now();delete pr.ajuste;{const nx=approved(p).find(a=>!propOf(p,a.id).saved);ui.flag.dsaved=d.aid;if(nx&&ui.dq){ui.dq=nx.id;ui.dstep=0;ui.scrollQ=true}else ui.dq=null}log(p,me,'registrou a proposta de '+p.assets.find(x=>x.id===d.aid).name);say(pr.semAcordo?'Criação registrada como sem acordo. O acordo não fecha enquanto isso valer.':'Proposta salva.');break}
   case 'tryprop':say('Ação negada: só quem organiza altera a proposta. Use o comentário.','bad');break;
   case 'comment':{const t=(ui.cmt[d.aid]||'').trim();if(!t){say('Escreva o comentário antes de enviar.','bad');break}p.comments.push({aid:d.aid,pid:me,text:t,at:Date.now()});ui.cmt[d.aid]='';say('Comentário registrado. A proposta não foi alterada.');break}
   case 'sendv':{
     if(p.org!==me||p.phase!=='decisao')break;
     const as=approved(p);if(!as.length){ui.err.send='Cadastre ao menos uma criação antes de enviar.';break}if(as.some(a=>!(propOf(p,a.id).saved||propOf(p,a.id).semAcordo&&propOf(p,a.id).saved))){ui.err.send='Conclua a proposta de todas as criações antes de enviar.';break}
-    const snap={};as.forEach(a=>{const pr=p.proposal[a.id];snap[a.id]={name:a.name,cat:a.cat,part:partOf(p,a.id),qs:decQs(a),v:clone(pr.v),texto:pr.texto,semAcordo:pr.semAcordo}});
+    const snap={};as.forEach(a=>{const pr=p.proposal[a.id];snap[a.id]={name:a.name,cat:a.cat,desc:a.desc||'',link:a.link||'',part:partOf(p,a.id),qs:decQs(a),v:clone(pr.v),externo:pr.externo||'',percentual:clone(pr.percentual||{}),texto:pr.texto,semAcordo:pr.semAcordo,relatos:elig(p).map(pid=>{const x=ansOf(p,pid,a.id)?.sent;return{pid,respondido:!!x,desc:x?.desc||'',evidencia:x?.link||'',origem:x?.origem||'',titularAtual:x?.titularAtual||'',titularAtualNome:x?.titularAtualNome||'',titularAtualBase:x?.titularAtualBase||'',titularExterno:x?.titularExterno||''}})}});
     const n=p.versions.length+1;p.versions.push({n,at:Date.now(),snap,conf:{}});p.phase='confirmacao';log(p,me,'enviou a proposta '+n+' para confirmação');ui.tab='conf';ui.notice='Proposta enviada. Cada pessoa confirma ou recusa individualmente.';say('Proposta enviada para confirmação.');break}
   case 'editask':ui.flag.edit=true;break;
   case 'editno':ui.flag={};break;
@@ -1429,7 +1474,7 @@ function act(a,d){
       lv.conf[me]={v:'no',comment:ui.refuse.trim(),assets:ra,at:Date.now()};ra.forEach(x=>{const pr=propOf(p,x);pr.saved=false;pr.ajuste={by:me,comment:ui.refuse.trim()}});
       p.phase='decisao';ui.tab='proj';ui.notice='Recusa enviada. '+nm(p.org)+' vai revisar '+ra.map(x=>lv.snap[x].name).join(', ')+' e enviar a proposta '+(lv.n+1)+' para todos.';ui.refuse='';ui.refAssets=[];ui.flag={};log(p,me,'recusou a proposta '+lv.n+' e pediu ajuste em '+ra.map(x=>lv.snap[x].name).join(', '));say('Recusa enviada.');break}
     lv.conf[me]={v:'ok',comment:'',at:Date.now()};log(p,me,'confirmou a proposta '+lv.n);
-    if(elig(p).every(x=>lv.conf[x]&&lv.conf[x].v==='ok')&&!Object.values(lv.snap).some(s=>s.semAcordo)){p.phase='consolidado';ui.tab='memorial';ui.notice='A equipe confirmou a proposta. O registro do acordo pode ser gerado agora.';say('Todos confirmaram. Acordo fechado.')}else if(elig(p).every(x=>lv.conf[x]&&lv.conf[x].v==='ok')){ui.notice='Todos confirmaram, mas ainda há criação sem acordo. O acordo só fecha quando ela for decidida.';say('Confirmação registrada.')}else{ui.notice='Sua confirmação foi registrada. Aguarde as demais pessoas.';say('Confirmação registrada.')}break}
+    if(elig(p).every(x=>lv.conf[x]&&lv.conf[x].v==='ok')&&!Object.values(lv.snap).some(s=>s.semAcordo)){p.phase='consolidado';ui.tab='memorial';ui.notice='Todos confirmaram a proposta. O registro pode ser gerado agora.';say('Todos confirmaram.')}else if(elig(p).every(x=>lv.conf[x]&&lv.conf[x].v==='ok')){ui.notice='Todos confirmaram a proposta, mas há criação sem acordo. O registro mantém essa pendência.';say('Confirmação registrada.')}else{ui.notice='Sua confirmação foi registrada. Aguarde as demais pessoas.';say('Confirmação registrada.')}break}
   case 'genmem':genMem(p);return;
   case 'copymem':copy(p.memorials[0].body+'\n\nCódigo de verificação (SHA-256): '+p.memorials[0].hash);return;
   case 'pasteorig':ui.verifyText=p.memorials[0].body+'\n\nCódigo de verificação (SHA-256): '+p.memorials[0].hash;ui.verify=null;break;
@@ -1448,19 +1493,12 @@ function act(a,d){
   render();
 }
 function delAsset(p,aid){const x=p.assets.find(y=>y.id===aid);p.assets=p.assets.filter(y=>y.id!==aid);Object.values(p.answers).forEach(o=>delete o[aid]);delete p.proposal[aid];log(p,ui.me,'excluiu a criação '+x.name+' e descartou as respostas');say('Criação excluída e registrada no histórico.')}
-/* Quando a última pessoa envia, as respostas se encerram sozinhas e as decisões são liberadas. */
-function autoClose(p){
-  const as=approved(p);if(p.phase!=='coleta'||!as.length||!elig(p).every(x=>as.every(a=>ansOf(p,x,a.id)?.sent)))return;
-  p.phase='decisao';log(p,'sistema','encerrou as respostas: todas as pessoas responderam');
-  if(p.org===ui.me){if(ui.tab!=='home')ui.tab='decidir';ui.notice='Todos responderam. Agora decida os pontos em que as respostas diferem.'}
-  else ui.notice='Todos responderam. '+nm(p.org)+' já pode registrar as decisões. Você acompanha e comenta em Decisões.';
-}
 function sendAnswer(p,aid){
   if(!approved(p).some(a=>a.id===aid))return false;
   if(p.phase!=='coleta'||!elig(p).includes(ui.me))return false;
   const me=ui.me,an=ensureAns(p,me,aid),d=an.draft,E=elig(p),a=p.assets.find(x=>x.id===aid);
   let bad=false;
-  qsFor(a).forEach(q=>{if(q==='notas'){const n=notasOf(d),o={};E.forEach(pid=>{if(hasNota(n,pid))o[pid]=+n[pid]});d.notas=o;if(!E.every(pid=>hasNota(o,pid))){ui.err[aid+':notas']='Escolha quanto cada pessoa fez';bad=true}return}if(isP(q))d[q]=(d[q]||[]).filter(x=>E.includes(x));if(isP(q)?!d[q].length:!d[q]){ui.err[aid+':'+q]='Responda esta pergunta para enviar';bad=true}});
+  qsFor(a).forEach(q=>{if(q==='notas'){const n=notasOf(d),o={};E.forEach(pid=>{if(hasNota(n,pid))o[pid]=+n[pid]});d.notas=o;if(!E.every(pid=>hasNota(o,pid))){ui.err[aid+':notas']='Escolha a participação percebida de cada pessoa';bad=true}return}if(isP(q))d[q]=(d[q]||[]).filter(x=>E.includes(x));if(isP(q)?!d[q].length&&!(q==='titular'&&(d.titularExterno||'').trim()):!d[q]){ui.err[aid+':'+q]='Responda esta pergunta para enviar';bad=true}});
   if(contribOf(d).includes(me)&&!(d.desc||'').trim()){ui.err[aid+':desc']='Conte em uma frase o que você fez';bad=true}
   if((d.link||'').trim()&&!/^https?:\/\/\S+$/i.test(d.link.trim())){ui.err[aid+':link']='Informe um link válido, começando com http';bad=true}
   if(bad){ui.qstep=Math.max(0,steps(a,d).findIndex(g=>(GROUPS[g]||[]).some(q=>ui.err[aid+':'+q])||g==='contrib'&&ui.err[aid+':link']));ui.scrollQ=true;say('Falta uma resposta. Levamos você até ela.','bad');return false}
@@ -1493,6 +1531,7 @@ document.addEventListener('input',e=>{
   else if(x.in==='ans'){ensureAns(p,ui.me,x.a).draft[x.k]=t.value;persist()}
   else if(x.in==='nota'){const d=ensureAns(p,ui.me,x.a).draft;d.notas=d.notas||{};let v=t.value.trim();if(v!==''){v=Math.max(0,Math.min(10,Math.round(+v)||0));if(String(v)!==t.value)t.value=v}d.notas[x.v]=v;const sh=shares(Object.fromEntries(Object.entries(d.notas).filter(([k,n])=>n!=='')));document.querySelectorAll('[data-pct]').forEach(el=>{const k=el.dataset.pct;el.textContent=hasNota(d.notas,k)?sh[k]+'%':''});const er=t.closest('.qs-card')&&t.closest('.qs-card').querySelector('.err');if(er)er.remove()}
   else if(x.in==='prop'){const pr=propOf(p,x.a);pr[x.k]=t.value;pr.saved=false}
+  else if(x.in==='pct'){const pr=propOf(p,x.a);pr.percentual=pr.percentual||{};pr.percentual[x.pid]=t.value;pr.saved=false}
   persist();
 });
 document.addEventListener('change',e=>{
