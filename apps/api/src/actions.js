@@ -170,9 +170,9 @@ export const ACTIONS = {
     const a = assetOf(p, d.aid), pr = ensureProp(p, a.id), e = propError(p, a.id);
     if (e) fail('p' + a.id, e);
     pr.saved = true; pr.by = me; pr.at = now(); delete pr.ajuste;
-    log(p, me, 'registrou a proposta de ' + a.name);
+    log(p, me, 'registrou as decisões de ' + a.name);
     const next = approved(p).find(x => !propOf(p, x.id).saved);
-    return { toast: pr.semAcordo ? 'Criação registrada como sem acordo. O acordo não fecha enquanto isso valer.' : 'Proposta salva.', next: next?.id || null };
+    return { toast: pr.semAcordo ? 'Criação registrada como sem acordo. O acordo não fecha enquanto isso valer.' : 'Decisões de ' + a.name + ' salvas.', next: next?.id || null };
   },
 
   comment(p, me, d) {

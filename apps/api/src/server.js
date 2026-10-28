@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
-import { taskFor, mem, nm, stripHash, PHN } from '@mip/domain';
+import { taskFor, mem, nm, stripHash, phaseName } from '@mip/domain';
 import { load, withProject } from './store.js';
 import { apply, ActionError, sha256 } from './actions.js';
 import { viewFor } from './view.js';
@@ -29,7 +29,8 @@ app.use((_req, res, next) => {
   res.set({ 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin', 'X-Frame-Options': 'SAMEORIGIN' });
   next();
 });
-app.use(sessionUser(prisma));
+/* Sessão só nas rotas da API: os arquivos do site (JS, CSS, HTML) não precisam consultar o banco. */
+app.use('/api', sessionUser(prisma));
 
 /* Pedidos que mudam dados precisam ser JSON: um formulário de outro site não consegue enviar isso sem permissão (CSRF). */
 app.use('/api', (req, res, next) => {
@@ -100,12 +101,13 @@ app.patch('/api/me', auth, wrap(async (req, res) => {
 app.get('/api/projects', auth, wrap(async (req, res) => {
   const ms = await prisma.member.findMany({ where: { userId: req.user.id }, select: { projectId: true }, orderBy: { createdAt: 'desc' } });
   const out = [];
-  for (const { projectId } of ms) {
-    const p = await load(prisma, projectId);
+  /* Carrega os projetos em paralelo, não um depois do outro. */
+  const all = await Promise.all(ms.map(({ projectId }) => load(prisma, projectId)));
+  for (const p of all) {
     if (!p) continue;
     const v = viewFor(p, req.user.id), qpos = Object.fromEntries(Object.entries(p.answers[req.user.id] || {}).map(([aid, an]) => [aid, an.step]));
     const lastAt = Math.max(p.createdAt || 0, ...p.history.map(h => h.at));
-    out.push({ id: p.id, name: p.name, context: p.context, phase: p.phase, phaseName: PHN[p.phase], org: p.org === req.user.id, orgName: p.people[p.org]?.name, people: p.members.filter(m => m.status === 'ativo').length, assets: p.assets.filter(a => a.st === 'ok').length, lastAt, task: taskFor(v, req.user.id, qpos) });
+    out.push({ id: p.id, name: p.name, context: p.context, phase: p.phase, phaseName: phaseName(p), org: p.org === req.user.id, orgName: p.people[p.org]?.name, people: p.members.filter(m => m.status === 'ativo').length, assets: p.assets.filter(a => a.st === 'ok').length, lastAt, task: taskFor(v, req.user.id, qpos) });
   }
   out.sort((a, b) => b.lastAt - a.lastAt);
   res.json(out);
@@ -114,11 +116,10 @@ app.get('/api/projects', auth, wrap(async (req, res) => {
 app.post('/api/projects', auth, wrap(async (req, res) => {
   const name = String(req.body.name || '').trim().slice(0, 120), context = String(req.body.context || '').trim().slice(0, 300), person = String(req.body.person || '').trim().slice(0, 80);
   const err = {};
-  if (!person) err.person = 'Informe seu nome';
   if (!name) err.pn = 'Informe o nome do projeto';
   if (Object.keys(err).length) return res.status(400).json({ err });
   const pr = await prisma.$transaction(async tx => {
-    await tx.user.update({ where: { id: req.user.id }, data: { name: person } });
+    if (person) await tx.user.update({ where: { id: req.user.id }, data: { name: person } });
     const p = await tx.project.create({ data: { name, context, orgId: req.user.id, inviteCode: newCode(), members: { create: { userId: req.user.id } } } });
     await tx.historyEntry.create({ data: { projectId: p.id, userId: req.user.id, text: 'criou o projeto ' + name } });
     return p;

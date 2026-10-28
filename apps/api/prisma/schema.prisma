@@ -3,12 +3,15 @@
 // para que as regras em @mip/domain funcionem igual no servidor e no navegador.
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  /* Carrega o projeto com todas as relações numa consulta só (JOIN), em vez de uma consulta por tabela. */
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
   provider  = "postgresql"
-  // Conexão usada pelo app. No Supabase: "Transaction pooler" (porta 6543, com ?pgbouncer=true).
+  // Conexão usada pelo app. No Supabase: "Session pooler" (porta 5432) com ?connection_limit=5.
+  // O Transaction pooler (6543 + pgbouncer) faz 4 idas ao banco por consulta, e o app é um servidor contínuo.
   url       = env("DATABASE_URL")
   // Conexão usada para criar e alterar tabelas (migrações). No Supabase: "Session pooler" (porta 5432).
   // Local, use o mesmo valor de DATABASE_URL.

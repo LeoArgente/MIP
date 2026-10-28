@@ -7,6 +7,7 @@ const ms = d => (d ? new Date(d).getTime() : null);
 
 export async function load(tx, projectId) {
   const r = await tx.project.findUnique({
+    relationLoadStrategy: 'join',
     where: { id: projectId },
     include: {
       members: { include: { user: true }, orderBy: { createdAt: 'asc' } },
