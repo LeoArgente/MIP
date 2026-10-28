@@ -65,6 +65,8 @@ model Project {
   setupStep    String   @default("equipe")
   inviteCode   String   @unique
   inviteActive Boolean  @default(true)
+  /// Sobre o projeto (quem organiza responde): contas, acordo, edital
+  sobre        Json     @default("{}")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -90,6 +92,8 @@ model Member {
   elig      Boolean   @default(true)
   removedBy String?
   removedAt DateTime?
+  /// Sobre a pessoa (ela mesma responde): função e se investiu dinheiro
+  perfil    Json      @default("{}")
   createdAt DateTime  @default(now())
 
   @@unique([projectId, userId])

@@ -37,7 +37,7 @@ test('jornada completa com privacidade, decisão, recusa e confirmação', async
 
   /* Bruno termina o Backend; Carla responde as duas criações. */
   const [logo, back] = pb.assets;
-  const full = me => ({ notas: { [ana.u.id]: 6, [bruno.u.id]: 10, [carla.u.id]: 3 }, origem: 'Criada neste projeto', titularAtual: 'Ainda não sabemos', titular: [ana.u.id, bruno.u.id], divisao: 'Ainda não, precisamos negociar', uso: 'Só quem for dono', comercial: 'Sim', portfolio: 'Todos que criaram', licenca: 'Não publicar por enquanto', marcaRegistro: 'Sim, com evidência', desc: 'Parte de ' + me, link: '' });
+  const full = me => ({ notas: { [ana.u.id]: 6, [bruno.u.id]: 10, [carla.u.id]: 3 }, origem: 'Criada neste projeto', titularAtual: 'Ainda não sabemos', titular: [ana.u.id, bruno.u.id], divisao: 'Ainda não, precisamos negociar', uso: 'Só quem for dono', materiais: 'Só o que a própria pessoa fez', comercial: 'Sim', portfolio: 'Todos que criaram', licenca: 'Não publicar por enquanto', marcaRegistro: 'Sim, com evidência', desc: 'Parte de ' + me, link: '' });
   let r = await act(bruno.c, pid, 'qsend', { aid: back.id });
   assert.equal(r.status, 400, 'envio incompleto deve falhar');
   assert.ok(r.data.err[back.id + ':origem']);
@@ -93,4 +93,28 @@ test('jornada completa com privacidade, decisão, recusa e confirmação', async
   assert.equal(ok.ok, true);
   const bad = (await carla.c.post('/api/verify', { text: m.body.replace('Projeto', 'Projeto alterado') })).data;
   assert.equal(bad.ok, false);
+});
+
+test('sobre o projeto, sobre você e privacidade do perfil', async () => {
+  const at = String.fromCharCode(64), org = client(), outro = client();
+  await org.post('/api/auth/test-login', { name: 'Org Sobre', email: 'org.sobre' + at + 'teste.local' });
+  const { data: { id } } = await org.post('/api/projects', { person: 'Org Sobre', name: 'Sobre Teste' });
+  await org.post(`/api/projects/${id}/invite`, { email: 'par.sobre' + at + 'teste.local' });
+  assert.equal((await act(org, id, 'setupnext')).status, 200);
+  assert.equal((await act(org, id, 'setupnext')).status, 400, 'sem criação não avança');
+  await act(org, id, 'addasset', { type: 'codigo', name: 'App' });
+  assert.equal((await act(org, id, 'setupnext')).data.project.setupStep, 'sobre');
+  let r = await act(org, id, 'setupassets');
+  assert.equal(r.status, 400); assert.ok(r.data.err['sobre:contas'] && r.data.err['sobre:edital']);
+  await act(org, id, 'sobre', { sobre: { contas: 'Domínio com a Org', acordo: 'Nenhum', edital: 'Sim', editalQual: 'Regulamento' } });
+  assert.equal((await act(org, id, 'setupassets')).data.project.setupStep, 'resp');
+  await outro.post('/api/auth/test-login', { name: 'Par', email: 'par.sobre' + at + 'teste.local' });
+  assert.equal((await act(outro, id, 'sobre', { sobre: { acordo: 'Escrito' } })).status, 403, 'só quem organiza responde sobre o projeto');
+  r = await act(outro, id, 'perfil', { perfil: { funcao: 'Design' }, check: true });
+  assert.equal(r.status, 400);
+  await act(outro, id, 'perfil', { perfil: { funcao: 'Design', investiu: 'Sim' } });
+  const vOrg = (await org.get('/api/projects/' + id)).data, par = vOrg.members.find(m => m.pid !== vOrg.org);
+  assert.equal(par.perfil.funcao, undefined, 'função escondida durante as respostas');
+  assert.equal(par.perfil.feito, true);
+  assert.equal(vOrg.sobre.editalQual, 'Regulamento');
 });

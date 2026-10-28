@@ -3,7 +3,7 @@
    Erros de regra viram ActionError e chegam ao navegador como mensagem por campo. */
 import { createHash, randomUUID } from 'node:crypto';
 import {
-  QS, TYPES, approved, elig, mem, nm, ansOf, lastV, isP, qsFor, propOf, propDefault, propError,
+  QS, TYPES, SOBRE, PERFIL, sobreErrors, perfilErrors, approved, elig, mem, nm, ansOf, lastV, isP, qsFor, propOf, propDefault, propError,
   sendErrors, snapshot, memorialBody, validLink, clone
 } from '@mip/domain';
 
@@ -39,11 +39,38 @@ function newAsset(p, me, f, st) {
 }
 
 export const ACTIONS = {
-  setupnext(p, me) { needOrg(p, me); if (p.setupStep === 'equipe') p.setupStep = 'ativos'; return { tab: 'ativos' }; },
+  setupnext(p, me) {
+    needOrg(p, me);
+    if (p.setupStep === 'equipe') { p.setupStep = 'ativos'; return { tab: 'ativos' }; }
+    if (p.setupStep === 'ativos') { if (!approved(p).length) fail('_', 'Cadastre pelo menos 1 criação para continuar.'); p.setupStep = 'sobre'; return { tab: 'sobre' }; }
+    return {};
+  },
+
+  /* Sobre o projeto: quem organiza responde (pode ajustar enquanto as respostas estão abertas). */
+  sobre(p, me, d) {
+    needOrg(p, me); needPhase(p, 'coleta');
+    const cur = { ...(p.sobre || {}) };
+    Object.keys(SOBRE).forEach(k => { if (k in (d.sobre || {})) cur[k] = String(d.sobre[k] ?? '').slice(0, 500); });
+    if (cur.edital !== 'Sim') delete cur.editalQual;
+    p.sobre = cur;
+    if (d.check) { const e = sobreErrors(cur); if (Object.keys(e).length) throw new ActionError(e); }
+    return { quiet: !d.check };
+  },
+
+  /* Sobre você: cada pessoa responde por si, enquanto as respostas estão abertas. */
+  perfil(p, me, d) {
+    if (p.phase !== 'coleta') deny('As respostas foram encerradas.');
+    const m = mem(p, me), cur = { ...(m.perfil || {}) };
+    Object.keys(PERFIL).forEach(k => { if (k in (d.perfil || {})) cur[k] = String(d.perfil[k] ?? '').slice(0, 200); });
+    m.perfil = cur;
+    if (d.check) { const e = perfilErrors(cur); if (Object.keys(e).length) throw new ActionError(e); }
+    return { quiet: !d.check };
+  },
 
   setupassets(p, me) {
     needOrg(p, me); needPhase(p, 'coleta');
     if (!approved(p).length) fail('_', 'Cadastre pelo menos 1 criação para liberar as perguntas.');
+    { const e = sobreErrors(p.sobre); if (Object.keys(e).length) throw new ActionError(e); }
     p.setupStep = 'resp'; log(p, me, 'liberou as perguntas para a equipe');
     return { tab: 'resp', notice: 'Perguntas liberadas para a equipe. Comece pelas suas.' };
   },

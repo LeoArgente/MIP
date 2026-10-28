@@ -16,7 +16,9 @@ export function viewFor(p, me) {
       answers[uid][aid] = uid === me ? an : { sent: an.sent ? { at: an.sent.at } : null };
     }
   }
-  const out = { ...p, answers, me };
+  /* Função e investimento de cada pessoa só aparecem para a equipe depois do encerramento das respostas. */
+  const members = p.phase === 'coleta' ? p.members.map(m => (m.pid === me ? m : { ...m, perfil: { feito: !!(m.perfil && m.perfil.funcao && m.perfil.investiu) } })) : p.members;
+  const out = { ...p, members, answers, me };
   if (p.phase !== 'coleta') {
     const stats = {}, parts = {};
     for (const a of approved(p)) {

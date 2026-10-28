@@ -171,6 +171,32 @@ app.post('/api/projects/:id/invite', auth, wrap(async (req, res) => {
   res.json({ result: { toast: added.user.name + ' entrou no projeto.' + (sent ? ' Enviamos um e-mail com o link de acesso.' : ' O e-mail não foi enviado; compartilhe o link de convite.') }, project: viewFor(fresh, req.user.id) });
 }));
 
+/* Remover alguém do projeto (só quem organiza, enquanto as respostas estão abertas).
+   Sem `confirm`, devolve o que será apagado para a tela pedir confirmação. */
+app.post('/api/projects/:id/remove', auth, wrap(async (req, res) => {
+  const pid = String(req.body.pid || '');
+  const out = await withProject(prisma, req.params.id, async (p, tx) => {
+    if (!p) throw new ActionError('Projeto não encontrado.', 404);
+    if (p.org !== req.user.id) throw new ActionError('Só quem organiza pode remover pessoas.', 403);
+    if (pid === p.org) throw new ActionError({ np: 'Quem organiza não pode ser removido do projeto.' });
+    if (!mem(p, pid)) throw new ActionError({ np: 'Esta pessoa não está no projeto.' });
+    if (p.phase !== 'coleta') throw new ActionError({ np: 'Depois que as respostas foram encerradas, não dá para remover. Use “Tirar das respostas”.' });
+    const name = nm(p, pid), sent = Object.values(p.answers[pid] || {}).filter(a => a.sent).length;
+    if (!req.body.confirm) return { confirmRemove: { pid, name, sent } };
+    await tx.answer.deleteMany({ where: { projectId: p.id, userId: pid } });
+    await tx.comment.deleteMany({ where: { projectId: p.id, userId: pid } });
+    await tx.member.delete({ where: { projectId_userId: { projectId: p.id, userId: pid } } });
+    delete p.answers[pid];
+    p.members = p.members.filter(m => m.pid !== pid);
+    p.comments = p.comments.filter(c => c.pid !== pid);
+    p.history.unshift({ at: Date.now(), who: req.user.id, text: 'removeu ' + name + ' do projeto' + (sent ? ' e apagou as respostas' : '') });
+    return { toast: name + ' foi removido do projeto.' };
+  });
+  if (out.confirmRemove) return res.json({ result: out });
+  const fresh = await load(prisma, req.params.id);
+  res.json({ result: out, project: viewFor(fresh, req.user.id) });
+}));
+
 app.post('/api/projects/:id/remind', auth, wrap(async (req, res) => {
   const p = await projectFor(req, res); if (!p) return;
   if (p.org !== req.user.id) return res.status(403).json({ err: { _: 'Só quem organiza pode lembrar a equipe.' } });

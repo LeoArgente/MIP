@@ -30,10 +30,10 @@ export async function load(tx, projectId) {
   const proposal = {};
   r.proposals.forEach(x => { proposal[x.assetId] = x.data; });
   return {
-    id: r.id, name: r.name, context: r.context, org: r.orgId, phase: r.phase, setupStep: r.setupStep,
+    id: r.id, name: r.name, context: r.context, org: r.orgId, phase: r.phase, setupStep: r.setupStep, sobre: r.sobre || {},
     createdAt: ms(r.createdAt),
     people,
-    members: r.members.map(m => ({ pid: m.userId, status: m.status, elig: m.elig, by: m.removedBy || undefined, at: ms(m.removedAt) || undefined })),
+    members: r.members.map(m => ({ pid: m.userId, status: m.status, elig: m.elig, by: m.removedBy || undefined, at: ms(m.removedAt) || undefined, perfil: m.perfil || {} })),
     link: { active: r.inviteActive, code: r.inviteCode },
     assets: r.assets.map(a => ({ id: a.id, name: a.name, type: a.type, cat: a.cat, desc: a.desc, link: a.link, st: a.status, by: a.suggestedBy || undefined, reason: a.reason || undefined })),
     answers,
@@ -53,13 +53,13 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 export async function save(tx, before, p) {
   const pid = p.id;
-  if (!same([before.name, before.context, before.phase, before.setupStep, before.link.active], [p.name, p.context, p.phase, p.setupStep, p.link.active])) {
-    await tx.project.update({ where: { id: pid }, data: { name: p.name, context: p.context, phase: p.phase, setupStep: p.setupStep, inviteActive: p.link.active } });
+  if (!same([before.name, before.context, before.phase, before.setupStep, before.link.active, before.sobre], [p.name, p.context, p.phase, p.setupStep, p.link.active, p.sobre])) {
+    await tx.project.update({ where: { id: pid }, data: { name: p.name, context: p.context, phase: p.phase, setupStep: p.setupStep, inviteActive: p.link.active, sobre: p.sobre || {} } });
   }
   /* Integrantes (novos integrantes entram por rotas próprias; aqui só mudam de estado). */
   for (const m of p.members) {
     const b = before.members.find(x => x.pid === m.pid);
-    if (b && !same(b, m)) await tx.member.update({ where: { projectId_userId: { projectId: pid, userId: m.pid } }, data: { status: m.status, elig: m.elig, removedBy: m.by || null, removedAt: m.at ? new Date(m.at) : null } });
+    if (b && !same(b, m)) await tx.member.update({ where: { projectId_userId: { projectId: pid, userId: m.pid } }, data: { status: m.status, elig: m.elig, removedBy: m.by || null, removedAt: m.at ? new Date(m.at) : null, perfil: m.perfil || {} } });
   }
   /* Criações */
   for (const a of p.assets) {
