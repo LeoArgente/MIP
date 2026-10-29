@@ -5,11 +5,13 @@ import '@mip/tokens/tokens.css';
 import './styles/app.css';
 import { SessionProvider, useSession } from './session.jsx';
 import { ToastProvider } from './components/ui.jsx';
+import { FeedbackProvider } from './components/Feedback.jsx';
 import Home from './screens/Home.jsx';
 import Login from './screens/Login.jsx';
 import NewProject from './screens/NewProject.jsx';
 import Invite from './screens/Invite.jsx';
 import Project from './screens/Project.jsx';
+import Admin from './screens/Admin.jsx';
 
 /* Telas que exigem conta mandam para /entrar e voltam depois. */
 function Private({ children }) {
@@ -28,6 +30,7 @@ function App() {
         <Route path="/novo" element={<Private><NewProject /></Private>} />
         <Route path="/convite/:code" element={<Invite />} />
         <Route path="/p/:id/:tab?" element={<Private><Project /></Private>} />
+        <Route path="/admin" element={<Private><Admin /></Private>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
@@ -39,7 +42,9 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <SessionProvider>
         <ToastProvider>
-          <App />
+          <FeedbackProvider>
+            <App />
+          </FeedbackProvider>
         </ToastProvider>
       </SessionProvider>
     </BrowserRouter>

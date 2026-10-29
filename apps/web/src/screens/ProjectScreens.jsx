@@ -1,5 +1,5 @@
 /* Telas do projeto, portadas do protótipo (vHub, vEquipe, vAtivos, vResp, vColeta, vDecidir, vConf, vMemorial). */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   TYPES, SECTIONS, SCEN, QS, PCT_NEG, SOBRE, sobreKeys, sobreErrors, approved, elig, mem, nm, ansOf, lastV, qsFor, decQs, roleTxt, fmt, taskFor, secInfo,
   partOf, partTxt, pctTxt, fmtAns, propOf, decPts, dsteps, memorialText, steps, phaseName
@@ -7,12 +7,13 @@ import {
 import { useProject, Page } from './Project.jsx';
 import { ActionBar, Banner, Btn, Chip, Err, Head, Progress, copyText } from '../components/ui.jsx';
 import { post } from '../api.js';
+import { Satisfaction, markSeen } from '../components/Feedback.jsx';
 
 export const TIPS = {
   equipe: 'Adicione quem participou do projeto. Cada pessoa responde em particular sobre cada criação.',
   ativos: 'Cadastre o que a equipe criou. O tipo da criação define uma das perguntas.',
   sobre: 'Perguntas sobre o projeto como um todo. Quem organiza responde, e todos da equipe podem ver.',
-  resp: 'Uma tela por parte. Você pode sair e voltar de onde parou. Ninguém vê suas respostas até o fim.',
+  resp: 'Uma tela por parte. Você pode sair e voltar de onde parou. Ninguém vê suas respostas até o fim; depois, a equipe vê o que cada pessoa escolheu.',
   coleta: 'Mostra quem já respondeu, sem revelar as respostas. Quem não responde nunca conta como concordância.',
   decidir: 'Aparecem só os pontos em que as respostas diferem, sem mostrar quem respondeu o quê. O que todos concordaram já entra na proposta.',
   conf: 'Cada pessoa confirma ou recusa a proposta. Uma recusa devolve a proposta para ajuste.',
@@ -32,7 +33,7 @@ export function Welcome({ onStart, name, askName = true }) {
       <div>
         <h3 className="h3">Como a MIP funciona</h3>
         <ol>
-          <li><b>Cada pessoa responde em particular.</b> Ninguém vê suas respostas até o fim.</li>
+          <li><b>Cada pessoa responde em particular.</b> Ninguém vê suas respostas até o fim. Depois, a equipe vê o que cada pessoa escolheu, para decidir junto.</li>
           <li><b>A equipe decide só o que diverge.</b> O que todos concordaram já fica combinado.</li>
           <li><b>Todos confirmam.</b> As decisões ficam no registro do acordo.</li>
         </ol>
@@ -101,6 +102,7 @@ export function Hub() {
         <div><p className="label">Agora</p><h2>{t.label}</h2><p>{t.note}</p></div>
         {t.tab !== 'proj' && <Btn kind="pri" onClick={start}>{t.cta || 'Continuar'}</Btn>}
       </section>
+      {p.phase === 'consolidado' && <Satisfaction projectId={p.id} where="hub" />}
       {/* Quem já respondeu só importa enquanto as respostas estão abertas. */}
       {p.phase === 'coleta' && p.setupStep === 'resp' && <TeamCard />}
       <section className="hub-sec" aria-labelledby="hub-etapas">
@@ -495,6 +497,9 @@ export function Confirmacao() {
 /* ===== Registro do acordo ===== */
 export function Memorial() {
   const { p, act, say } = useProject(), [text, setText] = useState(''), [res, setRes] = useState(null);
+  /* Ver o registro libera o pedido de nota também na página do projeto. */
+  const seen = !!p.memorials[0] && p.phase === 'consolidado';
+  useEffect(() => { if (seen) markSeen(p.id); }, [seen, p.id]);
   if (!lastV(p)) return <Page><Head title="Registro do acordo" /><Banner>O registro do acordo fica disponível depois do envio da primeira proposta.</Banner></Page>;
   const m = p.memorials[0];
   const copy = async () => say(await copyText(memorialText(m)) ? 'Texto copiado.' : 'Não foi possível copiar. Selecione o texto e copie manualmente.');
@@ -507,6 +512,7 @@ export function Memorial() {
         <p className="muted small">Registro preparatório das decisões da equipe. Não substitui contrato ou registro oficial.</p>
       </div>
       {m && <div className="paper">{memorialText(m)}</div>}
+      {m && p.phase === 'consolidado' && <Satisfaction projectId={p.id} where="memorial" />}
       <details className="more">
         <summary>Verificar se um registro foi alterado</summary>
         <div className="page-main">

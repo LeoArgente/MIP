@@ -75,7 +75,7 @@ export const perfilErrors = f => { const e = {}; Object.keys(PERFIL).forEach(k =
 export const perfilDone = (p, pid) => !Object.keys(perfilErrors(mem(p, pid)?.perfil)).length;
 
 export const LIMITS = 'Este registro reúne as decisões da equipe para uma formalização futura. Ele não substitui contrato, advogado ou registro oficial.';
-export const SECTIONS = [['equipe', 'Equipe'], ['ativos', 'Criações'], ['sobre', 'Sobre o projeto'], ['resp', 'Suas respostas'], ['decidir', 'Decisões'], ['conf', 'Confirmação'], ['memorial', 'Registro do acordo']];
+export const SECTIONS = [['equipe', 'Equipe'], ['ativos', 'Criações'], ['sobre', 'Sobre o projeto'], ['resp', 'Perguntas'], ['decidir', 'Decisões'], ['conf', 'Confirmação'], ['memorial', 'Registro do acordo']];
 export const PCT_SIM = 'Sim, a equipe combinou percentuais';
 export const PCT_NEG = 'Ainda não, precisamos negociar';
 
@@ -113,7 +113,7 @@ export const fmtAns = (p, q, v) => q === 'notas'
 
 /* ===== Comparação das respostas (HU-15) ===== */
 export const norm = (v, q) => (isP(q) ? [...(v || [])].sort().join('|') : v);
-/* vals não leva o autor (pid) para o navegador; o servidor manda vals embaralhados. */
+/* vals leva o autor (pid); o servidor só manda vals depois do encerramento das respostas. */
 export function itemStatus(p, aid, q) {
   if (p.stats && p.stats[aid] && p.stats[aid][q]) return p.stats[aid][q];
   const E = elig(p);
@@ -130,7 +130,7 @@ export function itemStatus(p, aid, q) {
   const status = set.size > 1 ? 'div' : (vals.length === 0 || vals.length < E.length ? 'pend' : 'conv');
   return { status, vals, missing: E.filter(pid => !vals.find(x => x.pid === pid)) };
 }
-/* Distribuição sem nomes de quem respondeu. */
+/* Distribuição das respostas por opção. */
 export function distRows(p, aid, q) {
   const r = itemStatus(p, aid, q), n = r.vals.length;
   if (q === 'notas') return elig(p).map(t => { const xs = r.vals.filter(x => hasNota(x.v, t)).map(x => +x.v[t]); if (!xs.length) return [nm(p, t), 'sem respostas']; const lo = Math.min(...xs), hi = Math.max(...xs); return [nm(p, t), lvName(lo) === lvName(hi) ? lvName(lo) : 'de ' + lvName(lo).toLowerCase() + ' a ' + lvName(hi).toLowerCase()]; });
@@ -239,7 +239,7 @@ export function secInfo(p, me, k) {
   if (k === 'equipe') { const n = p.members.filter(x => x.status === 'ativo').length; return { on: true, s: n + (n === 1 ? ' pessoa' : ' pessoas') }; }
   if (k === 'ativos') { const sg = p.assets.filter(a => a.st === 'sug').length; return { on: true, s: as.length + (as.length === 1 ? ' criação' : ' criações') + (sg ? ' · ' + sg + (sg > 1 ? ' sugestões' : ' sugestão') + ' para avaliar' : '') }; }
   if (k === 'sobre') { const n = sobreKeys(p.sobre).filter(x => !SOBRE[x].optional).length, d = n - Object.keys(sobreErrors(p.sobre)).length; return { on: true, s: d === n ? 'Respondido' : d + ' de ' + n + ' respondidas' }; }
-  if (k === 'resp') { if (!m.elig) return { on: false, s: 'Você não responde desta vez' }; if (!as.length) return { on: false, s: 'Depois do cadastro das criações' }; const d = as.filter(a => ansOf(p, me, a.id)?.sent).length; return { on: true, s: d === as.length ? 'Enviadas' : d + ' de ' + as.length + ' criações respondidas' }; }
+  if (k === 'resp') { if (!m.elig) return { on: false, s: 'Você não responde desta vez' }; if (!as.length) return { on: false, s: 'Depois do cadastro das criações' }; const d = as.filter(a => ansOf(p, me, a.id)?.sent).length; return { on: true, s: d === as.length ? 'Respondidas' : d + ' de ' + as.length + ' criações respondidas' }; }
   if (k === 'coleta') { const done = E.filter(x => as.length && as.every(a => ansOf(p, x, a.id)?.sent)).length; return { on: true, s: p.phase === 'coleta' ? done + ' de ' + E.length + ' pessoas concluíram' : 'Respostas encerradas' }; }
   if (k === 'decidir') { if (p.phase === 'coleta') return { on: false, s: 'Abre após o encerramento da coleta' }; const n = diffCount(p); return { on: true, s: n ? n + (n > 1 ? ' pontos com diferença' : ' ponto com diferença') : 'Todos concordaram' }; }
   if (k === 'conf') { if (!lv) return { on: false, s: 'Quando a proposta for enviada' }; return { on: true, s: Object.values(lv.conf).filter(c => c.v === 'ok').length + ' de ' + E.length + ' confirmaram' }; }

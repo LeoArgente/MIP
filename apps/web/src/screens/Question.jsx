@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { PERFIL, perfilDone, mem, QS, GROUPS, GNAME, LV, approved, elig, nm, ansOf, isP, qsFor, hasNota, lvOf, notasOf, fmtAns, steps, stepOf, stepErrors } from '@mip/domain';
 import { useProject } from './Project.jsx';
 import { Banner, Btn, Err } from '../components/ui.jsx';
+import { usePlace } from '../components/Feedback.jsx';
 
 /* Sobre você: uma vez por projeto, antes da primeira pergunta. */
 function Perfil() {
@@ -46,6 +47,7 @@ function Questions() {
   const as = approved(p), open = p.phase === 'coleta', a = as.find(x => x.id === ui.qasset);
   const an = ansOf(p, me, a.id) || { draft: {}, sent: null }, d = an.draft || {}, S = steps(), s = Math.min(S.length - 1, Math.max(0, ui.qstep)), g = S[s], nq = S.length - 1;
   const E = elig(p), qs = qsFor(a), dis = !open, title = useRef();
+  usePlace('Perguntas · ' + a.name + ' · ' + (g === 'review' ? 'revisão' : GNAME[g] || 'parte ' + (s + 1)));
 
   /* Guarda a tela em que a pessoa está, para "Continuar" depois. */
   useEffect(() => { if (open && !an.sent && an.step !== s) editDraft(a.id, null, s); title.current?.focus({ preventScroll: true }); window.scrollTo(0, 0); }, [a.id, s]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -144,7 +146,7 @@ function Questions() {
         <div className="qs-q">
           <label className="qs-sub" htmlFor="ta-nome">Quem é indicado como titular hoje? <span className="muted">(se souber)</span></label>
           <input id="ta-nome" type="text" value={d.titularAtualNome || ''} onChange={setText('titularAtualNome')} placeholder="Nome da pessoa, organização ou terceiro" disabled={dis} />
-          <label className="qs-sub" htmlFor="ta-base">Qual documento ou fato sustenta essa indicação? <span className="muted">(se houver)</span></label>
+          <label className="qs-sub" htmlFor="ta-base">Qual documento ou fato sustenta essa indicação? <span className="muted">(opcional)</span></label>
           <input id="ta-base" type="text" value={d.titularAtualBase || ''} onChange={setText('titularAtualBase')} placeholder="Contrato, registro, licença ou relato" disabled={dis} />
         </div>
       </>
@@ -155,7 +157,7 @@ function Questions() {
         <div className="qs-head"><p className="qs-step">Parte {s + 1} de 3 · {GNAME[g]}</p><h1 className="qs-title" ref={title} tabIndex={-1}>{g === 'donos' ? 'Donos de ' + a.name : 'Como ' + a.name + ' pode ser usado?'}</h1></div>
         {copyFrom(g)}
         {GROUPS[g].filter(q => qs.includes(q)).map(block)}
-        {g === 'donos' && <div className="qs-q"><label className="qs-sub" htmlFor="tit-ext">Titular pretendido fora da equipe <span className="muted">(se houver)</span></label><input id="tit-ext" type="text" value={d.titularExterno || ''} onChange={setText('titularExterno')} placeholder="Pessoa, empresa ou instituição" disabled={dis} /></div>}
+        {g === 'donos' && <div className="qs-q"><label className="qs-sub" htmlFor="tit-ext">Titular pretendido fora da equipe <span className="muted">(opcional)</span></label><input id="tit-ext" type="text" value={d.titularExterno || ''} onChange={setText('titularExterno')} placeholder="Pessoa, empresa ou instituição" disabled={dis} /></div>}
       </>
     );
   }

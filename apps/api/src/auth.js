@@ -49,12 +49,18 @@ export async function endSession(prisma, req, res) {
   res.clearCookie(COOKIE, { path: '/' });
 }
 
-/* Middleware: põe req.user quando a sessão é válida. */
-export const sessionUser = prisma => async (req, _res, next) => {
+/* Middleware: põe req.user quando a sessão é válida.
+   Se o banco não responde, devolve 503 em vez de derrubar o servidor. */
+export const sessionUser = prisma => async (req, res, next) => {
   const t = req.cookies?.[COOKIE];
   if (t) {
-    const s = await prisma.session.findUnique({ where: { tokenHash: hash(t) }, include: { user: true } });
-    if (s && s.expiresAt > new Date()) req.user = s.user;
+    try {
+      const s = await prisma.session.findUnique({ where: { tokenHash: hash(t) }, include: { user: true } });
+      if (s && s.expiresAt > new Date()) req.user = s.user;
+    } catch (e) {
+      console.error('Sessão: banco indisponível.', e.message);
+      return res.status(503).json({ err: { _: 'Não foi possível falar com o banco de dados. Tente de novo em instantes.' } });
+    }
   }
   next();
 };

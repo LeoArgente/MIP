@@ -5,8 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSession } from '../session.jsx';
-
-const initials = n => (n || '?').trim().split(/\s+/).slice(0, 2).map(x => x[0]).join('').toUpperCase();
+import { initials } from './ui.jsx';
 
 function AccountMenu({ me, onLogout }) {
   const [open, setOpen] = useState(false), box = useRef(), nav = useNavigate();
@@ -30,6 +29,7 @@ function AccountMenu({ me, onLogout }) {
           <div className="menu-head"><b>{me.name}</b><span>{me.email}</span></div>
           <button role="menuitem" onClick={() => go('/')}>Meus projetos</button>
           <button role="menuitem" onClick={() => go('/novo')}>Criar projeto</button>
+          {me.admin && <button role="menuitem" onClick={() => go('/admin')}>Ver feedbacks</button>}
           <div className="menu-sep" role="separator" />
           <button role="menuitem" onClick={() => { setOpen(false); onLogout(); }}>Sair da conta</button>
         </div>

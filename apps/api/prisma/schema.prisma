@@ -4,7 +4,9 @@
 
 generator client {
   provider        = "prisma-client-js"
-  /* Carrega o projeto com todas as relações numa consulta só (JOIN), em vez de uma consulta por tabela. */
+  /**
+   * Carrega o projeto com todas as relações numa consulta só (JOIN), em vez de uma consulta por tabela.
+   */
   previewFeatures = ["relationJoins"]
 }
 
@@ -31,6 +33,7 @@ model User {
   answers       Answer[]
   comments      Comment[]
   confirmations Confirmation[]
+  feedbacks     Feedback[]
 }
 
 /// Link de acesso por e-mail (guardamos só o hash do token).
@@ -118,9 +121,9 @@ model Asset {
   reason      String?
   createdAt   DateTime @default(now())
 
-  answers   Answer[]
-  proposal  Proposal?
-  comments  Comment[]
+  answers  Answer[]
+  proposal Proposal?
+  comments Comment[]
 }
 
 model Answer {
@@ -217,4 +220,36 @@ model Memorial {
   createdAt DateTime @default(now())
 
   @@index([hash])
+}
+
+/// Feedback para a equipe da MIP: comentário livre (botão "Feedback", em qualquer tela)
+/// ou nota de satisfação de 1 (muito ruim) a 5 (muito bom), dada ao ver o registro do acordo.
+model Feedback {
+  id        String          @id @default(cuid())
+  kind      String // "texto" ou "satisfacao"
+  rating    Int?
+  text      String?
+  screen    String // onde a pessoa estava, em palavras ("Decisões · Logo · ponto 2")
+  path      String
+  device    String? // "celular" ou "computador"
+  projectId String?
+  userId    String?
+  user      User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  images    FeedbackImage[]
+  createdAt DateTime        @default(now())
+
+  @@index([createdAt])
+  @@index([userId, projectId, kind])
+}
+
+/// Print anexado a um feedback (já reduzido no navegador). Fica à parte para a lista do /admin não carregar as imagens.
+model FeedbackImage {
+  id         String   @id @default(cuid())
+  feedbackId String
+  feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  mime       String
+  data       Bytes
+  createdAt  DateTime @default(now())
+
+  @@index([feedbackId])
 }

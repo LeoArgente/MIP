@@ -10,8 +10,10 @@ export function SessionProvider({ children }) {
   const refresh = useCallback(async () => {
     try { setMe(await get('/api/me')); } catch { setMe(null); }
   }, []);
-  useEffect(() => { refresh(); get('/api/config').then(setConfig).catch(() => {}); }, [refresh]);
+  /* loaded diz se a configuração já chegou; failed, se o servidor não respondeu (a tela de entrar mostra o aviso). */
+  const loadConfig = useCallback(() => get('/api/config').then(c => setConfig({ ...c, loaded: true })).catch(() => setConfig({ loaded: true, failed: true })), []);
+  useEffect(() => { refresh(); loadConfig(); }, [refresh, loadConfig]);
   const logout = async () => { await post('/api/auth/logout'); setMe(null); };
   const update = async data => { const u = await patch('/api/me', data); setMe(u); return u; };
-  return <Ctx.Provider value={{ me, setMe, refresh, logout, update, config }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ me, setMe, refresh, logout, update, config, loadConfig }}>{children}</Ctx.Provider>;
 }

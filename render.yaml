@@ -27,6 +27,12 @@ services:
         value: "MIP <onboarding@resend.dev>"
       - key: DEV_LOGIN
         value: "0"
+      # Botão "Feedback" e nota de satisfação. Troque para "0" quando a fase de testes acabar.
+      - key: FEEDBACK
+        value: "1"
+      # E-mails que podem abrir /admin e ler os feedbacks (separados por vírgula).
+      - key: ADMIN_EMAILS
+        sync: false
       # Versão de teste com usuários: entra com nome e e-mail, sem e-mail de confirmação.
       # Troque para "0" quando tiverem domínio e RESEND_API_KEY funcionando.
       - key: TEST_LOGIN

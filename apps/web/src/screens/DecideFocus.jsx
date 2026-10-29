@@ -3,13 +3,15 @@
 import { useEffect, useRef } from 'react';
 import { QS, SCEN, GRP, PCT_SIM, PCT_NEG, decQs, approved, elig, nm, isP, itemStatus, hasNota, lvName, partOf, partTxt, propOf, decPts, dsteps, decPick } from '@mip/domain';
 import { useProject } from './Project.jsx';
-import { Banner, Btn, Err } from '../components/ui.jsx';
+import { Banner, Btn, Err, Voters } from '../components/ui.jsx';
+import { usePlace } from '../components/Feedback.jsx';
 
 export default function DecideFocus() {
   const { p, act, err, setErr, ui, setUi, editProp } = useProject();
   const as = approved(p), a = as.find(x => x.id === ui.dq), pr = propOf(p, a.id), E = elig(p), S = dsteps(p, a);
   const s = Math.min(S.length - 1, Math.max(0, ui.dstep)), extra = ui.dedit && !S.includes(ui.dedit) ? ui.dedit : null;
   const q = extra || S[s], nq = S.length - 1, title = useRef();
+  usePlace('Decisões · ' + a.name + ' · ' + (q === 'review' ? 'revisão' : QS[q].short));
   useEffect(() => { title.current?.focus({ preventScroll: true }); window.scrollTo(0, 0); }, [a.id, s, extra]);
 
   const goStep = n => { setErr({}); setUi({ dstep: n, dedit: null }); };
@@ -39,7 +41,7 @@ export default function DecideFocus() {
           {same.length > 0 && <div className="qs-sec"><p>Respostas iguais — você também pode editar</p><div className="qs-list">{same.map(k => row(k, k !== 'notas'))}</div></div>}
         </div>
         {pr.v.divisao === PCT_NEG && <p className="qs-hint">Percentuais ficam como pendência no registro do acordo. Para informar agora, escolha “Percentuais combinados” acima.</p>}
-        <div className="qs-field"><label htmlFor={'ext-' + a.id} className="q">Titular pretendido fora da equipe (se houver)</label><input id={'ext-' + a.id} type="text" value={pr.externo || ''} onChange={e => editProp(a.id, { externo: e.target.value })} placeholder="Pessoa, empresa ou instituição" /></div>
+        <div className="qs-field"><label htmlFor={'ext-' + a.id} className="q">Titular pretendido fora da equipe (opcional)</label><input id={'ext-' + a.id} type="text" value={pr.externo || ''} onChange={e => editProp(a.id, { externo: e.target.value })} placeholder="Pessoa, empresa ou instituição" /></div>
         {pr.v.divisao === PCT_SIM && (
           <div className="qs-field">
             <p className="qs-sub">Percentuais acordados para a titularidade pretendida</p>
@@ -63,13 +65,13 @@ export default function DecideFocus() {
       </>
     );
   } else {
-    const r = itemStatus(p, a.id, q), n = r.vals.length;
+    const r = itemStatus(p, a.id, q), n = r.vals.length, who = f => r.vals.filter(f).map(x => nm(p, x.pid));
     body = (
       <>
         <div className="qs-head">
           <p className="qs-step">{extra ? GRP(q) : 'Ponto ' + (s + 1) + ' de ' + nq + ' · ' + GRP(q)}</p>
           <h1 className="qs-title" ref={title} tabIndex={-1}>{QS[q].label}</h1>
-          <p className="qs-hint">{q === 'notas' ? 'As respostas variaram. Elas mostram percepções, sem definir percentuais ou direitos.' : isP(q) ? 'Os números mostram quantas pessoas marcaram cada nome. Marque o que a equipe decidiu.' : 'Os números mostram quantas pessoas escolheram cada opção. Marque o que a equipe decidiu.'}</p>
+          <p className="qs-hint">{q === 'notas' ? 'As respostas variaram. Elas mostram percepções, sem definir percentuais ou direitos.' : isP(q) ? 'Os números mostram quantas pessoas marcaram cada nome; passe o mouse sobre eles para ver quem. Marque o que a equipe decidiu.' : 'Os números mostram quantas pessoas escolheram cada opção; passe o mouse sobre eles para ver quem. Marque o que a equipe decidiu.'}</p>
         </div>
         {q === 'notas' ? (
           <>
@@ -78,12 +80,12 @@ export default function DecideFocus() {
           </>
         ) : isP(q) ? (
           <>
-            <div className="qs-list" role="group">{E.map(pid => { const k = r.vals.filter(x => (x.v || []).includes(pid)).length; return <label className="qs-row dec-row" key={pid}><input type="checkbox" checked={(pr.v[q] || []).includes(pid)} onChange={() => pick(q, pid)} /><span>{nm(p, pid)}</span><span className="dec-bar"><i style={{ width: (n ? 100 * k / n : 0) + '%' }} /></span><b className="dec-n">{k} de {n}</b></label>; })}</div>
+            <div className="qs-list" role="group">{E.map(pid => { const ws = who(x => (x.v || []).includes(pid)); return <label className="qs-row dec-row" key={pid}><input type="checkbox" checked={(pr.v[q] || []).includes(pid)} onChange={() => pick(q, pid)} /><span>{nm(p, pid)}</span><span className="dec-bar"><i style={{ width: (n ? 100 * ws.length / n : 0) + '%' }} /></span><Voters names={ws} total={n} /></label>; })}</div>
             <p className="qs-foot">Pode marcar mais de uma pessoa.</p>
-            {q === 'titular' && <div className="qs-field"><label htmlFor="ext-step" className="q">Titular pretendido fora da equipe (se houver)</label><input id="ext-step" type="text" value={pr.externo || ''} onChange={e => editProp(a.id, { externo: e.target.value })} placeholder="Pessoa, empresa ou instituição" /></div>}
+            {q === 'titular' && <div className="qs-field"><label htmlFor="ext-step" className="q">Titular pretendido fora da equipe (opcional)</label><input id="ext-step" type="text" value={pr.externo || ''} onChange={e => editProp(a.id, { externo: e.target.value })} placeholder="Pessoa, empresa ou instituição" /></div>}
           </>
         ) : (
-          <div className="qs-list" role="radiogroup">{QS[q].opts.map(u => { const k = r.vals.filter(x => x.v === u).length; return <label className="qs-row dec-row" key={u}><input type="radio" name={'pv-' + q} checked={pr.v[q] === u} onChange={() => pick(q, u)} /><span>{u}</span><span className="dec-bar"><i style={{ width: (n ? 100 * k / n : 0) + '%' }} /></span><b className="dec-n">{k} de {n}</b></label>; })}</div>
+          <div className="qs-list" role="radiogroup">{QS[q].opts.map(u => { const ws = who(x => x.v === u); return <label className="qs-row dec-row" key={u}><input type="radio" name={'pv-' + q} checked={pr.v[q] === u} onChange={() => pick(q, u)} /><span>{u}</span><span className="dec-bar"><i style={{ width: (n ? 100 * ws.length / n : 0) + '%' }} /></span><Voters names={ws} total={n} /></label>; })}</div>
         )}
         {r.missing.length > 0 && <p className="qs-foot">{r.missing.length > 1 ? r.missing.length + ' pessoas não responderam.' : '1 pessoa não respondeu.'}</p>}
         {SCEN[q] && <details className="dec-more"><summary>Ideias para a conversa</summary><dl className="kv">{SCEN[q].map(([t, d]) => <Pair key={t} t={t} d={d} />)}</dl></details>}

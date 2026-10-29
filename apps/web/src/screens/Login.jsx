@@ -11,7 +11,7 @@ import { Btn, Err, Banner } from '../components/ui.jsx';
 const WAIT = 30;
 
 export default function Login() {
-  const [q] = useSearchParams(), next = q.get('next') || '/', { config } = useSession(), nav = useNavigate();
+  const [q] = useSearchParams(), next = q.get('next') || '/', { config, loadConfig, refresh } = useSession(), nav = useNavigate();
   const [email, setEmail] = useState(''), [err, setErr] = useState({}), [sent, setSent] = useState(null), [busy, setBusy] = useState(false), [wait, setWait] = useState(0);
   useEffect(() => { if (!wait) return; const t = setTimeout(() => setWait(w => w - 1), 1000); return () => clearTimeout(t); }, [wait]);
   const request = async () => {
@@ -20,6 +20,17 @@ export default function Login() {
     setBusy(false);
   };
   const submit = e => { e.preventDefault(); request(); };
+  /* Sem saber como se entra, a tela espera; se o servidor não respondeu, diz isso em vez de oferecer outro jeito de entrar. */
+  if (!config.loaded) return <Header />;
+  if (config.failed) return (
+    <>
+      <Header />
+      <main className="onboarding auth">
+        <div><h1>Entrar</h1><p>Não foi possível falar com o servidor da MIP. Verifique a conexão e tente de novo.</p></div>
+        <div><Btn kind="pri" onClick={() => { refresh(); return loadConfig(); }}>Tentar de novo</Btn></div>
+      </main>
+    </>
+  );
   if (config.testLogin) return (
     <>
       <Header />
@@ -65,7 +76,7 @@ export default function Login() {
                 <Err msg={err.email || err._} />
               </div>
               <button className="btn pri block" disabled={busy}>{busy ? 'Enviando…' : 'Enviar link de acesso'}</button>
-              <p className="muted small">Com a conta, você vê só os projetos em que participa. Suas respostas continuam em particular.</p>
+              <p className="muted small">Com a conta, você vê só os projetos em que participa. Ninguém vê suas respostas até o fim das respostas.</p>
             </form>
           </>
         )}
