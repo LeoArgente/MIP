@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { PERFIL, perfilDone, mem, QS, GROUPS, GNAME, LV, approved, elig, nm, ansOf, isP, qsFor, hasNota, lvOf, notasOf, fmtAns, steps, stepOf, stepErrors } from '@mip/domain';
 import { useProject } from './Project.jsx';
+import Header from '../components/Header.jsx';
 import { Banner, Btn, Err } from '../components/ui.jsx';
 import { usePlace } from '../components/Feedback.jsx';
 
@@ -12,6 +13,7 @@ function Perfil() {
   const exit = () => { setUi({ qasset: null, qstep: 0, flag: {} }); setErr({}); };
   return (
     <div className="qs">
+      <Header />
       <header className="qs-top"><button className="qs-exit" onClick={exit}>‹ Voltar ao projeto</button><div className="qs-ctx"><b>Sobre você</b><span>{p.name}</span></div><span className="qs-count">Antes de começar</span></header>
       <div className="qs-progress"><span style={{ width: '0%' }} /></div>
       <main className="qs-main"><div className="qs-col">
@@ -169,6 +171,7 @@ function Questions() {
   const sentName = ui.flag.qsent && p.assets.find(x => x.id === ui.flag.qsent)?.name;
   return (
     <div className="qs" onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !['TEXTAREA', 'BUTTON'].includes(e.target.tagName)) { e.preventDefault(); if (g === 'review') { if (open) send(); } else next(); } }}>
+      <Header />
       <header className="qs-top">
         <button className="qs-exit" onClick={exit}>‹ Voltar ao projeto</button>
         <div className="qs-ctx"><b>{a.name}</b><span>{a.cat} · {as.indexOf(a) + 1} de {as.length}</span></div>

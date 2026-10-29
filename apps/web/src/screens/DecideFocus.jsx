@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { QS, SCEN, GRP, PCT_SIM, PCT_NEG, decQs, approved, elig, nm, isP, itemStatus, hasNota, lvName, partOf, partTxt, propOf, decPts, dsteps, decPick } from '@mip/domain';
 import { useProject } from './Project.jsx';
+import Header from '../components/Header.jsx';
 import { Banner, Btn, Err, Voters } from '../components/ui.jsx';
 import { usePlace } from '../components/Feedback.jsx';
 
@@ -97,6 +98,7 @@ export default function DecideFocus() {
   const savedName = ui.flag.dsaved && p.assets.find(x => x.id === ui.flag.dsaved)?.name;
   return (
     <div className="qs">
+      <Header />
       <header className="qs-top">
         <button className="qs-exit" onClick={exit}>‹ Voltar às decisões</button>
         <div className="qs-ctx"><b>Decisões · {a.name}</b><span>Criação {as.indexOf(a) + 1} de {as.length}</span></div>

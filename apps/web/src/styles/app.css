@@ -137,8 +137,13 @@ input[type=radio], input[type=checkbox] { width: 20px; height: 20px; margin: 0; 
 .tok { background: var(--color-surface-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; font-size: var(--text-subhead-size); }
 
 /* ===== Topo e navegação ===== */
-.top { display: flex; gap: var(--space-3); align-items: center; justify-content: space-between; min-height: 56px; padding: var(--space-1) 0 var(--space-6); }
-.brand { background: none; border: 0; padding: 0; cursor: pointer; font-size: var(--text-title-3-size); font-weight: 700; letter-spacing: -.01em; min-height: var(--size-touch); }
+.top { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); padding: var(--space-1) 0 var(--space-6); }
+.top-row { width: 100%; display: flex; gap: var(--space-3); align-items: center; justify-content: space-between; min-height: 56px; }
+.brand { background: none; border: 0; padding: 0; cursor: pointer; color: var(--color-ink); min-height: var(--size-touch); display: inline-flex; align-items: center; }
+.brand-logo { display: block; }
+.brand-logo svg { display: block; height: 40px; width: auto; }
+@media (max-width: 560px) { .brand-logo svg { height: 32px; } }
+.brand:hover { opacity: .75; }
 /* Conta: botão com inicial + nome que abre um menu (pull-down). */
 .account { position: relative; }
 .account-btn { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--size-touch); padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1); border-radius: var(--radius-pill); background: var(--color-surface); border: 1px solid transparent; cursor: pointer; font-size: var(--text-callout-size); font-weight: 500; }
@@ -253,7 +258,9 @@ html { scroll-behavior: smooth; }
 .art-orbit { position: absolute; border: 1px solid rgba(255,255,255,.32); border-radius: 50%; aspect-ratio: 1; }
 .orbit-one { width: min(78%, 400px); box-shadow: 0 0 0 28px rgba(255,255,255,.035); }
 .orbit-two { width: min(54%, 280px); }
-.art-core { width: min(34%, 168px); aspect-ratio: 1; border-radius: 50%; background: var(--color-hero-ink); color: var(--color-hero-bg); display: grid; place-items: center; font-size: clamp(30px, 3.6vw, 48px); font-weight: 700; letter-spacing: -.04em; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+.art-core { width: min(34%, 168px); aspect-ratio: 1; border-radius: 50%; background: var(--color-hero-ink); color: var(--color-hero-bg); display: grid; place-items: center; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+/* Símbolo da MIP no centro, na cor do fundo do destaque (currentColor). */
+.art-core svg { width: 46%; height: auto; display: block; }
 .art-caption { position: absolute; bottom: var(--space-6); font-size: var(--text-caption-1-size); font-weight: 500; letter-spacing: .16em; text-transform: uppercase; color: var(--color-hero-muted); }
 /* Com projetos, o destaque é secundário: mais baixo e com título menor. */
 .has-projects .landing-art { min-height: 300px; }

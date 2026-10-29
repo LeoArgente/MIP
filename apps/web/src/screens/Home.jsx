@@ -6,6 +6,7 @@ import { get } from '../api.js';
 import { useSession } from '../session.jsx';
 import Header from '../components/Header.jsx';
 import { Btn, Chip } from '../components/ui.jsx';
+import simbolo from '../assets/logo/mip-simbolo.svg?raw';
 
 const HOME_STEPS = [
   ['Preparar', 'Adicione a equipe e cadastre o que vocês criaram.'],
@@ -88,7 +89,7 @@ export default function Home() {
             <div className="landing-actions">{!has && cta}<a href="#etapas">Conhecer as etapas ↓</a></div>
           </div>
           <div className="landing-art" aria-hidden="true">
-            <span className="art-orbit orbit-one" /><span className="art-orbit orbit-two" /><span className="art-core">mip.</span><span className="art-caption">criar · conversar · decidir</span>
+            <span className="art-orbit orbit-one" /><span className="art-orbit orbit-two" /><span className="art-core" dangerouslySetInnerHTML={{ __html: simbolo }} /><span className="art-caption">criar · conversar · decidir</span>
           </div>
         </section>
 
