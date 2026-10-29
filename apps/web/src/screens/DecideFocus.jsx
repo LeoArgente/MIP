@@ -1,4 +1,5 @@
-/* Decidir uma criação (quem organiza): um ponto por tela, com a contagem das respostas dentro de cada opção, e a revisão. */
+/* Decidir uma criação (quem organiza): um ponto divergente por tela, com a contagem das respostas dentro de cada opção, e a revisão.
+   Um ponto em que todos concordaram só abre quando escolhido na revisão, e volta direto para ela. */
 import { useEffect, useRef } from 'react';
 import { QS, SCEN, GRP, PCT_SIM, PCT_NEG, decQs, approved, elig, nm, isP, itemStatus, hasNota, lvName, partOf, partTxt, propOf, decPts, dsteps, decPick } from '@mip/domain';
 import { useProject } from './Project.jsx';
@@ -7,35 +8,37 @@ import { Banner, Btn, Err } from '../components/ui.jsx';
 export default function DecideFocus() {
   const { p, act, err, setErr, ui, setUi, editProp } = useProject();
   const as = approved(p), a = as.find(x => x.id === ui.dq), pr = propOf(p, a.id), E = elig(p), S = dsteps(p, a);
-  const s = Math.min(S.length - 1, Math.max(0, ui.dstep)), q = S[s], nq = S.length - 1, title = useRef();
-  useEffect(() => { title.current?.focus({ preventScroll: true }); window.scrollTo(0, 0); }, [a.id, s]);
+  const s = Math.min(S.length - 1, Math.max(0, ui.dstep)), extra = ui.dedit && !S.includes(ui.dedit) ? ui.dedit : null;
+  const q = extra || S[s], nq = S.length - 1, title = useRef();
+  useEffect(() => { title.current?.focus({ preventScroll: true }); window.scrollTo(0, 0); }, [a.id, s, extra]);
 
-  const goStep = n => { setErr({}); setUi({ dstep: n }); };
+  const goStep = n => { setErr({}); setUi({ dstep: n, dedit: null }); };
+  const edit = k => { setErr({}); if (S.includes(k)) goStep(S.indexOf(k)); else setUi({ dedit: k }); };
   const pick = (k, v) => { setErr({}); editProp(a.id, cur => ({ v: { [k]: isP(k) ? ((cur.v[k] || []).includes(v) ? cur.v[k].filter(x => x !== v) : [...(cur.v[k] || []), v]) : v } })); };
   const save = async () => {
     const r = await act('saveprop', { aid: a.id });
     if (!r) return;
-    if (r.next) setUi({ dq: r.next, dstep: 0, flag: { dsaved: a.id } });
-    else setUi({ dq: null, dstep: 0, flag: { dsaved: a.id } });
+    if (r.next) setUi({ dq: r.next, dstep: 0, dedit: null, flag: { dsaved: a.id } });
+    else setUi({ dq: null, dstep: 0, dedit: null, flag: { dsaved: a.id } });
   };
 
   let body;
   if (q === 'review') {
     const pts = decPts(p, a), same = ['notas'].concat(decQs(a)).filter(k => !pts.includes(k));
     const row = (k, goTo) => {
-      const inner = <><b>{QS[k].short}</b><span>{k === 'notas' ? partTxt(p, partOf(p, a.id)) : decPick(p, k, pr) || 'Falta decidir'}</span>{goTo && <i>Mudar</i>}</>;
-      return goTo ? <button className="qs-rrow" key={k} onClick={() => goStep(S.indexOf(k))}>{inner}</button> : <div className="qs-rrow" key={k}>{inner}</div>;
+      const inner = <><b>{QS[k].short}</b><span>{k === 'notas' ? partTxt(p, partOf(p, a.id)) : decPick(p, k, pr) || 'Falta decidir'}</span>{goTo && <i>Editar</i>}</>;
+      return goTo ? <button className="qs-rrow" key={k} onClick={() => edit(k)}>{inner}</button> : <div className="qs-rrow" key={k}>{inner}</div>;
     };
     const holders = (pr.v.titular || []).concat(pr.externo ? ['__externo__'] : []);
     const cs = p.comments.filter(x => x.aid === a.id);
     body = (
       <>
-        <div className="qs-head"><h1 className="qs-title" ref={title} tabIndex={-1}>Decisões de {a.name}</h1><p className="qs-hint">{pts.length ? 'Confira antes de salvar. Clique num ponto para mudar.' : 'Todos responderam igual. Confira e salve.'}</p></div>
+        <div className="qs-head"><h1 className="qs-title" ref={title} tabIndex={-1}>Decisões de {a.name}</h1><p className="qs-hint">{pts.length ? 'Confira antes de salvar. Escolha um ponto para editar.' : 'Todos responderam igual. Confira e salve.'}</p></div>
         <div className="qs-review">
           {pts.length > 0 && <div className="qs-sec"><p>Pontos com respostas diferentes</p><div className="qs-list">{pts.map(k => row(k, k !== 'notas'))}</div></div>}
-          {same.length > 0 && <div className="qs-sec"><p>Respostas iguais — você também pode mudar a proposta</p><div className="qs-list">{same.map(k => row(k, k !== 'notas'))}</div></div>}
+          {same.length > 0 && <div className="qs-sec"><p>Respostas iguais — você também pode editar</p><div className="qs-list">{same.map(k => row(k, k !== 'notas'))}</div></div>}
         </div>
-        {pr.v.divisao === PCT_NEG && <p className="qs-hint">Os percentuais ainda não foram combinados? Você pode salvar a proposta assim; o memorial mostrará essa pendência. Para informar percentuais, clique em “Percentuais combinados” acima e escolha “Sim”.</p>}
+        {pr.v.divisao === PCT_NEG && <p className="qs-hint">Percentuais ficam como pendência no registro do acordo. Para informar agora, escolha “Percentuais combinados” acima.</p>}
         <div className="qs-field"><label htmlFor={'ext-' + a.id} className="q">Titular pretendido fora da equipe (se houver)</label><input id={'ext-' + a.id} type="text" value={pr.externo || ''} onChange={e => editProp(a.id, { externo: e.target.value })} placeholder="Pessoa, empresa ou instituição" /></div>
         {pr.v.divisao === PCT_SIM && (
           <div className="qs-field">
@@ -54,7 +57,7 @@ export default function DecideFocus() {
           <p className="qs-hint">As escolhas acima já estão registradas. Escreva aqui apenas o motivo de alguma escolha ou algo que ainda precisa ser conferido, como um contrato ou uma autorização. Se não houver nada a acrescentar, deixe em branco.</p>
           <textarea id={'pt-' + a.id} value={pr.texto || ''} onChange={e => editProp(a.id, { texto: e.target.value })} placeholder="Ex.: O logo pode ir ao portfólio após autorização de Ana. Falta conferir a licença da fonte." />
         </div>
-        <label className="qs-row"><input type="checkbox" checked={!!pr.semAcordo} onChange={e => editProp(a.id, { semAcordo: e.target.checked })} /><span>A equipe ainda não chegou a um acordo sobre {a.name}</span></label>
+        {(pts.length > 0 || pr.semAcordo) && <label className="qs-row"><input type="checkbox" checked={!!pr.semAcordo} onChange={e => editProp(a.id, { semAcordo: e.target.checked })} /><span>A equipe ainda não chegou a um acordo sobre {a.name}</span></label>}
         <Err msg={err['p' + a.id]} />
         {cs.length > 0 && <div className="qs-sec"><p>Comentários da equipe</p>{cs.map((x, i) => <p className="qs-hint" key={x.id || i}><b>{nm(p, x.pid)}:</b> {x.text}</p>)}</div>}
       </>
@@ -64,7 +67,7 @@ export default function DecideFocus() {
     body = (
       <>
         <div className="qs-head">
-          <p className="qs-step">Ponto {s + 1} de {nq} · {GRP(q)}</p>
+          <p className="qs-step">{extra ? GRP(q) : 'Ponto ' + (s + 1) + ' de ' + nq + ' · ' + GRP(q)}</p>
           <h1 className="qs-title" ref={title} tabIndex={-1}>{QS[q].label}</h1>
           <p className="qs-hint">{q === 'notas' ? 'As respostas variaram. Elas mostram percepções, sem definir percentuais ou direitos.' : isP(q) ? 'Os números mostram quantas pessoas marcaram cada nome. Marque o que a equipe decidiu.' : 'Os números mostram quantas pessoas escolheram cada opção. Marque o que a equipe decidiu.'}</p>
         </div>
@@ -88,14 +91,14 @@ export default function DecideFocus() {
     );
   }
 
-  const exit = () => { setUi({ dq: null, dstep: 0, flag: {} }); setErr({}); };
+  const exit = () => { setUi({ dq: null, dstep: 0, dedit: null, flag: {} }); setErr({}); };
   const savedName = ui.flag.dsaved && p.assets.find(x => x.id === ui.flag.dsaved)?.name;
   return (
     <div className="qs">
       <header className="qs-top">
-        <button className="qs-exit" onClick={exit}>Sair</button>
+        <button className="qs-exit" onClick={exit}>‹ Voltar às decisões</button>
         <div className="qs-ctx"><b>Decisões · {a.name}</b><span>Criação {as.indexOf(a) + 1} de {as.length}</span></div>
-        <span className="qs-count">{q === 'review' ? 'Revisão' : (s + 1) + ' de ' + nq}</span>
+        <span className="qs-count">{q === 'review' || extra ? 'Revisão' : (s + 1) + ' de ' + nq}</span>
       </header>
       <div className="qs-progress" role="progressbar" aria-label="Progresso das decisões" aria-valuemin={0} aria-valuemax={nq} aria-valuenow={s}><span style={{ width: (nq ? Math.round(100 * s / nq) : 100) + '%' }} /></div>
       <main className="qs-main">
@@ -104,7 +107,7 @@ export default function DecideFocus() {
           {savedName && s === 0 && <Banner>Decisões de {savedName} salvas. Agora, {a.name}.</Banner>}
           <div className="qs-card">
             {body}
-            <div className="qs-actions">{s > 0 && <Btn onClick={() => goStep(s - 1)}>Voltar</Btn>}{q === 'review' ? <Btn kind="pri" onClick={save}>Salvar decisões de {a.name}</Btn> : <Btn kind="pri" onClick={() => goStep(s + 1)}>{s === nq - 1 ? 'Revisar decisões' : 'Próximo ponto'}</Btn>}</div>
+            <div className="qs-actions">{extra ? <Btn kind="pri" onClick={() => setUi({ dedit: null })}>Voltar à revisão</Btn> : <>{s > 0 && <Btn onClick={() => goStep(s - 1)}>Voltar</Btn>}{q === 'review' ? <Btn kind="pri" onClick={save}>Salvar decisões de {a.name}</Btn> : <Btn kind="pri" onClick={() => goStep(s + 1)}>{s === nq - 1 ? 'Revisar' : 'Continuar'}</Btn>}</>}</div>
           </div>
           <p className="qs-private">Só quem organiza registra. A equipe confirma depois.</p>
         </div>

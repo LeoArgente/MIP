@@ -2,16 +2,18 @@
    Rascunhos (respostas e proposta) são salvos sozinhos alguns instantes depois da última mudança. */
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { approved, mem, PHN, clone, propOf } from '@mip/domain';
+import { approved, mem, phaseName, clone, propOf } from '@mip/domain';
 import { get, post, patch } from '../api.js';
 import { useSession } from '../session.jsx';
 import Header from '../components/Header.jsx';
-import { Banner, Btn, Chip, useToast } from '../components/ui.jsx';
-import { Hub, Equipe, Criacoes, Respostas, Andamento, Decidir, Confirmacao, Memorial, Welcome, TIPS } from './ProjectScreens.jsx';
+import { Banner, Btn, BusyCtx, Chip, useToast } from '../components/ui.jsx';
+import { Hub, Equipe, Criacoes, Sobre, Respostas, Andamento, Decidir, Confirmacao, Memorial, Welcome, TIPS } from './ProjectScreens.jsx';
 import Question from './Question.jsx';
 import DecideFocus from './DecideFocus.jsx';
 
 const Ctx = createContext(null);
+/* O que o botão diz enquanto a ação roda: o que está acontecendo, não "Carregando". */
+const BUSY = { setupnext: 'Salvando…', setupassets: 'Liberando…', qsend: 'Enviando…', closeok: 'Encerrando…', saveprop: 'Salvando…', sendv: 'Enviando…', conf: 'Confirmando…', refuse: 'Enviando…', genmem: 'Gerando…', del: 'Excluindo…', remove: 'Removendo…', invite: 'Adicionando…', addasset: 'Cadastrando…', sugasset: 'Enviando…', comment: 'Enviando…', remind: 'Enviando…' };
 export const useProject = () => useContext(Ctx);
 
 export default function Project() {
@@ -19,9 +21,10 @@ export default function Project() {
   const { me: user, update, config } = useSession(), me = user.id;
   const [p, setP] = useState(null), [loadErr, setLoadErr] = useState(null), [err, setErr] = useState({});
   /* Estado da tela (não vai para o servidor). */
-  const [ui, setUiState] = useState({ qasset: null, qstep: 0, dq: null, dstep: 0, flag: {}, tipOpen: null });
+  const [ui, setUiState] = useState({ qasset: null, qstep: 0, dq: null, dstep: 0, dedit: null, flag: {}, tipOpen: null });
   const setUi = useCallback(o => setUiState(s => ({ ...s, ...(typeof o === 'function' ? o(s) : o) })), []);
   const pending = useRef(new Map()), timer = useRef();
+  const [busy, setBusy] = useState(null), running = useRef(false);
 
   const load = useCallback(async () => {
     try { setP(await get('/api/projects/' + id)); setLoadErr(null); } catch (x) { setLoadErr(x); }
@@ -50,9 +53,13 @@ export default function Project() {
 
   /* Executa uma ação no servidor e aplica o resultado na tela. */
   const act = useCallback(async (type, body = {}, path) => {
-    await flush();
-    setErr({});
+    /* Uma ação por vez: um segundo clique enquanto a primeira roda é ignorado. */
+    if (running.current) return null;
+    running.current = true;
+    setBusy({ type, label: BUSY[type] || 'Salvando…' });
     try {
+      await flush();
+      setErr({});
       const r = await post(path || `/api/projects/${id}/actions/${type}`, body);
       if (r.project) setP(r.project);
       const res = r.result || {};
@@ -67,6 +74,9 @@ export default function Project() {
       if (x.err._ || x.status === 403) say(x.message, 'bad');
       if (x.status === 409 || x.status === 403) load();
       return null;
+    } finally {
+      running.current = false;
+      setBusy(null);
     }
   }, [flush, go, id, load, say, me, setUi]);
 
@@ -92,42 +102,46 @@ export default function Project() {
     });
   }, [queue]);
 
-  if (loadErr) return <><Header /><Banner k="bad" action={<Btn kind="sm" onClick={() => nav('/')}>Voltar ao início</Btn>}>{loadErr.message}</Banner></>;
-  if (!p) return <Header />;
+  if (loadErr) return <div className="proj-wrap"><Header /><Banner k="bad" action={<Btn kind="sm" onClick={() => nav('/')}>Voltar ao início</Btn>}>{loadErr.message}</Banner></div>;
+  if (!p) return <div className="proj-wrap"><Header /></div>;
 
   const m = mem(p, me), org = p.org === me;
-  const value = { p, me, org, act, go, err, setErr, ui, setUi, editDraft, editProp, flush, reload: load, say, tab };
+  /* Sobre o projeto e sobre você: salvos sozinhos, como os rascunhos. */
+  const editSobre = ch => setP(prev => { const n = clone(prev); n.sobre = { ...(n.sobre || {}), ...ch }; queue('sobre', { type: 'sobre', body: { sobre: n.sobre } }); return n; });
+  const editPerfil = ch => setP(prev => { const n = clone(prev), mm = n.members.find(x => x.pid === me); mm.perfil = { ...(mm.perfil || {}), ...ch }; queue('perfil', { type: 'perfil', body: { perfil: mm.perfil } }); return n; });
+  const value = { p, me, org, act, go, err, setErr, ui, setUi, editDraft, editProp, editSobre, editPerfil, flush, reload: load, say, tab };
 
   /* Modo foco: responder perguntas ou decidir uma criação, uma tela por vez. */
   const inQuestion = tab === 'resp' && m?.status === 'ativo' && m.elig && approved(p).some(a => a.id === ui.qasset);
   const inDecide = tab === 'decidir' && p.phase === 'decisao' && org && approved(p).some(a => a.id === ui.dq);
-  if (user.seenWelcome && (inQuestion || inDecide)) return <Ctx.Provider value={value}>{inQuestion ? <Question /> : <DecideFocus />}</Ctx.Provider>;
+  if (user.seenWelcome && (inQuestion || inDecide)) return <Ctx.Provider value={value}><BusyCtx.Provider value={busy}>{inQuestion ? <Question /> : <DecideFocus />}</BusyCtx.Provider></Ctx.Provider>;
 
-  const head = <header className="proj"><b>{p.name}</b><span>{(org ? 'Você organiza' : 'Você participa') + ' · ' + PHN[p.phase]}</span></header>;
-  if (!user.seenWelcome) return <><Header />{head}<Welcome name={user.name} askName={!config.testLogin} onStart={async name => { await update({ name, seenWelcome: true }); load(); }} /></>;
+  if (!user.seenWelcome) return <div className="proj-wrap"><Header /><div className="hub"><header className="proj"><h1>{p.name}</h1><span>{org ? 'Você organiza' : 'Você participa'}</span></header><Welcome name={user.name} askName={!config.testLogin} onStart={async name => { await update({ name, seenWelcome: true }); load(); }} /></div></div>;
 
-  const screens = { proj: Hub, equipe: Equipe, ativos: Criacoes, resp: Respostas, coleta: Andamento, decidir: Decidir, conf: Confirmacao, memorial: Memorial };
+  const screens = { proj: Hub, equipe: Equipe, ativos: Criacoes, sobre: Sobre, resp: Respostas, coleta: Andamento, decidir: Decidir, conf: Confirmacao, memorial: Memorial };
   const Screen = screens[tab] || Hub;
   return (
-    <Ctx.Provider value={value}>
-      <Header />
-      {tab === 'proj' ? head : (
-        <nav className={'back-nav' + (tab === 'conf' ? '' : ' read')}>
-          <span className="back-l"><button className="back-btn" onClick={() => go('proj')}>‹ {p.name}</button><Chip>{PHN[p.phase]}</Chip></span>
-          {TIPS[tab] && ui.tipOpen !== tab && <button className="link" onClick={() => setUi({ tipOpen: tab })}>Como funciona?</button>}
-        </nav>
-      )}
-      <Screen />
-    </Ctx.Provider>
+    <Ctx.Provider value={value}><BusyCtx.Provider value={busy}>
+      <div className="proj-wrap">
+        {/* Uma barra só no alto: dentro de uma etapa, "‹ Nome do projeto" ocupa o lugar da marca. */}
+        <Header back={tab === 'proj' ? null : { label: p.name, onClick: () => go('proj') }} />
+        <Screen />
+      </div>
+    </BusyCtx.Provider></Ctx.Provider>
   );
 }
 
-/* Layout das telas do projeto: cartão principal com a barra de ações no fim e, quando houver, coluna lateral. */
+/* Layout das telas do projeto: fase e ajuda no alto, o conteúdo direto no fundo (sem cartão em volta),
+   a barra de ações no fim e, quando houver, o complemento logo abaixo, na mesma coluna. */
 export function Page({ children, bar, side }) {
-  const { ui, setUi, tab } = useProject();
+  const { p, ui, setUi, tab } = useProject();
   return (
-    <div className={'page' + (side ? '' : ' solo')}>
+    <div className="page">
       <div className="page-main">
+        <div className="page-meta">
+          <Chip>{phaseName(p)}</Chip>
+          {TIPS[tab] && ui.tipOpen !== tab && <button className="link" onClick={() => setUi({ tipOpen: tab })}>Como funciona?</button>}
+        </div>
         {ui.tipOpen === tab && TIPS[tab] && <div className="tip-card"><p>{TIPS[tab]}</p><Btn kind="sm" onClick={() => setUi({ tipOpen: null })}>Fechar</Btn></div>}
         <div className="step-card">{children}{bar}</div>
       </div>

@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { itemStatus, partOf, taskFor, propDefault, propError, sendErrors, memorialBody, snapshot, approved, PCT_SIM } from '../src/index.js';
+import { itemStatus, partOf, taskFor, propDefault, propError, sendErrors, memorialBody, snapshot, approved, PCT_SIM, dsteps } from '../src/index.js';
 
 /* Cenário do protótipo: Ana organiza, Bruno e Carla participam. */
 function demo() {
-  const base = { origem: 'Criada neste projeto', titularAtual: 'Ainda não sabemos', divisao: 'Ainda não, precisamos negociar', uso: 'Só quem for dono', comercial: 'Sim', portfolio: 'Todos que criaram', marcaRegistro: 'Sim, com evidência', desc: 'fiz', link: '' };
+  const base = { materiais: 'Só o que a própria pessoa fez', origem: 'Criada neste projeto', titularAtual: 'Ainda não sabemos', divisao: 'Ainda não, precisamos negociar', uso: 'Só quem for dono', comercial: 'Sim', portfolio: 'Todos que criaram', marcaRegistro: 'Sim, com evidência', desc: 'fiz', link: '' };
   const sent = (o) => ({ draft: { ...base, ...o }, sent: { ...base, ...o, at: 1 } });
   return {
     id: 'p1', name: 'App Rotas', context: 'Disciplina', org: 'ana', phase: 'decisao', setupStep: 'resp',
@@ -26,6 +26,13 @@ test('respostas iguais convergem e diferentes divergem', () => {
   assert.equal(itemStatus(p, 'a1', 'uso').status, 'conv');
   assert.equal(itemStatus(p, 'a1', 'titular').status, 'div');
   assert.equal(itemStatus(p, 'a1', 'notas').status, 'conv');
+});
+
+test('decisão passa só pelos pontos divergentes antes da revisão', () => {
+  const p = demo();
+  assert.deepEqual(dsteps(p, p.assets[0]), ['titular', 'review']);
+  p.answers.carla.a1 = p.answers.ana.a1;
+  assert.deepEqual(dsteps(p, p.assets[0]), ['review']);
 });
 
 test('proposta inicial traz só o que todos responderam igual', () => {
@@ -70,4 +77,11 @@ test('registro do acordo lista participantes e pendências', () => {
   const body = memorialBody(p, Date.UTC(2026, 9, 27, 15));
   assert.match(body, /PARTICIPANTES/);
   assert.match(body, /percentuais ainda não negociados/);
+});
+
+test('pergunta sem resposta (enviada antes de existir) fica pendente, não convergente', () => {
+  const p = demo();
+  Object.values(p.answers).forEach(x => { delete x.a1.sent.materiais; });
+  assert.equal(itemStatus(p, 'a1', 'materiais').status, 'pend');
+  assert.equal(propDefault(p, 'a1').v.materiais, '');
 });

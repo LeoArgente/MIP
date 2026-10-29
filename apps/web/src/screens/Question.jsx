@@ -1,10 +1,47 @@
 /* Responder uma criação: 3 telas (Contribuição e origem, Titularidade pretendida, Uso e condições) e a revisão. */
 import { useEffect, useRef } from 'react';
-import { QS, GROUPS, GNAME, LV, approved, elig, nm, ansOf, isP, qsFor, hasNota, lvOf, notasOf, fmtAns, steps, stepOf, stepErrors } from '@mip/domain';
+import { PERFIL, perfilDone, mem, QS, GROUPS, GNAME, LV, approved, elig, nm, ansOf, isP, qsFor, hasNota, lvOf, notasOf, fmtAns, steps, stepOf, stepErrors } from '@mip/domain';
 import { useProject } from './Project.jsx';
 import { Banner, Btn, Err } from '../components/ui.jsx';
 
+/* Sobre você: uma vez por projeto, antes da primeira pergunta. */
+function Perfil() {
+  const { p, me, act, err, setErr, setUi, editPerfil } = useProject(), f = mem(p, me).perfil || {}, title = useRef();
+  useEffect(() => { title.current?.focus({ preventScroll: true }); window.scrollTo(0, 0); }, []);
+  const exit = () => { setUi({ qasset: null, qstep: 0, flag: {} }); setErr({}); };
+  return (
+    <div className="qs">
+      <header className="qs-top"><button className="qs-exit" onClick={exit}>‹ Voltar ao projeto</button><div className="qs-ctx"><b>Sobre você</b><span>{p.name}</span></div><span className="qs-count">Antes de começar</span></header>
+      <div className="qs-progress"><span style={{ width: '0%' }} /></div>
+      <main className="qs-main"><div className="qs-col">
+        <div className="qs-card">
+          <div className="qs-head"><p className="qs-step">Uma vez por projeto</p><h1 className="qs-title" ref={title} tabIndex={-1}>Antes de começar, conte sobre você</h1><p className="qs-hint">A equipe vê estas respostas só depois que as respostas forem encerradas.</p></div>
+          <div className="qs-q">
+            <label className="qs-sub" htmlFor="pf-funcao">{PERFIL.funcao.label}</label>
+            <input id="pf-funcao" type="text" value={f.funcao || ''} onChange={e => { setErr({}); editPerfil({ funcao: e.target.value }); }} placeholder={PERFIL.funcao.ph} autoFocus />
+            <Err msg={err['perfil:funcao']} />
+          </div>
+          <div className="qs-q">
+            <p className="qs-sub" id="pf-investiu">{PERFIL.investiu.label}</p>
+            <p className="qs-hint" id="pf-investiu-h">{PERFIL.investiu.hint}</p>
+            <div className="qs-list" role="radiogroup" aria-labelledby="pf-investiu" aria-describedby="pf-investiu-h">{PERFIL.investiu.opts.map(o => <label className="qs-row" key={o}><input type="radio" name="pf-investiu" checked={f.investiu === o} onChange={() => { setErr({}); editPerfil({ investiu: o }); }} /><span>{o}</span></label>)}</div>
+            <Err msg={err['perfil:investiu']} />
+          </div>
+          <div className="qs-actions"><Btn kind="pri" onClick={() => act('perfil', { perfil: f, check: true })}>Continuar</Btn></div>
+        </div>
+        <p className="qs-private">Salvo automaticamente.</p>
+      </div></main>
+    </div>
+  );
+}
+
 export default function Question() {
+  const { p: pp, me: mm } = useProject();
+  if (pp.phase === 'coleta' && !perfilDone(pp, mm)) return <Perfil />;
+  return <Questions />;
+}
+
+function Questions() {
   const { p, me, act, err, setErr, ui, setUi, editDraft, say, go } = useProject();
   const as = approved(p), open = p.phase === 'coleta', a = as.find(x => x.id === ui.qasset);
   const an = ansOf(p, me, a.id) || { draft: {}, sent: null }, d = an.draft || {}, S = steps(), s = Math.min(S.length - 1, Math.max(0, ui.qstep)), g = S[s], nq = S.length - 1;
@@ -35,19 +72,20 @@ export default function Question() {
     if (gi >= 0) { goStep(gi); say('Falta uma resposta. Levamos você até ela.', 'bad'); }
   }, [err]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const block = q => (
-    <fieldset className="qs-q" key={q}>
-      <legend className="qs-sub">{QS[q].label}</legend>
-      {QS[q].hint && <p className="qs-hint">{QS[q].hint}</p>}
-      <div className="qs-list" role={isP(q) ? 'group' : 'radiogroup'}>
+  /* Pergunta de escolha: enunciado, dica e o grupo de opções ligado a eles por aria-labelledby/describedby. */
+  const block = q => { const id = 'q-' + a.id + '-' + q; return (
+    <div className="qs-q" key={q}>
+      <p className="qs-sub" id={id}>{QS[q].label}</p>
+      {QS[q].hint && <p className="qs-hint" id={id + '-h'}>{QS[q].hint}</p>}
+      <div className="qs-list" role={isP(q) ? 'group' : 'radiogroup'} aria-labelledby={id} aria-describedby={QS[q].hint ? id + '-h' : undefined}>
         {isP(q)
           ? E.map(pid => <label className={'qs-row' + (dis ? ' dis' : '')} key={pid}><input type="checkbox" checked={(d[q] || []).includes(pid)} disabled={dis} onChange={() => setAns(q, pid)} /><span>{nm(p, pid)}{pid === me && ' (você)'}</span></label>)
           : QS[q].opts.map(u => <label className={'qs-row' + (dis ? ' dis' : '')} key={u}><input type="radio" name={'q-' + a.id + '-' + q} checked={d[q] === u} disabled={dis} onChange={() => setAns(q, u)} /><span>{u}</span></label>)}
       </div>
       {isP(q) && <p className="qs-foot">Pode marcar mais de uma pessoa.</p>}
       <Err msg={err[a.id + ':' + q]} />
-    </fieldset>
-  );
+    </div>
+  ); };
   /* Atalho: repetir as respostas que a pessoa já enviou em outra criação. */
   const copyFrom = gk => {
     if (!open) return null;
@@ -73,7 +111,7 @@ export default function Question() {
     };
     body = (
       <>
-        <div className="qs-head"><h1 className="qs-title" ref={title} tabIndex={-1}>{an.sent || !open ? 'Suas respostas' : 'Revise e envie'}</h1>{open && <p className="qs-hint">Clique numa resposta para mudar. Você pode editar até quem organiza encerrar as respostas.</p>}</div>
+        <div className="qs-head"><h1 className="qs-title" ref={title} tabIndex={-1}>{an.sent || !open ? 'Suas respostas' : 'Revise e envie'}</h1>{open && <p className="qs-hint">Escolha uma resposta para editar. Você pode editar até quem organiza encerrar as respostas.</p>}</div>
         <div className="qs-review">{sec('contrib')}<div className="qs-stack">{sec('donos')}{sec('uso')}</div></div>
       </>
     );
@@ -92,15 +130,15 @@ export default function Question() {
         </div>
         <Err msg={err[a.id + ':notas']} />
         {+n[me] > 0 && (
-          <fieldset className="qs-q">
-            <legend className="qs-sub"><label htmlFor="ds">O que você fez?</label></legend>
-            <p className="qs-hint">Uma ou duas frases bastam. Isso entra no registro do acordo.</p>
-            <textarea id="ds" value={d.desc || ''} onChange={setText('desc')} placeholder="Ex.: Desenhei o logo e escolhi as cores" disabled={dis} />
+          <div className="qs-q">
+            <label className="qs-sub" htmlFor="ds">O que você fez?</label>
+            <p className="qs-hint" id="ds-h">Uma ou duas frases bastam. Isso entra no registro do acordo.</p>
+            <textarea id="ds" aria-describedby="ds-h" value={d.desc || ''} onChange={setText('desc')} placeholder="Ex.: Desenhei o logo e escolhi as cores" disabled={dis} />
             <Err msg={err[a.id + ':desc']} />
             <label htmlFor="lk" className="qs-hint" style={{ marginTop: 8 }}>Link de evidência (opcional)</label>
             <input id="lk" type="text" inputMode="url" value={d.link || ''} onChange={setText('link')} placeholder="https://" disabled={dis} />
             <Err msg={err[a.id + ':link']} />
-          </fieldset>
+          </div>
         )}
         {block('origem')}{block('titularAtual')}
         <div className="qs-q">
@@ -114,7 +152,7 @@ export default function Question() {
   } else {
     body = (
       <>
-        <div className="qs-head"><p className="qs-step">Parte {s + 1} de 3 · {GNAME[g]}</p><h1 className="qs-title" ref={title} tabIndex={-1}>{g === 'donos' ? 'Quem a equipe pretende indicar como titular de ' + a.name + '?' : 'Como ' + a.name + ' pode ser usado?'}</h1></div>
+        <div className="qs-head"><p className="qs-step">Parte {s + 1} de 3 · {GNAME[g]}</p><h1 className="qs-title" ref={title} tabIndex={-1}>{g === 'donos' ? 'Donos de ' + a.name : 'Como ' + a.name + ' pode ser usado?'}</h1></div>
         {copyFrom(g)}
         {GROUPS[g].filter(q => qs.includes(q)).map(block)}
         {g === 'donos' && <div className="qs-q"><label className="qs-sub" htmlFor="tit-ext">Titular pretendido fora da equipe <span className="muted">(se houver)</span></label><input id="tit-ext" type="text" value={d.titularExterno || ''} onChange={setText('titularExterno')} placeholder="Pessoa, empresa ou instituição" disabled={dis} /></div>}
@@ -124,13 +162,13 @@ export default function Question() {
 
   const exit = () => { setUi({ qasset: null, qstep: 0, flag: {} }); setErr({}); };
   const pri = open
-    ? (g === 'review' ? <Btn kind="pri" onClick={send}>{an.sent ? 'Salvar alterações' : 'Enviar respostas'}</Btn> : <Btn kind="pri" onClick={next}>{s === nq - 1 ? 'Revisar respostas' : 'Continuar'}</Btn>)
-    : (g === 'review' ? <Btn kind="pri" onClick={exit}>Concluir</Btn> : <Btn kind="pri" onClick={() => goStep(s + 1)}>Próxima</Btn>);
+    ? (g === 'review' ? <Btn kind="pri" onClick={send}>{an.sent ? 'Salvar alterações' : 'Enviar respostas'}</Btn> : <Btn kind="pri" onClick={next}>{s === nq - 1 ? 'Revisar' : 'Continuar'}</Btn>)
+    : (g === 'review' ? <Btn kind="pri" onClick={exit}>Voltar ao projeto</Btn> : <Btn kind="pri" onClick={() => goStep(s + 1)}>Continuar</Btn>);
   const sentName = ui.flag.qsent && p.assets.find(x => x.id === ui.flag.qsent)?.name;
   return (
     <div className="qs" onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !['TEXTAREA', 'BUTTON'].includes(e.target.tagName)) { e.preventDefault(); if (g === 'review') { if (open) send(); } else next(); } }}>
       <header className="qs-top">
-        <button className="qs-exit" onClick={exit}>{open ? 'Salvar e sair' : 'Sair'}</button>
+        <button className="qs-exit" onClick={exit}>‹ Voltar ao projeto</button>
         <div className="qs-ctx"><b>{a.name}</b><span>{a.cat} · {as.indexOf(a) + 1} de {as.length}</span></div>
         <span className="qs-count">{g === 'review' ? 'Revisão' : (s + 1) + ' de ' + nq}</span>
       </header>

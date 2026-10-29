@@ -5,8 +5,26 @@ export const Chip = ({ children, k }) => <span className={'chip ' + (k || '')}>{
 export const Banner = ({ children, k, action }) => <div className={'banner ' + (k || '')} role={k === 'bad' ? 'alert' : undefined}><span>{children}</span>{action}</div>;
 export const Err = ({ msg }) => (msg ? <div className="err" role="alert">{msg}</div> : null);
 export const Head = ({ title, sub }) => <div className="head"><h2>{title}</h2>{sub && <p>{sub}</p>}</div>;
-export function Btn({ kind = '', children, ...rest }) {
-  return <button type="button" className={'btn ' + kind} {...rest}>{children}</button>;
+/* Ação do projeto em andamento (nome da ação ou null). Enquanto houver uma, os botões ficam desativados
+   e o que foi clicado mostra o indicador com o que está acontecendo ("Enviando…"). */
+export const BusyCtx = createContext(null);
+export function Btn({ kind = '', children, onClick, disabled, busyLabel, ...rest }) {
+  const busy = useContext(BusyCtx), [mine, setMine] = useState(false), ref = useRef(), width = useRef();
+  const click = e => {
+    const r = onClick?.(e);
+    if (r && typeof r.then === 'function') {
+      width.current = ref.current?.offsetWidth;
+      setMine(true);
+      r.finally(() => setMine(false));
+    }
+  };
+  const on = mine && !!busy;
+  return (
+    <button ref={ref} type="button" className={'btn ' + kind} onClick={click} disabled={disabled || !!busy} aria-busy={on || undefined} style={on && width.current ? { minWidth: width.current } : undefined} {...rest}>
+      {on && <span className="spin" aria-hidden="true" />}
+      {on ? busyLabel || busy.label : children}
+    </button>
+  );
 }
 export function Progress({ value }) {
   return <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(value)}><span style={{ width: value + '%' }} /></div>;

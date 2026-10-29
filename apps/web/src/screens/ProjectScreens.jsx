@@ -1,8 +1,8 @@
 /* Telas do projeto, portadas do protótipo (vHub, vEquipe, vAtivos, vResp, vColeta, vDecidir, vConf, vMemorial). */
 import { useState } from 'react';
 import {
-  TYPES, SECTIONS, SCEN, QS, PCT_NEG, approved, elig, mem, nm, ansOf, lastV, qsFor, decQs, roleTxt, fmt, taskFor, secInfo,
-  partOf, partTxt, pctTxt, fmtAns, propOf, decPts, dsteps, memorialText, steps
+  TYPES, SECTIONS, SCEN, QS, PCT_NEG, SOBRE, sobreKeys, sobreErrors, approved, elig, mem, nm, ansOf, lastV, qsFor, decQs, roleTxt, fmt, taskFor, secInfo,
+  partOf, partTxt, pctTxt, fmtAns, propOf, decPts, dsteps, memorialText, steps, phaseName
 } from '@mip/domain';
 import { useProject, Page } from './Project.jsx';
 import { ActionBar, Banner, Btn, Chip, Err, Head, Progress, copyText } from '../components/ui.jsx';
@@ -11,6 +11,7 @@ import { post } from '../api.js';
 export const TIPS = {
   equipe: 'Adicione quem participou do projeto. Cada pessoa responde em particular sobre cada criação.',
   ativos: 'Cadastre o que a equipe criou. O tipo da criação define uma das perguntas.',
+  sobre: 'Perguntas sobre o projeto como um todo. Quem organiza responde, e todos da equipe podem ver.',
   resp: 'Uma tela por parte. Você pode sair e voltar de onde parou. Ninguém vê suas respostas até o fim.',
   coleta: 'Mostra quem já respondeu, sem revelar as respostas. Quem não responde nunca conta como concordância.',
   decidir: 'Aparecem só os pontos em que as respostas diferem, sem mostrar quem respondeu o quê. O que todos concordaram já entra na proposta.',
@@ -35,13 +36,13 @@ export function Welcome({ onStart, name, askName = true }) {
           <li><b>A equipe decide só o que diverge.</b> O que todos concordaram já fica combinado.</li>
           <li><b>Todos confirmam.</b> As decisões ficam no registro do acordo.</li>
         </ol>
-        <p className="muted small" style={{ marginTop: 14 }}>A MIP organiza as decisões da equipe. Ela não substitui contrato, advogado ou registro oficial.</p>
-        {askName && <div className="field" style={{ marginTop: 18, maxWidth: 360 }}>
+        <p className="muted small" style={{ marginTop: 16 }}>A MIP organiza as decisões da equipe. Ela não substitui contrato, advogado ou registro oficial.</p>
+        {askName && <div className="field" style={{ marginTop: 16, maxWidth: 360 }}>
           <label htmlFor="wname">Como a equipe conhece você?</label>
           <input id="wname" type="text" autoComplete="name" value={n} onChange={x => { setN(x.target.value); setE(''); }} onKeyDown={x => x.key === 'Enter' && start()} />
           <Err msg={e} />
         </div>}
-        <div className="row start" style={{ marginTop: 14 }}><Btn kind="pri" onClick={start}>Começar</Btn></div>
+        <div className="row start" style={{ marginTop: 16 }}><Btn kind="pri" onClick={start}>Começar</Btn></div>
       </div>
     </div>
   );
@@ -52,7 +53,7 @@ function TeamCard() {
   const { p, me, org, act } = useProject(), E = elig(p), as = approved(p), open = p.phase === 'coleta';
   return (
     <section className="side-card">
-      <div className="row"><h3>Equipe</h3><span className="muted small">{E.length} respondem</span></div>
+      <div className="row"><h3>Equipe</h3><span className="muted small">{E.filter(x => as.length && as.every(a => ansOf(p, x, a.id)?.sent)).length} de {E.length} {E.length > 1 ? 'responderam' : 'respondeu'}</span></div>
       <div className="team">
         {p.members.filter(m => m.status !== 'pendente').map(m => {
           const isE = E.includes(m.pid), sent = as.filter(a => ansOf(p, m.pid, a.id)?.sent).length, done = as.length && sent === as.length;
@@ -73,7 +74,7 @@ function TeamCard() {
 function History() {
   const { p } = useProject();
   return (
-    <section className="side-card">
+    <section className="hub-history">
       <details className="more">
         <summary>Histórico do projeto ({p.history.length})</summary>
         <div className="list">
@@ -86,50 +87,68 @@ function History() {
 }
 
 /* ===== Página do projeto ===== */
+/* Em que etapa o projeto está (índice em SECTIONS): as anteriores aparecem como feitas e as seguintes, esmaecidas. */
+const stageOf = p => p.phase === 'coleta' ? ({ equipe: 0, ativos: 1, sobre: 2 }[p.setupStep] ?? 3) : { encerrada: 4, decisao: 4, confirmacao: 5, consolidado: 6 }[p.phase] ?? 3;
 export function Hub() {
-  const { p, me, go, setUi } = useProject(), t = taskFor(p, me, qposOf(p, me));
+  const { p, me, org, go, setUi } = useProject(), t = taskFor(p, me, qposOf(p, me)), stage = stageOf(p), fase = phaseName(p);
   /* Como no protótipo: "Começar a responder" abre direto a primeira criação que falta. */
   const start = () => { if (t.tab === 'resp') { const nx = approved(p).find(a => !ansOf(p, me, a.id)?.sent); if (nx) setUi({ qasset: nx.id, qstep: ansOf(p, me, nx.id)?.step || 0 }); } go(t.tab); };
   return (
-    <>
+    <div className="hub">
+      {/* A fase só aparece aqui quando o bloco "Agora" não diz a mesma coisa. */}
+      <header className="proj"><h1>{p.name}</h1><span>{(org ? 'Você organiza' : 'Você participa') + (fase !== t.label ? ' · ' + fase : '')}</span></header>
       <section className="hub-now">
         <div><p className="label">Agora</p><h2>{t.label}</h2><p>{t.note}</p></div>
         {t.tab !== 'proj' && <Btn kind="pri" onClick={start}>{t.cta || 'Continuar'}</Btn>}
       </section>
-      <div className="hub-grid">
-        <section className="g-list" aria-label="Partes do projeto">
-          {SECTIONS.map(([k, n]) => {
-            const i = secInfo(p, me, k), inner = <span className="g-l"><b>{n}</b><span>{i.s}</span></span>;
-            return i.on ? <button className="g-row" key={k} onClick={() => go(k)}>{inner}<i aria-hidden="true">›</i></button> : <div className="g-row off" key={k}>{inner}</div>;
+      {/* Quem já respondeu só importa enquanto as respostas estão abertas. */}
+      {p.phase === 'coleta' && p.setupStep === 'resp' && <TeamCard />}
+      <section className="hub-sec" aria-labelledby="hub-etapas">
+        <h2 id="hub-etapas">Etapas</h2>
+        <div className="g-list">
+          {SECTIONS.map(([k, n], ix) => {
+            const i = secInfo(p, me, k), st = ix < stage ? 'done' : ix === stage ? 'now' : 'later';
+            const inner = <span className="g-step"><span className="dot" aria-hidden="true">{st === 'done' ? '✓' : ''}</span><span className="g-l"><b><span className="sr">{st === 'done' ? 'Feita: ' : st === 'now' ? 'Agora: ' : ''}</span>{n}</b><span>{i.s}</span></span></span>;
+            return i.on ? <button className={'g-row ' + st} key={k} onClick={() => go(k)}>{inner}<i aria-hidden="true">›</i></button> : <div className={'g-row off ' + st} key={k}>{inner}</div>;
           })}
-        </section>
-        <div className="hub-col"><TeamCard /><History /></div>
-      </div>
-    </>
+        </div>
+      </section>
+      <History />
+    </div>
   );
 }
 
 /* ===== Equipe ===== */
 export function Equipe() {
   const { p, me, org, act, err, setErr, say } = useProject(), [email, setEmail] = useState(''), [msg, setMsg] = useState('');
+  const [rm, setRm] = useState(null);
+  const askRemove = async pid => { const r = await act('remove', { pid }, `/api/projects/${p.id}/remove`); if (r?.confirmRemove) setRm(r.confirmRemove); };
+  const doRemove = async () => { const r = await act('remove', { pid: rm.pid, confirm: true }, `/api/projects/${p.id}/remove`); if (r) setRm(null); };
   const copyInvite = async () => say(await copyText(inviteUrl) ? 'Link de convite para ' + p.name + ' copiado. Mande no grupo da equipe.' : 'Não foi possível copiar. Selecione o link e copie manualmente.', undefined);
   const setup = org && p.phase === 'coleta' && p.setupStep === 'equipe';
   const invite = async () => { const r = await act('invite', { email }, `/api/projects/${p.id}/invite`); if (r) { setEmail(''); setMsg(r.toast); } };
   const inviteUrl = p.link.code ? location.origin + '/convite/' + p.link.code : '';
-  const memChip = m => m.status === 'ativo' ? (m.elig ? <Chip k="ok">Participa</Chip> : <Chip k="warn">Entrou depois das respostas</Chip>) : m.status === 'pendente' ? <Chip k="warn">Convite pendente</Chip> : <Chip>Não responde</Chip>;
+  const memChip = m => m.status === 'ativo' ? (m.elig ? <Chip>Participa</Chip> : <Chip k="warn">Entrou depois das respostas</Chip>) : m.status === 'pendente' ? <Chip k="warn">Convite pendente</Chip> : <Chip>Não responde</Chip>;
   return (
-    <Page bar={setup && <ActionBar note={elig(p).length > 1 ? '' : 'Você pode adicionar mais pessoas depois.'}><Btn kind="pri" onClick={() => act('setupnext')}>Continuar para criações</Btn></ActionBar>}>
+    <Page bar={setup && <ActionBar note={elig(p).length > 1 ? '' : 'Você pode adicionar mais pessoas depois.'}><Btn kind="pri" onClick={() => act('setupnext')}>Continuar</Btn></ActionBar>}>
       <Head title="Equipe" sub={org && p.phase === 'coleta' ? 'Adicione quem participou do projeto. Cada pessoa responde em particular.' : 'Quem participa do projeto.'} />
       <div className="card">
         <div className="row"><h3>Integrantes</h3><Chip k="acc">{plural(elig(p).length, 'participa', 'participam')}</Chip></div>
         <div className="list">
           {p.members.map(m => (
             <div className="li" key={m.pid}>
-              <div className="l"><b>{nm(p, m.pid)}</b><span className="muted small">{roleTxt(p, m.pid)}{p.people[m.pid]?.email ? ' · ' + p.people[m.pid].email : ''}</span></div>
+              <div className="l"><b>{nm(p, m.pid)}</b><span className="muted small">{roleTxt(p, m.pid)}{m.perfil?.funcao ? ' · ' + m.perfil.funcao : ''}{p.people[m.pid]?.email ? ' · ' + p.people[m.pid].email : ''}</span></div>
               <div className="row start">
                 {memChip(m)}
                 {org && m.pid !== p.org && m.status === 'ativo' && <button className="link" onClick={() => act('naopart', { pid: m.pid })}>Tirar das respostas</button>}
+                {org && m.pid !== p.org && p.phase === 'coleta' && rm?.pid !== m.pid && <Btn kind="sm bad" onClick={() => askRemove(m.pid)}>Remover</Btn>}
               </div>
+              {rm?.pid === m.pid && (
+                <div className="banner warn" style={{ width: '100%' }}>
+                  <span>Remover {rm.name} do projeto?{rm.sent ? ' As respostas que ' + rm.name + ' já enviou serão apagadas.' : ''} Para voltar, será preciso adicionar de novo.</span>
+                  <span className="row start"><Btn kind="sm" onClick={() => setRm(null)}>Cancelar</Btn><Btn kind="sm bad" onClick={doRemove}>Remover do projeto</Btn></span>
+                </div>
+              )}
               {m.status === 'naopart' && <div className="muted small" style={{ width: '100%' }}>Tirado das respostas por {nm(p, m.by)} em {fmt(m.at)}. Continua na lista e no registro do acordo, mas não conta como pendência.</div>}
             </div>
           ))}
@@ -163,14 +182,14 @@ export function Equipe() {
 
 /* ===== Criações ===== */
 export function Criacoes() {
-  const { p, me, org, act, err, setErr } = useProject();
+  const { p, me, org, act, err, setErr, go } = useProject();
   const [f, setF] = useState({ type: '', name: '', desc: '', link: '' }), [open, setOpen] = useState(false), [confirmDel, setConfirmDel] = useState(null), [rec, setRec] = useState({ aid: null, reason: '' });
   const ty = TYPES.find(x => x.k === f.type), coleta = p.phase === 'coleta';
   const set = k => e => { setF({ ...f, [k]: e.target.value }); setErr({}); };
   const submit = async () => { const r = await act(org ? 'addasset' : 'sugasset', f); if (r) { setF({ type: '', name: '', desc: '', link: '' }); setOpen(false); } };
   const del = async (aid, confirm) => { const r = await act('del', { aid, confirm }); if (r?.confirmDelete) setConfirmDel(r.confirmDelete); else setConfirmDel(null); };
   const showForm = coleta && (!p.assets.length || open || err.fn || err.ft || err.fl);
-  const bar = org && coleta && p.setupStep !== 'resp' && <ActionBar note={approved(p).length ? '' : 'Cadastre pelo menos 1 criação para liberar as perguntas.'}>{approved(p).length > 0 && <Btn kind="pri" onClick={() => act('setupassets')}>Liberar perguntas para a equipe</Btn>}</ActionBar>;
+  const bar = org && coleta && p.setupStep !== 'resp' && <ActionBar note={approved(p).length ? '' : 'Cadastre pelo menos 1 criação para continuar.'}>{approved(p).length > 0 && <Btn kind="pri" onClick={() => (p.setupStep === 'ativos' ? act('setupnext') : go('sobre'))}>Continuar</Btn>}</ActionBar>;
   return (
     <Page bar={bar}>
       <Head title="Criações" sub={org && coleta ? 'Diga o que a equipe criou: um app, um logo, uma música. Cada criação recebe perguntas sobre contribuição, donos e uso.' : 'O que a equipe criou.'} />
@@ -229,6 +248,33 @@ export function Criacoes() {
               <div className="row start"><Btn kind={org && approved(p).length ? '' : 'pri'} onClick={submit}>{org ? 'Cadastrar criação' : 'Enviar sugestão'}</Btn>{p.assets.length > 0 && <Btn onClick={() => { setOpen(false); setErr({}); }}>Cancelar</Btn>}</div>
             </div>
           )}
+    </Page>
+  );
+}
+
+/* ===== Sobre o projeto (quem organiza responde) ===== */
+export function Sobre() {
+  const { p, org, act, err, setErr, editSobre } = useProject(), s = p.sobre || {}, edit = org && p.phase === 'coleta', setup = edit && p.setupStep !== 'resp';
+  const keys = sobreKeys(s), done = !Object.keys(sobreErrors(s)).length;
+  const bar = setup ? <ActionBar note={done ? 'Tudo pronto. Depois de liberar, cada pessoa responde em particular.' : 'Responda as 3 perguntas para continuar.'}><Btn kind="pri" onClick={() => act('setupassets')}>Liberar perguntas</Btn></ActionBar>
+    : edit ? <ActionBar note="As respostas são salvas sozinhas." /> : null;
+  return (
+    <Page bar={bar}>
+      <Head title="Sobre o projeto" sub={edit ? 'Três perguntas sobre o projeto como um todo. Elas ajudam a equipe a saber de onde está partindo.' : 'O que quem organiza informou sobre o projeto.'} />
+      {keys.map(k => {
+        const q = SOBRE[k], v = s[k] || '';
+        return (
+          <div className="card" key={k}>
+            <h3 className="title">{q.label}</h3>
+            {q.hint && <p className="muted small">{q.hint}</p>}
+            {!edit ? <p>{v || <span className="muted">Não informado</span>}</p>
+              : q.kind === 'text'
+                ? <input type="text" value={v} onChange={e => { setErr({}); editSobre({ [k]: e.target.value }); }} placeholder={q.ph} aria-label={q.label} />
+                : <div className="opts" role="radiogroup" aria-label={q.label}>{q.opts.map(o => <label className="opt" key={o}><input type="radio" name={'sobre-' + k} checked={v === o} onChange={() => { setErr({}); editSobre({ [k]: o }); }} />{o}</label>)}</div>}
+            <Err msg={err['sobre:' + k]} />
+          </div>
+        );
+      })}
     </Page>
   );
 }
@@ -308,11 +354,11 @@ export function Decidir() {
   const ref = p.phase === 'decisao' && lv ? Object.keys(lv.conf).filter(k => lv.conf[k].v === 'no') : [];
   const done = as.filter(a => propOf(p, a.id).saved).length, left = as.filter(a => !propOf(p, a.id).saved);
   const semN = as.filter(a => propOf(p, a.id).saved && propOf(p, a.id).semAcordo), pctN = as.filter(a => propOf(p, a.id).saved && propOf(p, a.id).v.divisao === PCT_NEG);
-  const startDecide = a => { setUi({ dq: a.id, dstep: propOf(p, a.id).saved ? dsteps(p, a).length - 1 : 0, flag: {} }); window.scrollTo(0, 0); };
+  const startDecide = a => { setUi({ dq: a.id, dstep: propOf(p, a.id).saved ? dsteps(p, a).length - 1 : 0, dedit: null, flag: {} }); window.scrollTo(0, 0); };
   let bar = null;
   if (edit) bar = left.length
-    ? <ActionBar note={done ? 'Falta' + (left.length > 1 ? 'm ' : ' ') + plural(left.length, 'criação', 'criações') + '.' : 'Decida uma criação por vez, um ponto por tela.'}><Btn kind="pri" onClick={() => startDecide(left[0])}>{propOf(p, left[0].id).ajuste ? 'Ajustar ' : 'Decidir '}{left[0].name}</Btn></ActionBar>
-    : <ActionBar k={semN.length || pctN.length ? 'warn' : ''} note={semN.length ? semN.map(a => a.name).join(', ') + ' vai como sem acordo.' : pctN.length ? 'Percentuais de ' + pctN.map(a => a.name).join(', ') + ' ficam pendentes no memorial.' : 'Todas as criações estão revisadas.'}><Btn kind="pri" onClick={() => act('sendv')}>Enviar proposta para todos confirmarem</Btn></ActionBar>;
+    ? <ActionBar note={done ? 'Falta' + (left.length > 1 ? 'm ' : ' ') + plural(left.length, 'criação', 'criações') + '.' : ''}><Btn kind="pri" onClick={() => startDecide(left[0])}>{propOf(p, left[0].id).ajuste ? 'Ajustar ' : 'Decidir '}{left[0].name}</Btn></ActionBar>
+    : <ActionBar k={semN.length || pctN.length ? 'warn' : ''} note={semN.length ? semN.map(a => a.name).join(', ') + ' vai como sem acordo.' : pctN.length ? 'Percentuais de ' + pctN.map(a => a.name).join(', ') + ' ficam pendentes no registro do acordo.' : 'Todas as criações estão revisadas.'}><Btn kind="pri" onClick={() => act('sendv')}>Enviar proposta</Btn></ActionBar>;
   else if (p.phase === 'confirmacao' && org && ui.flag.edit) bar = <ActionBar k="warn" note={'Editar cria a proposta ' + (lv.n + 1) + ' e invalida as confirmações da proposta ' + lv.n + '.'}><Btn onClick={() => setUi({ flag: {} })}>Cancelar</Btn><Btn kind="pri" onClick={() => act('editok')}>Criar proposta {lv.n + 1}</Btn></ActionBar>;
   const shown = !edit && as.find(x => x.id === ui.dasset);
   return (
@@ -328,11 +374,11 @@ export function Decidir() {
       <div className="g-list">
         {as.map(a => {
           const n = decPts(p, a).length, pr = propOf(p, a.id);
-          const st = pr.ajuste && !pr.saved ? <Chip k="bad">Pedido de ajuste</Chip> : pr.semAcordo && pr.saved ? <Chip k="bad">Sem acordo</Chip> : pr.saved && pr.v.divisao === PCT_NEG ? <Chip k="warn">Percentuais pendentes</Chip> : pr.saved ? <Chip k="ok">Decidido</Chip> : <Chip k="warn">A decidir</Chip>;
+          const st = pr.ajuste && !pr.saved ? <Chip k="bad">Pedido de ajuste</Chip> : pr.semAcordo && pr.saved ? <Chip k="bad">Sem acordo</Chip> : pr.saved && pr.v.divisao === PCT_NEG ? <Chip k="warn">Percentuais pendentes</Chip> : pr.saved ? <Chip k="ok">Decidido</Chip> : n ? <Chip k="warn">A decidir</Chip> : <Chip>Pronto para conferir</Chip>;
           return (
             <div className="g-row" key={a.id}>
               <div className="g-l"><b>{a.name}</b><span>{a.cat} · {n ? plural(n, 'ponto com diferença', 'pontos com diferença') : 'todos concordaram'}</span>{pr.ajuste && !pr.saved && <span>{nm(p, pr.ajuste.by)}: “{pr.ajuste.comment}”</span>}</div>
-              <div className="g-r">{st}{edit ? <Btn kind="sm" onClick={() => startDecide(a)}>{pr.saved ? 'Revisar' : pr.ajuste ? 'Ajustar' : 'Decidir'}</Btn> : <Btn kind="sm" onClick={() => setUi({ dasset: ui.dasset === a.id ? null : a.id })}>{ui.dasset === a.id ? 'Fechar' : 'Ver'}</Btn>}</div>
+              <div className="g-r">{st}{edit ? <Btn kind="sm" onClick={() => startDecide(a)}>{pr.saved || !n ? 'Revisar' : pr.ajuste ? 'Ajustar' : 'Decidir'}</Btn> : <Btn kind="sm" onClick={() => setUi({ dasset: ui.dasset === a.id ? null : a.id })}>{ui.dasset === a.id ? 'Fechar' : 'Ver'}</Btn>}</div>
             </div>
           );
         })}
@@ -468,7 +514,7 @@ export function Memorial() {
     <Page bar={m ? <ActionBar note={plural(p.memorials.length, 'cópia gerada', 'cópias geradas') + ' neste projeto.'}><Btn onClick={() => act('genmem')}>Gerar nova cópia</Btn><Btn kind="pri" onClick={copy}>Copiar texto</Btn></ActionBar> : <ActionBar><Btn kind="pri" onClick={() => act('genmem')}>Gerar registro do acordo</Btn></ActionBar>}>
       <Head title="Registro do acordo" sub="Reúne as decisões da equipe neste projeto." />
       <div className="card">
-        <div className="row"><h3>Memorial de {p.name}</h3>{p.phase === 'consolidado' ? <Chip k="ok">Proposta confirmada</Chip> : <Chip k="warn">Proposta em aberto</Chip>}</div>
+        <div className="row"><h3>{p.name}</h3>{p.phase === 'consolidado' ? <Chip k="ok">Proposta confirmada</Chip> : <Chip k="warn">Proposta em aberto</Chip>}</div>
         <p className="muted small">Registro preparatório das decisões da equipe. Não substitui contrato ou registro oficial.</p>
       </div>
       {m && <div className="paper">{memorialText(m)}</div>}

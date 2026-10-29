@@ -10,10 +10,11 @@
 export const QS = {
   notas: { label: 'Como você percebe a participação de cada pessoa?', hint: 'É uma percepção, não um cálculo de propriedade.', kind: 'scores', short: 'Participação percebida' },
   origem: { label: 'Qual é a origem desta criação?', opts: ['Criada neste projeto', 'Criada antes do projeto', 'Inclui material de terceiros', 'Origem mista', 'Não sei'], short: 'Origem', dec: true },
-  titularAtual: { label: 'Qual é a situação da titularidade hoje?', opts: ['Há titularidade documentada', 'Há indicação, sem documento', 'Há direitos de terceiros', 'Ainda não sabemos'], short: 'Titularidade atual', dec: true },
-  titular: { label: 'Quem a equipe pretende indicar como titular?', hint: 'Esta intenção não comprova a titularidade atual nem transfere direitos.', kind: 'people', short: 'Titularidade pretendida', dec: true },
-  divisao: { label: 'Há percentuais de titularidade combinados?', opts: ['Sim, a equipe combinou percentuais', 'Ainda não, precisamos negociar', 'Não se aplica a esta criação'], short: 'Percentuais combinados', dec: true },
+  titularAtual: { label: 'Hoje, de quem é esta criação no papel?', opts: ['Há titularidade documentada', 'Há indicação, sem documento', 'Há direitos de terceiros', 'Ainda não sabemos'], short: 'Titularidade atual', dec: true },
+  titular: { label: 'Quem deve ser dono?', hint: 'É uma intenção: não comprova quem é dono hoje nem transfere direitos.', kind: 'people', short: 'Titularidade pretendida', dec: true },
+  divisao: { label: 'A equipe já combinou quanto cada dono tem?', opts: ['Sim, a equipe combinou percentuais', 'Ainda não, precisamos negociar', 'Não se aplica a esta criação'], short: 'Percentuais combinados', dec: true },
   uso: { label: 'Quem sair do projeto pode continuar usando esta criação?', hint: 'Pense em alguém que deixa a equipe depois.', opts: ['Qualquer pessoa que participou', 'Só quem for dono', 'Ninguém, sem um novo acordo da equipe'], short: 'Uso após a saída', dec: true },
+  materiais: { label: 'Quem sair do projeto pode levar os arquivos e dados desta criação?', hint: 'Por exemplo: código, arquivos de design, planilhas e contatos.', opts: ['Sim, tudo o que precisar', 'Só o que a própria pessoa fez', 'Não, ficam com a equipe'], short: 'Arquivos e dados na saída', dec: true },
   comercial: { label: 'Pode ser vendido ou gerar dinheiro?', opts: ['Sim', 'Só com acordo de todos os donos', 'Não'], short: 'Uso comercial', dec: true },
   portfolio: { label: 'Quem pode mostrar no portfólio?', opts: ['Todos que criaram', 'Toda a equipe', 'Só com autorização dos donos'], short: 'Portfólio', dec: true },
   licenca: { label: 'Em que condição o código pode ser publicado?', opts: ['Após revisar dependências e licenças', 'Somente com autorização dos titulares', 'Não publicar por enquanto'], short: 'Publicação do código', dec: true },
@@ -23,7 +24,7 @@ export const QS = {
   invDivulgacao: { label: 'Há alguma condição antes de divulgar a invenção?', opts: ['Pode divulgar após decisão da equipe', 'Avaliar proteção e confidencialidade antes', 'Há obrigação com terceiro', 'Ainda não sabemos'], short: 'Divulgação da invenção', dec: true },
   remix: { label: 'Outras pessoas podem adaptar esta criação?', hint: 'Ex.: editar, remixar ou criar novas versões a partir dele.', opts: ['Sim, livremente', 'Só com autorização dos donos', 'Não'], short: 'Adaptações', dec: true }
 };
-export const QBASE = ['notas', 'origem', 'titularAtual', 'titular', 'divisao', 'uso', 'comercial', 'portfolio'];
+export const QBASE = ['notas', 'origem', 'titularAtual', 'titular', 'divisao', 'uso', 'materiais', 'comercial', 'portfolio'];
 /* Tipos de criação: cada um pode acrescentar uma pergunta própria (extra). */
 export const TYPES = [
   { k: 'codigo', n: 'Código', ex: 'App, site, script', ph: 'Ex.: Backend, App do aluno', extra: 'licenca' },
@@ -40,7 +41,7 @@ export const decQs = a => qsFor(a).filter(q => QS[q].dec);
 export const isP = q => QS[q].kind === 'people';
 export const GRP = q => ['notas', 'desc', 'origem', 'titularAtual'].includes(q) ? 'Origem e situação atual' : ['titular', 'divisao'].includes(q) ? 'Titularidade pretendida' : 'Uso e condições';
 /* Respostas em 3 telas por criação. */
-export const GROUPS = { contrib: ['notas', 'desc', 'origem', 'titularAtual'], donos: ['titular', 'divisao'], uso: ['uso', 'comercial', 'portfolio', 'licenca', 'remix', 'marcaRegistro', 'terceiros', 'audioDireitos', 'invDivulgacao'] };
+export const GROUPS = { contrib: ['notas', 'desc', 'origem', 'titularAtual'], donos: ['titular', 'divisao'], uso: ['uso', 'materiais', 'comercial', 'portfolio', 'licenca', 'remix', 'marcaRegistro', 'terceiros', 'audioDireitos', 'invDivulgacao'] };
 export const GNAME = { contrib: 'Contribuição e origem', donos: 'Titularidade pretendida', uso: 'Uso e condições' };
 export const stepOf = q => Object.keys(GROUPS).find(g => GROUPS[g].includes(q));
 export const steps = () => ['contrib', 'donos', 'uso', 'review'];
@@ -48,19 +49,38 @@ export const steps = () => ['contrib', 'donos', 'uso', 'review'];
 export const LV = [[0, 'Nada'], [3, 'Pouco'], [6, 'Parte'], [10, 'Muito']];
 export const lvOf = n => LV.reduce((b, x) => Math.abs(x[0] - n) < Math.abs(b[0] - n) ? x : b)[0];
 export const lvName = n => LV.find(x => x[0] === lvOf(+n))[1];
-export const PHN = { coleta: 'Respondendo', encerrada: 'Respostas encerradas', decisao: 'Decidindo', confirmacao: 'Em confirmação', consolidado: 'Proposta confirmada' };
+export const PHN = { coleta: 'Respondendo', encerrada: 'Respostas encerradas', decisao: 'Decidindo', confirmacao: 'Em confirmação', consolidado: 'Acordo confirmado' };
+/* Nome da fase para a tela: antes de liberar as perguntas, o projeto ainda está sendo preparado. */
+export const phaseName = p => (p.phase === 'coleta' && ['equipe', 'ativos', 'sobre'].includes(p.setupStep) ? 'Preparando' : PHN[p.phase]);
 export const SCEN = {
   notas: [['Comparar percepções', 'As respostas ajudam a identificar divergências sobre a participação. Não geram percentuais.'], ['Registrar evidências', 'Converse sobre relatos e links antes de decidir a titularidade pretendida.']],
   titular: [['Titularidade pretendida', 'Registre quem a equipe pretende indicar e o fundamento.'], ['Situação atual separada', 'Confira documentos e possíveis direitos de terceiros antes de formalizar.'], ['Ponto em aberto', 'Marque a criação como sem acordo e descreva a pendência.']],
   uso: [['Qualquer pessoa que participou', 'Quem sai continua podendo usar a criação, mesmo sem ser dono.'], ['Só quem for dono', 'Quem sai sem ser dono deixa de usar a criação.'], ['Ninguém, sem um novo acordo', 'Depois da saída, qualquer uso exige um novo acordo da equipe.']]
 };
+/* Sobre o projeto: quem organiza responde uma vez. */
+export const SOBRE = {
+  contas: { label: 'Em nome de quem estão o domínio, as contas, o repositório e a marca?', hint: 'Por exemplo: o domínio está com a Ana, o GitHub com o Bruno e o Instagram com a Carla.', kind: 'text', short: 'Domínio, contas, repositório e marca', ph: 'Escreva o nome de quem é dono de cada um' },
+  acordo: { label: 'Já existe algum acordo sobre participação ou saída de integrantes?', opts: ['Nenhum', 'Verbal', 'Escrito'], short: 'Acordo existente' },
+  edital: { label: 'Existe contrato, regulamento ou edital que dê direitos sobre o que vocês criam?', hint: 'Da faculdade, de um programa, de uma incubadora ou de um empregador.', opts: ['Sim', 'Não', 'Não sei'], short: 'Contrato, regulamento ou edital' },
+  editalQual: { label: 'Qual documento? (opcional)', kind: 'text', short: 'Qual documento', ph: 'Ex.: regulamento da disciplina, edital do programa', when: s => s.edital === 'Sim', optional: true }
+};
+export const sobreKeys = s => Object.keys(SOBRE).filter(k => !SOBRE[k].when || SOBRE[k].when(s || {}));
+export const sobreErrors = s => { const e = {}; sobreKeys(s).forEach(k => { if (!SOBRE[k].optional && !String((s || {})[k] || '').trim()) e['sobre:' + k] = SOBRE[k].kind === 'text' ? 'Responda esta pergunta' : 'Escolha uma opção'; }); return e; };
+/* Sobre você: cada pessoa responde uma vez por projeto. */
+export const PERFIL = {
+  funcao: { label: 'Qual é a sua função na equipe?', kind: 'text', short: 'Função', ph: 'Ex.: desenvolvimento, design, pesquisa, gestão' },
+  investiu: { label: 'Você investiu dinheiro no projeto?', hint: 'Por exemplo: domínio, hospedagem, ferramentas ou materiais.', opts: ['Sim', 'Não'], short: 'Investiu dinheiro' }
+};
+export const perfilErrors = f => { const e = {}; Object.keys(PERFIL).forEach(k => { if (!String((f || {})[k] || '').trim()) e['perfil:' + k] = PERFIL[k].kind === 'text' ? 'Escreva sua função' : 'Escolha uma opção'; }); return e; };
+export const perfilDone = (p, pid) => !Object.keys(perfilErrors(mem(p, pid)?.perfil)).length;
+
 export const LIMITS = 'Este registro reúne as decisões da equipe para uma formalização futura. Ele não substitui contrato, advogado ou registro oficial.';
-export const SECTIONS = [['equipe', 'Equipe'], ['ativos', 'Criações'], ['resp', 'Suas respostas'], ['decidir', 'Decisões'], ['conf', 'Confirmação'], ['memorial', 'Registro do acordo']];
+export const SECTIONS = [['equipe', 'Equipe'], ['ativos', 'Criações'], ['sobre', 'Sobre o projeto'], ['resp', 'Suas respostas'], ['decidir', 'Decisões'], ['conf', 'Confirmação'], ['memorial', 'Registro do acordo']];
 export const PCT_SIM = 'Sim, a equipe combinou percentuais';
 export const PCT_NEG = 'Ainda não, precisamos negociar';
 
 /* ===== Utilidades ===== */
-export const clone = o => JSON.parse(JSON.stringify(o));
+export const clone = o => (o === undefined ? undefined : JSON.parse(JSON.stringify(o)));
 export const fmt = t => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }).replace(', ', ' às ');
 export const nm = (p, pid) => (p.people && p.people[pid] ? p.people[pid].name : pid);
 export const mem = (p, pid) => p.members.find(m => m.pid === pid);
@@ -104,7 +124,8 @@ export function itemStatus(p, aid, q) {
     return { status: spread ? 'div' : (!vals.length || vals.length < E.length ? 'pend' : 'conv'), vals, missing: E.filter(pid => !vals.find(x => x.pid === pid)) };
   }
   const vals = [];
-  E.forEach(pid => { const a = ansOf(p, pid, aid); if (a && a.sent) vals.push({ pid, v: a.sent[q], ext: q === 'titular' ? (a.sent.titularExterno || '') : '' }); });
+  /* Quem não respondeu esta pergunta (por exemplo, enviou antes de ela existir) conta como pendente, nunca como concordância. */
+  E.forEach(pid => { const a = ansOf(p, pid, aid); if (a && a.sent && a.sent[q] !== undefined && a.sent[q] !== '') vals.push({ pid, v: a.sent[q], ext: q === 'titular' ? (a.sent.titularExterno || '') : '' }); });
   const set = new Set(vals.map(x => norm(x.v, q) + (q === 'titular' ? '|' + x.ext.trim().toLowerCase() : '')));
   const status = set.size > 1 ? 'div' : (vals.length === 0 || vals.length < E.length ? 'pend' : 'conv');
   return { status, vals, missing: E.filter(pid => !vals.find(x => x.pid === pid)) };
@@ -126,8 +147,9 @@ export function propDefault(p, aid) {
 }
 export const propOf = (p, aid) => p.proposal[aid] || propDefault(p, aid);
 export const decPts = (p, a) => ['notas'].concat(decQs(a)).filter(q => itemStatus(p, a.id, q).status !== 'conv');
-/* Pontos divergentes vêm primeiro; os demais continuam editáveis antes da revisão. */
-export const dsteps = (p, a) => { const diff = decPts(p, a); return diff.concat(decQs(a).filter(q => !diff.includes(q)), 'review'); };
+/* Passo a passo da decisão: só os pontos divergentes, depois a revisão. Os pontos em que todos concordaram
+   já entram na proposta e podem ser editados a partir da revisão. */
+export const dsteps = (p, a) => decPts(p, a).concat('review');
 export const decPick = (p, q, pr) => (isP(q) ? (pr.v[q] || []).map(x => nm(p, x)).join(', ') : pr.v[q] || '');
 export const diffCount = p => approved(p).reduce((s, a) => s + ['notas'].concat(decQs(a)).filter(q => itemStatus(p, a.id, q).status !== 'conv').length, 0);
 /* Validação da proposta de uma criação (null quando está tudo certo). */
@@ -176,9 +198,11 @@ export function taskFor(p, pid, qpos = {}) {
   const m = mem(p, pid), org = p.org === pid, as = approved(p);
   if (!m || m.status === 'pendente') return { tab: 'proj', label: 'Aceitar convite', note: 'Entre no projeto para ver suas tarefas.' };
   if (p.phase === 'coleta') {
-    if (org && p.setupStep !== 'resp' && (p.setupStep === 'equipe' || p.setupStep === 'ativos' || !as.length)) return p.setupStep === 'equipe'
-      ? { tab: 'equipe', label: 'Adicionar a equipe', note: 'Passo 1 de 2. Adicione quem participou do projeto.', cta: 'Adicionar pessoas' }
-      : { tab: 'ativos', label: 'Cadastrar as criações', note: 'Passo 2 de 2. Cadastre o que a equipe criou e libere as perguntas.', cta: 'Cadastrar criações' };
+    if (org && p.setupStep !== 'resp' && (['equipe', 'ativos', 'sobre'].includes(p.setupStep) || !as.length)) return p.setupStep === 'equipe'
+      ? { tab: 'equipe', label: 'Adicionar a equipe', note: 'Passo 1 de 3. Adicione quem participou do projeto.', cta: 'Adicionar pessoas' }
+      : p.setupStep === 'sobre' && as.length
+        ? { tab: 'sobre', label: 'Contar sobre o projeto', note: 'Passo 3 de 3. Três perguntas rápidas sobre contas, acordos e regras. Depois, libere as perguntas.', cta: 'Responder' }
+        : { tab: 'ativos', label: 'Cadastrar as criações', note: 'Passo 2 de 3. Cadastre o que a equipe criou.', cta: 'Cadastrar criações' };
     if (!as.length) return { tab: 'ativos', label: 'Aguardando as criações', note: 'Quem organiza está cadastrando o que a equipe criou. Você pode sugerir uma criação.', cta: 'Ver criações' };
     if (!m.elig) return { tab: 'coleta', label: 'Acompanhar a equipe', note: 'Você entrou depois do início e não responde desta vez.', cta: 'Ver andamento' };
     const left = as.filter(a => !ansOf(p, pid, a.id)?.sent);
@@ -207,13 +231,14 @@ export function taskFor(p, pid, qpos = {}) {
       ? { tab: 'proj', label: 'Você está em dia', note: 'Sua posição foi registrada. Aguarde as demais pessoas.' }
       : { tab: 'conf', label: 'Confirmar a proposta', note: 'Leia a proposta e diga se ela representa o que a equipe combinou.', cta: 'Ler proposta' };
   }
-  return { tab: 'memorial', label: 'Proposta confirmada', note: 'Todas as pessoas confirmaram. O memorial está pronto.', cta: 'Ver memorial' };
+  return { tab: 'memorial', label: 'Acordo confirmado', note: 'Todas as pessoas confirmaram. O registro do acordo está pronto.', cta: 'Ver registro do acordo' };
 }
 /* Resumo de cada parte do projeto na página do projeto. */
 export function secInfo(p, me, k) {
   const m = mem(p, me), as = approved(p), E = elig(p), lv = lastV(p);
   if (k === 'equipe') { const n = p.members.filter(x => x.status === 'ativo').length; return { on: true, s: n + (n === 1 ? ' pessoa' : ' pessoas') }; }
   if (k === 'ativos') { const sg = p.assets.filter(a => a.st === 'sug').length; return { on: true, s: as.length + (as.length === 1 ? ' criação' : ' criações') + (sg ? ' · ' + sg + (sg > 1 ? ' sugestões' : ' sugestão') + ' para avaliar' : '') }; }
+  if (k === 'sobre') { const n = sobreKeys(p.sobre).filter(x => !SOBRE[x].optional).length, d = n - Object.keys(sobreErrors(p.sobre)).length; return { on: true, s: d === n ? 'Respondido' : d + ' de ' + n + ' respondidas' }; }
   if (k === 'resp') { if (!m.elig) return { on: false, s: 'Você não responde desta vez' }; if (!as.length) return { on: false, s: 'Depois do cadastro das criações' }; const d = as.filter(a => ansOf(p, me, a.id)?.sent).length; return { on: true, s: d === as.length ? 'Enviadas' : d + ' de ' + as.length + ' criações respondidas' }; }
   if (k === 'coleta') { const done = E.filter(x => as.length && as.every(a => ansOf(p, x, a.id)?.sent)).length; return { on: true, s: p.phase === 'coleta' ? done + ' de ' + E.length + ' pessoas concluíram' : 'Respostas encerradas' }; }
   if (k === 'decidir') { if (p.phase === 'coleta') return { on: false, s: 'Abre após o encerramento da coleta' }; const n = diffCount(p); return { on: true, s: n ? n + (n > 1 ? ' pontos com diferença' : ' ponto com diferença') : 'Todos concordaram' }; }
@@ -239,12 +264,18 @@ export function snapshot(p) {
 export function memorialBody(p, at) {
   const v = lastV(p), L = [], E = elig(p), allOk = E.every(pid => v.conf[pid]?.v === 'ok');
   const n = pid => nm(p, pid), fa = (q, x) => fmtAns(p, q, x);
-  L.push('MEMORIAL DE CONTRIBUIÇÕES E DECISÕES');
+  L.push('REGISTRO DO ACORDO');
   L.push('Projeto: ' + p.name + ' (' + (p.context || 'sem contexto') + ')');
   L.push('Situação da proposta ' + v.n + ': ' + (allOk ? 'confirmada por todos' : 'em confirmação'));
   L.push('Gerado em: ' + fmt(at)); L.push('');
+  L.push('SOBRE O PROJETO');
+  sobreKeys(p.sobre).forEach(k => L.push('- ' + SOBRE[k].short + ': ' + ((p.sobre || {})[k] || 'não informado')));
+  L.push('');
   L.push('PARTICIPANTES');
-  p.members.forEach(m => L.push('- ' + n(m.pid) + ', ' + roleTxt(p, m.pid).toLowerCase() + (m.status === 'naopart' ? ' (não respondeu)' : m.status === 'pendente' ? ' (convite pendente)' : !m.elig ? ' (entrou depois das respostas)' : '')));
+  p.members.forEach(m => {
+    L.push('- ' + n(m.pid) + ', ' + roleTxt(p, m.pid).toLowerCase() + (m.status === 'naopart' ? ' (não respondeu)' : m.status === 'pendente' ? ' (convite pendente)' : !m.elig ? ' (entrou depois das respostas)' : ''));
+    if (m.perfil && (m.perfil.funcao || m.perfil.investiu)) L.push('  Função declarada: ' + (m.perfil.funcao || 'não informada') + ' · Investiu dinheiro: ' + (m.perfil.investiu || 'não informado'));
+  });
   L.push(''); L.push('SITUAÇÃO POR CRIAÇÃO');
   approved(p).forEach(a => {
     const x = v.snap[a.id]; if (!x) return;
