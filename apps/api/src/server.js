@@ -29,8 +29,9 @@ const isAdmin = u => !!u && admins.has(u.email.toLowerCase());
 
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
-/* O feedback pode levar até 3 prints (já reduzidos no navegador); o resto da API aceita pedidos pequenos. */
-const jsonSmall = express.json({ limit: '200kb' }), jsonFeedback = express.json({ limit: '6mb' });
+/* O feedback pode levar até 3 prints (já reduzidos no navegador); o resto da API aceita pedidos pequenos.
+   A Vercel recusa pedidos acima de 4,5 MB, então o feedback fica abaixo disso. */
+const jsonSmall = express.json({ limit: '200kb' }), jsonFeedback = express.json({ limit: '4400kb' });
 app.use((req, res, next) => (req.path === '/api/feedback' ? jsonFeedback : jsonSmall)(req, res, next));
 app.use(cookieParser());
 app.use((_req, res, next) => {
@@ -276,12 +277,12 @@ app.post('/api/feedback', wrap(async (req, res) => {
   /* O projeto só é guardado se a pessoa participa dele. */
   if (typeof b.projectId === 'string' && req.user && await prisma.member.findFirst({ where: { projectId: b.projectId, userId: req.user.id }, select: { id: true } })) data.projectId = b.projectId;
   if (kind === 'satisfacao' && !data.projectId) return res.status(400).json({ err: { _: 'Projeto não encontrado.' } });
-  /* Prints: até 3 imagens PNG, JPEG ou WebP de até 1,5 MB cada. */
+  /* Prints: até 3 imagens PNG, JPEG ou WebP de até 1 MB cada. */
   const imgs = kind === 'texto' && Array.isArray(b.images) ? b.images.slice(0, 3) : [];
   const images = [];
   for (const im of imgs) {
     const mime = ['image/png', 'image/jpeg', 'image/webp'].includes(im?.mime) ? im.mime : null, buf = mime && typeof im.data === 'string' ? Buffer.from(im.data, 'base64') : null;
-    if (!buf || !buf.length || buf.length > 1.5e6) return res.status(400).json({ err: { images: 'Não foi possível anexar uma das imagens. Tente outra.' } });
+    if (!buf || !buf.length || buf.length > 1e6) return res.status(400).json({ err: { images: 'Não foi possível anexar uma das imagens. Tente outra.' } });
     images.push({ mime, data: buf });
   }
   if (kind === 'texto' && !data.text && !images.length) return res.status(400).json({ err: { text: 'Escreva o que aconteceu ou anexe um print.' } });
@@ -319,7 +320,11 @@ if (existsSync(web)) {
 }
 app.use('/api', (_req, res) => res.status(404).json({ err: { _: 'Rota não encontrada.' } }));
 
-const port = process.env.PORT || 3001;
-app.listen(port, () => console.log(`MIP API em http://localhost:${port}`));
+/* Na Vercel, a API roda como função (api/index.js usa este app); no computador e em servidores comuns, fica ouvindo uma porta. */
+if (!process.env.VERCEL) {
+  const port = process.env.PORT || 3001;
+  app.listen(port, () => console.log(`MIP API em http://localhost:${port}`));
+}
 
 export { sendMail };
+export default app;

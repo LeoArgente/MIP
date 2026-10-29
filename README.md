@@ -46,13 +46,23 @@ npm test                                         # regras (packages/domain)
 npm run db:seed && npm test -w @mip/api          # jornada completa pela API (servidor rodando, DEV_LOGIN=1)
 ```
 
-## Publicar online (grátis)
+## Publicar online (Vercel)
 
-1. Crie uma conta na [Render](https://render.com) e escolha **New > Blueprint** com este repositório. O `render.yaml` cria o site e o banco.
-2. Em **Environment**, preencha `APP_URL` com o endereço que a Render der (ex.: `https://mip.onrender.com`).
-3. Crie uma conta na [Resend](https://resend.com), gere uma chave e coloque em `RESEND_API_KEY`. Para mandar e-mail para qualquer pessoa, a Resend pede um domínio verificado; sem domínio, ela só envia para o e-mail da própria conta.
+O site (`apps/web/dist`) e a API rodam na [Vercel]; o banco fica no Supabase. A API vira uma função (`api/index.js`), na região de São Paulo (`gru1`), perto do banco. A configuração está em `vercel.json`.
 
-O plano grátis da Render "dorme" depois de 15 minutos sem uso: o primeiro acesso seguinte leva cerca de 1 minuto. O banco grátis da Render expira em 30 dias; para algo mais duradouro, use o PostgreSQL grátis da [Neon](https://neon.tech) e coloque a URL em `DATABASE_URL`.
+1. Na Vercel, **Add New > Project** e escolha este repositório. Não mude as opções de build: elas vêm do `vercel.json`.
+2. Em **Settings > Git > Production Branch**, use `prod`. Cada envio para a `prod` publica o site; as outras branches viram prévias.
+3. Em **Settings > Environment Variables**, preencha:
+   - `DATABASE_URL`: Supabase, **Transaction pooler** (porta 6543) com `?pgbouncer=true&connection_limit=1` no fim.
+   - `DIRECT_URL`: Supabase, **Session pooler** (porta 5432). Usada só para as migrações.
+   - `TEST_LOGIN=1`, `DEV_LOGIN=0`, `FEEDBACK=1` e `ADMIN_EMAILS` (e-mails que abrem o /admin).
+   - `RESEND_API_KEY` e `MAIL_FROM`, quando houver envio de e-mail. `APP_URL` só se usarem um domínio próprio.
+
+As migrações (`prisma migrate deploy`) rodam no build, só no deploy de produção. Prévias de outras branches usam as mesmas variáveis: se apontarem para o banco de produção, o que for feito nelas aparece lá.
+
+Para publicar o que está na `main`: `git checkout prod && git merge main && git push && git checkout main`.
+
+[Vercel]: https://vercel.com
 
 ## Design tokens
 Edite `packages/tokens/tokens.json` e rode `npm run tokens`. O site usa as variáveis geradas (`--color-*`, `--text-*`, `--space-*`, `--radius-*`, `--size-*`) e as classes de texto `.t-hero`, `.t-h2`, `.t-h3`, `.t-title`, `.t-body-lg`, `.t-body`, `.t-small`, `.t-label`, `.t-button`, `.t-nav`.

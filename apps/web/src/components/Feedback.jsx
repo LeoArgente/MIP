@@ -20,17 +20,21 @@ function placeOf(path) {
 const projectOf = path => path.match(/^\/p\/([^/]+)/)?.[1];
 const device = () => (window.matchMedia('(max-width: 767px)').matches ? 'celular' : 'computador');
 const MAX_IMGS = 3;
-/* Reduz o print antes de enviar (lado maior até 1920 px, JPEG): a maioria fica com algumas centenas de KB. */
+/* Reduz o print antes de enviar (lado maior até 1920 px, JPEG): a maioria fica com algumas centenas de KB.
+   Cada um precisa ficar abaixo de 1 MB, para os 3 juntos caberem no limite de envio do servidor. */
+const MAX_BYTES = 0.95e6;
 async function shrink(file) {
-  const bmp = await createImageBitmap(file), k = Math.min(1, 1920 / Math.max(bmp.width, bmp.height));
-  const c = document.createElement('canvas');
-  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
-  const g = c.getContext('2d');
-  g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
-  bmp.close?.();
+  const bmp = await createImageBitmap(file), c = document.createElement('canvas'), g = c.getContext('2d');
   let blob;
-  for (const q of [0.85, 0.7, 0.5]) { blob = await new Promise(r => c.toBlob(r, 'image/jpeg', q)); if (blob && blob.size < 1.4e6) break; }
-  if (!blob || blob.size >= 1.4e6) throw new Error('grande');
+  for (const side of [1920, 1440, 1080]) {
+    const k = Math.min(1, side / Math.max(bmp.width, bmp.height));
+    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
+    for (const q of [0.85, 0.7, 0.55]) { blob = await new Promise(r => c.toBlob(r, 'image/jpeg', q)); if (blob && blob.size < MAX_BYTES) break; }
+    if (blob && blob.size < MAX_BYTES) break;
+  }
+  bmp.close?.();
+  if (!blob || blob.size >= MAX_BYTES) throw new Error('grande');
   const data = await new Promise((ok, bad) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result).split(',')[1]); fr.onerror = bad; fr.readAsDataURL(blob); });
   return { id: Math.random().toString(36).slice(2), mime: 'image/jpeg', data, url: URL.createObjectURL(blob), name: file.name || 'print colado' };
 }

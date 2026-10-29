@@ -6,7 +6,8 @@ export const COOKIE = 'mip_session';
 const SESSION_DAYS = 30, LINK_MINUTES = 30;
 const hash = t => createHash('sha256').update(t).digest('hex');
 const token = () => randomBytes(32).toString('base64url');
-export const appUrl = () => (process.env.APP_URL || 'http://localhost:5173').replace(/\/$/, '');
+/* Endereço do site, para links em e-mails. Na Vercel, sem APP_URL, usa o domínio de produção do projeto. */
+export const appUrl = () => (process.env.APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? 'https://' + process.env.VERCEL_PROJECT_PRODUCTION_URL : 'http://localhost:5173')).replace(/\/$/, '');
 export const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || '');
 export const nameFromEmail = e => { const s = e.split('@')[0].replace(/[._-]+/g, ' ').replace(/[^\p{L}\p{N} ]/gu, '').trim() || 'Pessoa'; return s.charAt(0).toUpperCase() + s.slice(1); };
 /* Só aceita voltar para caminhos internos, para o link não virar redirecionamento para outro site. */

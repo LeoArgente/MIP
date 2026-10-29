@@ -12,8 +12,9 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  // Conexão usada pelo app. No Supabase: "Session pooler" (porta 5432) com ?connection_limit=5.
-  // O Transaction pooler (6543 + pgbouncer) faz 4 idas ao banco por consulta, e o app é um servidor contínuo.
+  // Conexão usada pelo app.
+  // - Servidor contínuo (computador local): "Session pooler" (porta 5432) com ?connection_limit=5.
+  // - Vercel (funções que ligam a cada pedido): "Transaction pooler" (porta 6543) com ?pgbouncer=true&connection_limit=1.
   url       = env("DATABASE_URL")
   // Conexão usada para criar e alterar tabelas (migrações). No Supabase: "Session pooler" (porta 5432).
   // Local, use o mesmo valor de DATABASE_URL.
