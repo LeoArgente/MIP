@@ -120,13 +120,12 @@ export function Hub() {
 
 /* ===== Equipe ===== */
 export function Equipe() {
-  const { p, me, org, act, err, setErr, say } = useProject(), [email, setEmail] = useState(''), [msg, setMsg] = useState('');
+  const { p, me, org, act, err, say } = useProject();
   const [rm, setRm] = useState(null);
   const askRemove = async pid => { const r = await act('remove', { pid }, `/api/projects/${p.id}/remove`); if (r?.confirmRemove) setRm(r.confirmRemove); };
   const doRemove = async () => { const r = await act('remove', { pid: rm.pid, confirm: true }, `/api/projects/${p.id}/remove`); if (r) setRm(null); };
   const copyInvite = async () => say(await copyText(inviteUrl) ? 'Link de convite para ' + p.name + ' copiado. Mande no grupo da equipe.' : 'Não foi possível copiar. Selecione o link e copie manualmente.', undefined);
   const setup = org && p.phase === 'coleta' && p.setupStep === 'equipe';
-  const invite = async () => { const r = await act('invite', { email }, `/api/projects/${p.id}/invite`); if (r) { setEmail(''); setMsg(r.toast); } };
   const inviteUrl = p.link.code ? location.origin + '/convite/' + p.link.code : '';
   const memChip = m => m.status === 'ativo' ? (m.elig ? <Chip>Participa</Chip> : <Chip k="warn">Entrou depois das respostas</Chip>) : m.status === 'pendente' ? <Chip k="warn">Convite pendente</Chip> : <Chip>Não responde</Chip>;
   return (
@@ -157,22 +156,12 @@ export function Equipe() {
       </div>
       {org && (
         <div className="card">
-          <h3>Adicionar pessoas</h3>
-          <div className="field">
-            <label htmlFor="inv">Por e-mail</label>
-            <input id="inv" type="email" inputMode="email" value={email} onChange={e => { setEmail(e.target.value); setErr({}); }} onKeyDown={e => e.key === 'Enter' && invite()} placeholder="nome@email.com" />
-            <Err msg={err.inv} />
-          </div>
-          <div className="row start"><Btn onClick={invite}>Adicionar à equipe</Btn>{msg && <span className="muted small">{msg}</span>}</div>
-          <p className="muted small">A pessoa entra no projeto na hora. Para acessar, ela usa este mesmo e-mail.</p>
-          <div className="invite-link">
-            <div className="row"><span className="q">Ou compartilhe o link de convite para {p.name}</span><Chip k={p.link.active ? 'ok' : ''}>{p.link.active ? 'Link ativo' : 'Link desativado'}</Chip></div>
-            <div className="tok" onClick={e => window.getSelection()?.selectAllChildren(e.currentTarget)}>{inviteUrl}</div>
-            <p className="muted small">Quem abrir o link entra na equipe. Mande no grupo do WhatsApp, por exemplo.</p>
-            <div className="row start">
-              <Btn kind={p.link.active ? 'pri' : ''} onClick={copyInvite} disabled={!p.link.active}>Copiar link</Btn>
-              <Btn onClick={() => act('toglink')}>{p.link.active ? 'Desativar link' : 'Ativar link'}</Btn>
-            </div>
+          <div className="row"><h3>Adicionar pessoas</h3><Chip k={p.link.active ? 'ok' : ''}>{p.link.active ? 'Link ativo' : 'Link desativado'}</Chip></div>
+          <p className="muted small">Compartilhe o link de convite para {p.name}. Quem abrir o link entra na equipe. Mande no grupo do WhatsApp, por exemplo.</p>
+          <div className="tok invite" onClick={e => window.getSelection()?.selectAllChildren(e.currentTarget)}>{inviteUrl}</div>
+          <div className="row start">
+            <Btn kind={p.link.active ? 'pri' : ''} onClick={copyInvite} disabled={!p.link.active}>Copiar link</Btn>
+            <Btn onClick={() => act('toglink')}>{p.link.active ? 'Desativar link' : 'Ativar link'}</Btn>
           </div>
         </div>
       )}
