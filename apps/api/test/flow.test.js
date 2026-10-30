@@ -37,7 +37,7 @@ test('jornada completa com privacidade, decisão, recusa e confirmação', async
 
   /* Bruno termina o Backend; Carla responde as duas criações. */
   const [logo, back] = pb.assets;
-  const full = me => ({ notas: { [ana.u.id]: 6, [bruno.u.id]: 10, [carla.u.id]: 3 }, origem: 'Criada neste projeto', titularAtual: 'Ainda não sabemos', titular: [ana.u.id, bruno.u.id], divisao: 'Ainda não, precisamos negociar', uso: 'Só quem for dono', materiais: 'Só o que a própria pessoa fez', comercial: 'Sim', portfolio: 'Todos que criaram', licenca: 'Não publicar por enquanto', marcaRegistro: 'Sim, com evidência', desc: 'Parte de ' + me, link: '' });
+  const full = me => ({ notas: { [ana.u.id]: 6, [bruno.u.id]: 10, [carla.u.id]: 3 }, origem: 'Criada neste projeto', titularAtual: 'Não sei', titular: [ana.u.id, bruno.u.id], divisao: 'Ainda não, precisamos negociar', uso: 'Só quem for dono', materiais: 'Só o que a própria pessoa fez', comercial: 'Sim', portfolio: 'Todos que criaram', licenca: 'Não publicar por enquanto', marcaRegistro: 'Sim, com evidência', desc: 'Parte de ' + me, link: '' });
   let r = await act(bruno.c, pid, 'qsend', { aid: back.id });
   assert.equal(r.status, 400, 'envio incompleto deve falhar');
   assert.ok(r.data.err[back.id + ':origem']);
@@ -85,14 +85,10 @@ test('jornada completa com privacidade, decisão, recusa e confirmação', async
   for (const who of [ana, bruno, carla]) r = await act(who.c, pid, 'conf', { n: 2 });
   assert.equal(r.data.project.phase, 'consolidado');
 
-  /* Registro do acordo e verificação do código. */
+  /* Registro do acordo. */
   r = await act(carla.c, pid, 'genmem');
   const m = r.data.project.memorials[0];
   assert.match(m.body, /CONFIRMAÇÕES DA PROPOSTA 2/);
-  const ok = (await carla.c.post('/api/verify', { text: m.body + '\n\nCódigo de verificação (SHA-256): ' + m.hash })).data;
-  assert.equal(ok.ok, true);
-  const bad = (await carla.c.post('/api/verify', { text: m.body.replace('Projeto', 'Projeto alterado') })).data;
-  assert.equal(bad.ok, false);
 });
 
 test('sobre o projeto, sobre você e privacidade do perfil', async () => {

@@ -1,22 +1,23 @@
-/* Decidir uma criação (quem organiza): um ponto divergente por tela, com a contagem das respostas dentro de cada opção, e a revisão.
-   Um ponto em que todos concordaram só abre quando escolhido na revisão, e volta direto para ela. */
+/* Decidir uma criação (quem organiza): um ponto por tela, na ordem das perguntas, com a contagem das respostas
+   dentro de cada opção, e a revisão. Os pontos em que todos concordaram aparecem já marcados, com o aviso "Sem divergência".
+   Um ponto aberto a partir da revisão volta direto para ela. */
 import { useEffect, useRef } from 'react';
 import { QS, SCEN, GRP, PCT_SIM, PCT_NEG, decQs, approved, elig, nm, isP, itemStatus, hasNota, lvName, partOf, partTxt, propOf, decPts, dsteps, decPick } from '@mip/domain';
 import { useProject } from './Project.jsx';
 import Header from '../components/Header.jsx';
-import { Banner, Btn, Err, Voters } from '../components/ui.jsx';
+import { Banner, Btn, Chip, Err, Voters } from '../components/ui.jsx';
 import { usePlace } from '../components/Feedback.jsx';
 
 export default function DecideFocus() {
   const { p, act, err, setErr, ui, setUi, editProp } = useProject();
   const as = approved(p), a = as.find(x => x.id === ui.dq), pr = propOf(p, a.id), E = elig(p), S = dsteps(p, a);
-  const s = Math.min(S.length - 1, Math.max(0, ui.dstep)), extra = ui.dedit && !S.includes(ui.dedit) ? ui.dedit : null;
-  const q = extra || S[s], nq = S.length - 1, title = useRef();
+  const s = Math.min(S.length - 1, Math.max(0, ui.dstep)), fromReview = !!ui.dedit;
+  const q = S[s], nq = S.length - 1, title = useRef();
   usePlace('Decisões · ' + a.name + ' · ' + (q === 'review' ? 'revisão' : QS[q].short));
-  useEffect(() => { title.current?.focus({ preventScroll: true }); window.scrollTo(0, 0); }, [a.id, s, extra]);
+  useEffect(() => { title.current?.focus({ preventScroll: true }); window.scrollTo(0, 0); }, [a.id, s]);
 
   const goStep = n => { setErr({}); setUi({ dstep: n, dedit: null }); };
-  const edit = k => { setErr({}); if (S.includes(k)) goStep(S.indexOf(k)); else setUi({ dedit: k }); };
+  const edit = k => { setErr({}); setUi({ dstep: S.indexOf(k), dedit: true }); };
   const pick = (k, v) => { setErr({}); editProp(a.id, cur => ({ v: { [k]: isP(k) ? ((cur.v[k] || []).includes(v) ? cur.v[k].filter(x => x !== v) : [...(cur.v[k] || []), v]) : v } })); };
   const save = async () => {
     const r = await act('saveprop', { aid: a.id });
@@ -39,7 +40,7 @@ export default function DecideFocus() {
         <div className="qs-head"><h1 className="qs-title" ref={title} tabIndex={-1}>Decisões de {a.name}</h1><p className="qs-hint">{pts.length ? 'Confira antes de salvar. Escolha um ponto para editar.' : 'Todos responderam igual. Confira e salve.'}</p></div>
         <div className="qs-review">
           {pts.length > 0 && <div className="qs-sec"><p>Pontos com respostas diferentes</p><div className="qs-list">{pts.map(k => row(k, k !== 'notas'))}</div></div>}
-          {same.length > 0 && <div className="qs-sec"><p>Respostas iguais — você também pode editar</p><div className="qs-list">{same.map(k => row(k, k !== 'notas'))}</div></div>}
+          {same.length > 0 && <div className="qs-sec"><p>Sem divergência: todos responderam igual</p><div className="qs-list">{same.map(k => row(k, k !== 'notas'))}</div></div>}
         </div>
         {pr.v.divisao === PCT_NEG && <p className="qs-hint">Percentuais ficam como pendência no registro do acordo. Para informar agora, escolha “Percentuais combinados” acima.</p>}
         <div className="qs-field"><label htmlFor={'ext-' + a.id} className="q">Titular pretendido fora da equipe (opcional)</label><input id={'ext-' + a.id} type="text" value={pr.externo || ''} onChange={e => editProp(a.id, { externo: e.target.value })} placeholder="Pessoa, empresa ou instituição" /></div>
@@ -66,13 +67,18 @@ export default function DecideFocus() {
       </>
     );
   } else {
-    const r = itemStatus(p, a.id, q), n = r.vals.length, who = f => r.vals.filter(f).map(x => nm(p, x.pid));
+    const r = itemStatus(p, a.id, q), n = r.vals.length, who = f => r.vals.filter(f).map(x => nm(p, x.pid)), same = r.status === 'conv';
+    const hint = q === 'notas'
+      ? (same ? 'As percepções foram parecidas. Elas não definem percentuais nem direitos.' : 'As respostas variaram. Elas mostram percepções, sem definir percentuais ou direitos.')
+      : same ? (isP(q) ? 'Todos marcaram as mesmas pessoas, e elas já estão marcadas. Mude só se a equipe decidir outra coisa.' : 'Todos escolheram a mesma opção, e ela já está marcada. Mude só se a equipe decidir outra coisa.')
+      : 'Passe o mouse sobre os números para ver quem ' + (isP(q) ? 'marcou cada nome' : 'escolheu cada opção') + '. Marque o que a equipe decidiu.';
     body = (
       <>
         <div className="qs-head">
-          <p className="qs-step">{extra ? GRP(q) : 'Ponto ' + (s + 1) + ' de ' + nq + ' · ' + GRP(q)}</p>
+          <p className="qs-step">{'Ponto ' + (s + 1) + ' de ' + nq + ' · ' + GRP(q)}</p>
           <h1 className="qs-title" ref={title} tabIndex={-1}>{QS[q].label}</h1>
-          <p className="qs-hint">{q === 'notas' ? 'As respostas variaram. Elas mostram percepções, sem definir percentuais ou direitos.' : isP(q) ? 'Os números mostram quantas pessoas marcaram cada nome; passe o mouse sobre eles para ver quem. Marque o que a equipe decidiu.' : 'Os números mostram quantas pessoas escolheram cada opção; passe o mouse sobre eles para ver quem. Marque o que a equipe decidiu.'}</p>
+          <p className="qs-status">{same ? <Chip k="ok">Sem divergência</Chip> : r.status === 'div' ? <Chip k="warn">Respostas diferentes</Chip> : <Chip>Nem todos responderam</Chip>}</p>
+          <p className="qs-hint">{hint}</p>
         </div>
         {q === 'notas' ? (
           <>
@@ -89,7 +95,7 @@ export default function DecideFocus() {
           <div className="qs-list" role="radiogroup">{QS[q].opts.map(u => { const ws = who(x => x.v === u); return <label className="qs-row dec-row" key={u}><input type="radio" name={'pv-' + q} checked={pr.v[q] === u} onChange={() => pick(q, u)} /><span>{u}</span><span className="dec-bar"><i style={{ width: (n ? 100 * ws.length / n : 0) + '%' }} /></span><Voters names={ws} total={n} /></label>; })}</div>
         )}
         {r.missing.length > 0 && <p className="qs-foot">{r.missing.length > 1 ? r.missing.length + ' pessoas não responderam.' : '1 pessoa não respondeu.'}</p>}
-        {SCEN[q] && <details className="dec-more"><summary>Ideias para a conversa</summary><dl className="kv">{SCEN[q].map(([t, d]) => <Pair key={t} t={t} d={d} />)}</dl></details>}
+        {SCEN[q] && !same && <details className="dec-more"><summary>Ideias para a conversa</summary><dl className="kv">{SCEN[q].map(([t, d]) => <Pair key={t} t={t} d={d} />)}</dl></details>}
       </>
     );
   }
@@ -102,7 +108,7 @@ export default function DecideFocus() {
       <header className="qs-top">
         <button className="qs-exit" onClick={exit}>‹ Voltar às decisões</button>
         <div className="qs-ctx"><b>Decisões · {a.name}</b><span>Criação {as.indexOf(a) + 1} de {as.length}</span></div>
-        <span className="qs-count">{q === 'review' || extra ? 'Revisão' : (s + 1) + ' de ' + nq}</span>
+        <span className="qs-count">{q === 'review' ? 'Revisão' : (s + 1) + ' de ' + nq}</span>
       </header>
       <div className="qs-progress" role="progressbar" aria-label="Progresso das decisões" aria-valuemin={0} aria-valuemax={nq} aria-valuenow={s}><span style={{ width: (nq ? Math.round(100 * s / nq) : 100) + '%' }} /></div>
       <main className="qs-main">
@@ -111,7 +117,7 @@ export default function DecideFocus() {
           {savedName && s === 0 && <Banner>Decisões de {savedName} salvas. Agora, {a.name}.</Banner>}
           <div className="qs-card">
             {body}
-            <div className="qs-actions">{extra ? <Btn kind="pri" onClick={() => setUi({ dedit: null })}>Voltar à revisão</Btn> : <>{s > 0 && <Btn onClick={() => goStep(s - 1)}>Voltar</Btn>}{q === 'review' ? <Btn kind="pri" onClick={save}>Salvar decisões de {a.name}</Btn> : <Btn kind="pri" onClick={() => goStep(s + 1)}>{s === nq - 1 ? 'Revisar' : 'Continuar'}</Btn>}</>}</div>
+            <div className="qs-actions">{fromReview && q !== 'review' ? <Btn kind="pri" onClick={() => goStep(nq)}>Voltar à revisão</Btn> : <>{s > 0 && <Btn onClick={() => goStep(s - 1)}>Voltar</Btn>}{q === 'review' ? <Btn kind="pri" onClick={save}>Salvar decisões de {a.name}</Btn> : <Btn kind="pri" onClick={() => goStep(s + 1)}>{s === nq - 1 ? 'Revisar' : 'Continuar'}</Btn>}</>}</div>
           </div>
           <p className="qs-private">Só quem organiza registra. A equipe confirma depois.</p>
         </div>

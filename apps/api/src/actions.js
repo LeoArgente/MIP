@@ -240,7 +240,7 @@ export const ACTIONS = {
     const at = now(), body = memorialBody(p, at);
     p.memorials.unshift({ at, body, hash: sha256(body) });
     log(p, me, 'gerou o registro do acordo');
-    return { toast: 'Registro do acordo gerado com código de verificação.' };
+    return { toast: 'Registro do acordo gerado.' };
   }
 };
 

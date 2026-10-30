@@ -142,7 +142,7 @@ export function Page({ children, bar, side }) {
           <Chip>{phaseName(p)}</Chip>
           {TIPS[tab] && ui.tipOpen !== tab && <button className="link" onClick={() => setUi({ tipOpen: tab })}>Como funciona?</button>}
         </div>
-        {ui.tipOpen === tab && TIPS[tab] && <div className="tip-card"><p>{TIPS[tab]}</p><Btn kind="sm" onClick={() => setUi({ tipOpen: null })}>Fechar</Btn></div>}
+        {ui.tipOpen === tab && TIPS[tab] && <div className="tip-card"><ol>{TIPS[tab].map(t => <li key={t}>{t}</li>)}</ol><Btn kind="sm" onClick={() => setUi({ tipOpen: null })}>Fechar</Btn></div>}
         <div className="step-card">{children}{bar}</div>
       </div>
       {side && <aside className="page-side">{side}</aside>}

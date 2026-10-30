@@ -8,12 +8,13 @@ import Header from '../components/Header.jsx';
 import { Btn, Chip } from '../components/ui.jsx';
 import simbolo from '../assets/logo/mip-simbolo.svg?raw';
 
+/* Substantivos, não verbos: são etapas para ler, não botões para clicar. */
 const HOME_STEPS = [
-  ['Preparar', 'Adicione a equipe e cadastre o que vocês criaram.'],
-  ['Responder', 'Cada pessoa responde em particular, em poucos minutos.'],
-  ['Decidir', 'A equipe vê só onde as respostas diferem e combina.'],
-  ['Confirmar', 'Cada integrante confirma a proposta.'],
-  ['Registrar', 'O acordo fica registrado para a equipe guardar.']
+  ['Preparação', 'Convide a equipe e liste o que vocês criaram.'],
+  ['Respostas', 'Cada pessoa responde sozinha, em poucos minutos.'],
+  ['Conversa', 'Vocês conversam só sobre o que cada um viu diferente.'],
+  ['Confirmação', 'Cada pessoa lê a proposta e confirma ou pede ajuste.'],
+  ['Acordo', 'Tudo vira um documento para a equipe guardar.']
 ];
 const phaseKind = ph => (ph === 'consolidado' ? 'ok' : ph === 'coleta' ? '' : 'warn');
 
@@ -29,8 +30,6 @@ function RecordPreview() {
       <p>Logo (Marca)</p>
       <p className="rec-dim">· Titularidade pretendida: Ana, Bruno</p>
       <p className="rec-dim">· Uso comercial: só com acordo de todos os donos</p>
-      <span className="rec-gap" />
-      <p className="rec-hash">Código de verificação · 9f2c…a71e</p>
     </div>
   );
 }
@@ -85,7 +84,7 @@ export default function Home() {
         <section className="landing-hero">
           <div className="landing-copy">
             <h1><span>Criaram juntos.</span> <span>Combinem juntos.</span></h1>
-            <p>A MIP ajuda vocês a reconhecer contribuições, conversar sobre quem é dono e registrar decisões com transparência.</p>
+            <p>A MIP ajuda vocês a reconhecer contribuições, conversar sobre quem é dono e deixar por escrito o que decidiram.</p>
             <div className="landing-actions">{!has && cta}<a href="#etapas">Conhecer as etapas ↓</a></div>
           </div>
           <div className="landing-art" aria-hidden="true">
@@ -116,8 +115,8 @@ export default function Home() {
 
         <section className="landing-outcome">
           <div className="landing-outcome-text">
-            <h2>Um registro do acordo da equipe.</h2>
-            <p>Um registro das contribuições, da proposta, das confirmações e dos pontos que ainda precisem de acordo. Ele prepara a conversa para formalização futura, sem substituir um contrato ou registro oficial.</p>
+            <h2>No fim, um documento com o que vocês combinaram.</h2>
+            <p>Reúne as contribuições, a proposta, quem confirmou e o que ainda falta combinar. Serve de base para formalizar depois, mas não substitui contrato nem registro oficial.</p>
             {!has && cta}
           </div>
           <RecordPreview />

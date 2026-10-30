@@ -10,7 +10,7 @@
 export const QS = {
   notas: { label: 'Como você percebe a participação de cada pessoa?', hint: 'É uma percepção, não um cálculo de propriedade.', kind: 'scores', short: 'Participação percebida' },
   origem: { label: 'Qual é a origem desta criação?', opts: ['Criada neste projeto', 'Criada antes do projeto', 'Inclui material de terceiros', 'Origem mista', 'Não sei'], short: 'Origem', dec: true },
-  titularAtual: { label: 'Hoje, de quem é esta criação no papel?', opts: ['Há titularidade documentada', 'Há indicação, sem documento', 'Há direitos de terceiros', 'Ainda não sabemos'], short: 'Titularidade atual', dec: true },
+  titularAtual: { label: 'Já existe algum documento dizendo quem é dono desta criação?', hint: 'Por exemplo, um contrato, um termo de cessão ou um registro no INPI.', opts: ['Sim, há contrato, termo ou registro', 'Não, só combinamos de boca', 'Não sei'], short: 'Documento de titularidade', dec: true },
   titular: { label: 'Quem deve ser dono?', hint: 'É uma intenção: não comprova quem é dono hoje nem transfere direitos.', kind: 'people', short: 'Titularidade pretendida', dec: true },
   divisao: { label: 'A equipe já combinou quanto cada dono tem?', opts: ['Sim, a equipe combinou percentuais', 'Ainda não, precisamos negociar', 'Não se aplica a esta criação'], short: 'Percentuais combinados', dec: true },
   uso: { label: 'Quem sair do projeto pode continuar usando esta criação?', hint: 'Pense em alguém que deixa a equipe depois.', opts: ['Qualquer pessoa que participou', 'Só quem for dono', 'Ninguém, sem um novo acordo da equipe'], short: 'Uso após a saída', dec: true },
@@ -147,9 +147,10 @@ export function propDefault(p, aid) {
 }
 export const propOf = (p, aid) => p.proposal[aid] || propDefault(p, aid);
 export const decPts = (p, a) => ['notas'].concat(decQs(a)).filter(q => itemStatus(p, a.id, q).status !== 'conv');
-/* Passo a passo da decisão: só os pontos divergentes, depois a revisão. Os pontos em que todos concordaram
-   já entram na proposta e podem ser editados a partir da revisão. */
-export const dsteps = (p, a) => decPts(p, a).concat('review');
+/* Passo a passo da decisão: todos os pontos, na ordem das perguntas, depois a revisão. Os pontos em que todos
+   concordaram também aparecem (já preenchidos e marcados como sem divergência), para que nada surja na proposta
+   sem ter passado pela tela. */
+export const dsteps = (p, a) => ['notas'].concat(decQs(a), 'review');
 export const decPick = (p, q, pr) => (isP(q) ? (pr.v[q] || []).map(x => nm(p, x)).join(', ') : pr.v[q] || '');
 export const diffCount = p => approved(p).reduce((s, a) => s + ['notas'].concat(decQs(a)).filter(q => itemStatus(p, a.id, q).status !== 'conv').length, 0);
 /* Validação da proposta de uma criação (null quando está tudo certo). */
@@ -171,7 +172,7 @@ export function stepErrors(p, me, a, d, g) {
     if (!elig(p).every(pid => hasNota(notasOf(d), pid))) err[k + 'notas'] = 'Escolha quanto cada pessoa fez';
     if (+notasOf(d)[me] > 0 && !(d.desc || '').trim()) err[k + 'desc'] = 'Conte em uma frase o que você fez';
     if (!d.origem) err[k + 'origem'] = 'Informe a origem';
-    if (!d.titularAtual) err[k + 'titularAtual'] = 'Informe a situação atual';
+    if (!d.titularAtual) err[k + 'titularAtual'] = 'Diga se já existe um documento';
     if ((d.link || '').trim() && !validLink(d.link)) err[k + 'link'] = 'Informe um link válido, começando com http';
   } else if (g !== 'review') {
     GROUPS[g].filter(x => qsFor(a).includes(x)).forEach(x => {
@@ -289,7 +290,7 @@ export function memorialBody(p, at) {
       L.push('  - ' + n(r.pid) + ': ' + (r.respondido ? 'respondeu' : 'não respondeu'));
       if (r.respondido) {
         L.push('    Origem declarada: ' + (r.origem || 'não informada'));
-        L.push('    Titularidade atual declarada: ' + (r.titularAtual || 'não informada'));
+        L.push('    Documento de titularidade: ' + (r.titularAtual || 'não informada'));
         L.push('    Titular indicado hoje: ' + (r.titularAtualNome || 'não informado'));
         if (r.titularExterno) L.push('    Titular pretendido fora da equipe, segundo esta pessoa: ' + r.titularExterno);
         L.push('    Base ou documento: ' + (r.titularAtualBase || 'não informado'));
@@ -305,7 +306,7 @@ export function memorialBody(p, at) {
     const pend = [];
     if (x.semAcordo) pend.push('decisão da criação ainda sem acordo');
     if (x.v.divisao === PCT_NEG) pend.push('percentuais ainda não negociados');
-    if (x.v.titularAtual === 'Ainda não sabemos') pend.push('titularidade atual a verificar');
+    if (x.v.titularAtual === 'Não sei' || x.v.titularAtual === 'Ainda não sabemos') pend.push('titularidade atual a verificar');
     if (x.v.origem === 'Não sei') pend.push('origem a verificar');
     if (x.v.terceiros === 'Sim, autorização pendente' || x.v.terceiros === 'Ainda não sabemos') pend.push('direitos de terceiros a verificar');
     if (x.v.audioDireitos === 'Autorização pendente' || x.v.audioDireitos === 'Ainda não sabemos') pend.push('autorizações de áudio a verificar');
@@ -320,5 +321,4 @@ export function memorialBody(p, at) {
   L.push(''); L.push(LIMITS);
   return L.join('\n');
 }
-export const memorialText = m => m.body + '\n\nCódigo de verificação (SHA-256): ' + m.hash;
-export const stripHash = t => t.replace(/\n*Código de verificação \(SHA-256\):.*$/s, '');
+export const memorialText = m => m.body;

@@ -7,9 +7,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
-import { taskFor, mem, nm, stripHash, phaseName } from '@mip/domain';
+import { taskFor, mem, nm, phaseName } from '@mip/domain';
 import { load, withProject } from './store.js';
-import { apply, ActionError, sha256 } from './actions.js';
+import { apply, ActionError } from './actions.js';
 import { viewFor } from './view.js';
 import { sendMail, mailMode } from './mail.js';
 import { sendLoginLink, verifyLink, startSession, endSession, sessionUser, rateLimited, validEmail, nameFromEmail, appUrl } from './auth.js';
@@ -239,14 +239,6 @@ app.post('/api/invite/:code/join', auth, wrap(async (req, res) => {
     return { already: false, elig: p.phase === 'coleta' };
   });
   res.json({ id: pr.id, result: { notice: out.already ? 'Você já participa deste projeto.' : out.elig ? 'Você entrou no projeto. Veja sua tarefa atual.' : 'Você entrou no projeto, mas as respostas já foram encerradas e você não responde desta vez.' } });
-}));
-
-/* ===== Verificar registro do acordo ===== */
-app.post('/api/verify', wrap(async (req, res) => {
-  const text = String(req.body.text || '');
-  if (!text.trim()) return res.json({ ok: false, msg: 'Cole o texto do registro para verificar.' });
-  const m = await prisma.memorial.findFirst({ where: { hash: sha256(stripHash(text)) } });
-  res.json(m ? { ok: true, msg: 'Este texto corresponde ao registro gerado em ' + m.createdAt.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' }).replace(', ', ' às ') } : { ok: false, msg: 'Este texto não corresponde a nenhum registro gerado pela MIP' });
 }));
 
 /* ===== Só para testes locais: entrar como qualquer pessoa sem e-mail (DEV_LOGIN=1). ===== */

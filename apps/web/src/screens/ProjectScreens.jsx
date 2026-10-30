@@ -6,21 +6,31 @@ import {
 } from '@mip/domain';
 import { useProject, Page } from './Project.jsx';
 import { ActionBar, Banner, Btn, Chip, Err, Head, Progress, copyText } from '../components/ui.jsx';
-import { post } from '../api.js';
 import { Satisfaction, markSeen } from '../components/Feedback.jsx';
 
+/* "Como funciona?" de cada aba: um mini tutorial em passos curtos. O subtítulo da tela só diz o que ela é. */
 export const TIPS = {
-  equipe: 'Adicione quem participou do projeto. Cada pessoa responde em particular sobre cada criação.',
-  ativos: 'Cadastre o que a equipe criou. O tipo da criação define uma das perguntas.',
-  sobre: 'Perguntas sobre o projeto como um todo. Quem organiza responde, e todos da equipe podem ver.',
-  resp: 'Uma tela por parte. Você pode sair e voltar de onde parou. Ninguém vê suas respostas até o fim; depois, a equipe vê o que cada pessoa escolheu.',
-  coleta: 'Mostra quem já respondeu, sem revelar as respostas. Quem não responde nunca conta como concordância.',
-  decidir: 'Aparecem só os pontos em que as respostas diferem, sem mostrar quem respondeu o quê. O que todos concordaram já entra na proposta.',
-  conf: 'Cada pessoa confirma ou recusa a proposta. Uma recusa devolve a proposta para ajuste.',
-  memorial: 'Reúne as decisões em um texto. O código de verificação mostra se o texto foi alterado depois.'
+  equipe: ['Copie o convite abaixo e mande no grupo da equipe.', 'Inclua todo mundo que contribuiu, mesmo quem já saiu.', 'Cada pessoa responde sozinha, sobre cada criação. Ninguém vê as respostas dos outros até o fim.'],
+  ativos: ['Cadastre cada coisa que a equipe criou: um app, um logo, uma música.', 'Escolha o tipo certo. Ele acrescenta uma pergunta própria, como licença para código ou registro para marca.', 'Quem é da equipe pode sugerir criações. Quem organiza aprova ou recusa.'],
+  sobre: ['Quem organiza responde três perguntas sobre o projeto como um todo.', 'Todos da equipe podem ver essas respostas.'],
+  resp: ['Responda uma criação de cada vez, uma parte por tela.', 'Pode sair e voltar: a MIP guarda de onde você parou.', 'Ninguém vê suas respostas até o fim. Depois, a equipe vê o que cada pessoa escolheu.'],
+  coleta: ['Aqui aparece quem já respondeu, sem mostrar as respostas.', 'Quem não responde nunca conta como quem concordou.'],
+  decidir: ['Cada criação mostra todos os pontos, um por tela.', 'Onde todos responderam igual, a resposta já vem marcada, com o aviso "Sem divergência".', 'Onde as respostas diferem, a equipe conversa e quem organiza marca o que foi decidido.'],
+  conf: ['Cada pessoa lê a proposta e confirma ou recusa.', 'Uma recusa devolve a proposta para ajuste, e todos confirmam de novo.'],
+  memorial: ['Reúne em um texto tudo o que a equipe decidiu.', 'Copie o texto e guarde junto com os arquivos do projeto.']
 };
 
 const plural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
+/* Editar a proposta durante a confirmação: só pede para confirmar a edição quando alguém já confirmou. */
+const confirmedBy = (p, lv) => elig(p).filter(x => lv.conf[x]?.v === 'ok');
+function editNote(p, lv, me) {
+  const ns = confirmedBy(p, lv).map(x => (x === me ? 'você' : nm(p, x)));
+  if (ns.length === 1 && ns[0] === 'você') return 'Você já confirmou. Se editar, vai precisar confirmar de novo.';
+  const s = ns.length > 1 ? ns.slice(0, -1).join(', ') + ' e ' + ns.at(-1) : ns[0];
+  return s.charAt(0).toUpperCase() + s.slice(1) + ' já ' + (ns.length > 1 ? 'confirmaram' : 'confirmou') + '. Se você editar, quem já confirmou precisa confirmar de novo.';
+}
+const editBar = (p, lv, me, setUi, act) => <ActionBar k="warn" note={editNote(p, lv, me)}><Btn onClick={() => setUi({ flag: {} })}>Cancelar</Btn><Btn kind="pri" onClick={() => act('editok')}>Editar proposta</Btn></ActionBar>;
+const startEdit = (p, lv, setUi, act) => (confirmedBy(p, lv).length ? setUi({ flag: { edit: true } }) : act('editok'));
 const qposOf = (p, me) => Object.fromEntries(Object.entries(p.answers[me] || {}).map(([aid, an]) => [aid, an.step]));
 
 /* ===== Apresentação (uma vez por pessoa) ===== */
@@ -126,13 +136,17 @@ export function Equipe() {
   const [rm, setRm] = useState(null);
   const askRemove = async pid => { const r = await act('remove', { pid }, `/api/projects/${p.id}/remove`); if (r?.confirmRemove) setRm(r.confirmRemove); };
   const doRemove = async () => { const r = await act('remove', { pid: rm.pid, confirm: true }, `/api/projects/${p.id}/remove`); if (r) setRm(null); };
-  const copyInvite = async () => say(await copyText(inviteUrl) ? 'Link de convite para ' + p.name + ' copiado. Mande no grupo da equipe.' : 'Não foi possível copiar. Selecione o link e copie manualmente.', undefined);
   const setup = org && p.phase === 'coleta' && p.setupStep === 'equipe';
   const inviteUrl = p.link.code ? location.origin + '/convite/' + p.link.code : '';
+  /* Mensagem pronta para o grupo: quem recebe entende o que é antes de abrir o link. */
+  const inviteMsg = 'Vamos combinar na MIP quem é dono do que criamos no ' + p.name + '? Entre pelo link: ' + inviteUrl;
+  const copyInvite = async (t, what) => say(await copyText(t) ? what + ' copiado. Mande no grupo da equipe.' : 'Não foi possível copiar. Selecione o texto e copie manualmente.', undefined);
+  const canShare = typeof navigator !== 'undefined' && !!navigator.share;
+  const share = () => navigator.share({ text: inviteMsg }).catch(() => {});
   const memChip = m => m.status === 'ativo' ? (m.elig ? <Chip>Participa</Chip> : <Chip k="warn">Entrou depois das respostas</Chip>) : m.status === 'pendente' ? <Chip k="warn">Convite pendente</Chip> : <Chip>Não responde</Chip>;
   return (
     <Page bar={setup && <ActionBar note={elig(p).length > 1 ? '' : 'Você pode adicionar mais pessoas depois.'}><Btn kind="pri" onClick={() => act('setupnext')}>Continuar</Btn></ActionBar>}>
-      <Head title="Equipe" sub={org && p.phase === 'coleta' ? 'Adicione quem participou do projeto. Cada pessoa responde em particular.' : 'Quem participa do projeto.'} />
+      <Head title="Equipe" sub="Quem participou do projeto." />
       <div className="card">
         <div className="row"><h3>Integrantes</h3><Chip k="acc">{plural(elig(p).length, 'participa', 'participam')}</Chip></div>
         <div className="list">
@@ -159,11 +173,13 @@ export function Equipe() {
       {org && (
         <div className="card">
           <div className="row"><h3>Adicionar pessoas</h3><Chip k={p.link.active ? 'ok' : ''}>{p.link.active ? 'Link ativo' : 'Link desativado'}</Chip></div>
-          <p className="muted small">Compartilhe o link de convite para {p.name}. Quem abrir o link entra na equipe. Mande no grupo do WhatsApp, por exemplo.</p>
-          <div className="tok invite" onClick={e => window.getSelection()?.selectAllChildren(e.currentTarget)}>{inviteUrl}</div>
+          <p className="muted small">Mande esta mensagem no grupo da equipe. Quem abrir o link entra no projeto.</p>
+          <div className="tok invite" onClick={e => window.getSelection()?.selectAllChildren(e.currentTarget)}>{inviteMsg}</div>
           <div className="row start">
-            <Btn kind={p.link.active ? 'pri' : ''} onClick={copyInvite} disabled={!p.link.active}>Copiar link</Btn>
+            <Btn kind={p.link.active ? 'pri' : ''} onClick={() => copyInvite(inviteMsg, 'Convite')} disabled={!p.link.active}>Copiar convite</Btn>
+            {canShare && <Btn onClick={share} disabled={!p.link.active}>Compartilhar</Btn>}
             <Btn onClick={() => act('toglink')}>{p.link.active ? 'Desativar link' : 'Ativar link'}</Btn>
+            {p.link.active && <button className="link" onClick={() => copyInvite(inviteUrl, 'Link')}>Copiar só o link</button>}
           </div>
         </div>
       )}
@@ -183,7 +199,7 @@ export function Criacoes() {
   const bar = org && coleta && p.setupStep !== 'resp' && <ActionBar note={approved(p).length ? '' : 'Cadastre pelo menos 1 criação para continuar.'}>{approved(p).length > 0 && <Btn kind="pri" onClick={() => (p.setupStep === 'ativos' ? act('setupnext') : go('sobre'))}>Continuar</Btn>}</ActionBar>;
   return (
     <Page bar={bar}>
-      <Head title="Criações" sub={org && coleta ? 'Diga o que a equipe criou: um app, um logo, uma música. Cada criação recebe perguntas sobre contribuição, donos e uso.' : 'O que a equipe criou.'} />
+      <Head title="Criações" sub="O que a equipe fez junto." />
       {!org && coleta && !approved(p).length && <Banner>Aguardando quem organiza cadastrar as criações. Você pode sugerir uma que considera importante.</Banner>}
       <div className="card">
         <div className="row"><h3>Cadastradas</h3><Chip k="acc">{approved(p).length}</Chip></div>
@@ -350,14 +366,14 @@ export function Decidir() {
   if (edit) bar = left.length
     ? <ActionBar note={done ? 'Falta' + (left.length > 1 ? 'm ' : ' ') + plural(left.length, 'criação', 'criações') + '.' : ''}><Btn kind="pri" onClick={() => startDecide(left[0])}>{propOf(p, left[0].id).ajuste ? 'Ajustar ' : 'Decidir '}{left[0].name}</Btn></ActionBar>
     : <ActionBar k={semN.length || pctN.length ? 'warn' : ''} note={semN.length ? semN.map(a => a.name).join(', ') + ' vai como sem acordo.' : pctN.length ? 'Percentuais de ' + pctN.map(a => a.name).join(', ') + ' ficam pendentes no registro do acordo.' : 'Todas as criações estão revisadas.'}><Btn kind="pri" onClick={() => act('sendv')}>Enviar proposta</Btn></ActionBar>;
-  else if (p.phase === 'confirmacao' && org && ui.flag.edit) bar = <ActionBar k="warn" note={'Editar cria a proposta ' + (lv.n + 1) + ' e invalida as confirmações da proposta ' + lv.n + '.'}><Btn onClick={() => setUi({ flag: {} })}>Cancelar</Btn><Btn kind="pri" onClick={() => act('editok')}>Criar proposta {lv.n + 1}</Btn></ActionBar>;
+  else if (p.phase === 'confirmacao' && org && ui.flag.edit) bar = editBar(p, lv, me, setUi, act);
   const shown = !edit && as.find(x => x.id === ui.dasset);
   return (
     <Page bar={bar}>
-      <Head title="Decisões" sub="Mostra só os pontos em que as respostas diferem, sem dizer quem respondeu o quê." />
+      <Head title="Decisões" sub="O que a equipe decidiu para cada criação." />
       {ref.length > 0 && <Banner k="bad">{ref.map(k => nm(p, k) + ' recusou a proposta ' + lv.n + ': "' + lv.conf[k].comment + '"').join(' ')}{org && ' Revise as criações com pedido de ajuste e envie a proposta ' + (lv.n + 1) + '.'}</Banner>}
       {p.phase === 'decisao' && !org && <Banner>{nm(p, p.org)} está registrando as decisões. Você pode ver os pontos e comentar; a confirmação vem depois.</Banner>}
-      {(p.phase === 'confirmacao' || p.phase === 'consolidado') && <Banner action={org && p.phase === 'confirmacao' && <Btn kind="sm" onClick={() => setUi({ flag: { edit: true } })}>Editar proposta</Btn>}>{p.phase === 'consolidado' ? 'O acordo está fechado.' : 'A proposta foi enviada para confirmação. Editar cria uma nova proposta e invalida as confirmações já feitas.'}</Banner>}
+      {(p.phase === 'confirmacao' || p.phase === 'consolidado') && <Banner action={org && p.phase === 'confirmacao' && <Btn kind="sm" onClick={() => startEdit(p, lv, setUi, act)}>Editar proposta</Btn>}>{p.phase === 'consolidado' ? 'O acordo está fechado.' : 'A proposta foi enviada. ' + (() => { const n = elig(p).length - confirmedBy(p, lv).length; return n ? 'Falta a confirmação de ' + plural(n, 'pessoa', 'pessoas') + '.' : 'Todos confirmaram.'; })()}</Banner>}
       <div>
         <div className="row"><b>Criações revisadas: {done} de {as.length}</b>{semN.length > 0 && <span className="muted small">{semN.length} sem acordo</span>}</div>
         <div style={{ marginTop: 8 }}><Progress value={as.length ? 100 * done / as.length : 0} /></div>
@@ -453,10 +469,10 @@ export function Confirmacao() {
   const can = p.phase === 'confirmacao' && E.includes(me) && !c;
   let bar = null;
   if (p.phase === 'consolidado') bar = <ActionBar><Btn kind="pri" onClick={() => go('memorial')}>Ver registro do acordo</Btn></ActionBar>;
-  else if (ui.flag.edit && p.phase === 'confirmacao') bar = <ActionBar k="warn" note={'Editar cria a proposta ' + (lv.n + 1) + ' e invalida as confirmações já feitas.'}><Btn onClick={() => setUi({ flag: {} })}>Cancelar</Btn><Btn kind="pri" onClick={() => act('editok')}>Criar proposta {lv.n + 1}</Btn></ActionBar>;
+  else if (ui.flag.edit && p.phase === 'confirmacao') bar = editBar(p, lv, me, setUi, act);
   else if (can) bar = ui.flag.refusing
     ? <ActionBar><Btn onClick={() => { setUi({ flag: {} }); setRa([]); setWhy(''); setErr({}); }}>Cancelar</Btn><Btn kind="bad" onClick={() => act('refuse', { n: lv.n, assets: ra, comment: why })}>Enviar recusa</Btn></ActionBar>
-    : <ActionBar>{org ? <Btn onClick={() => setUi({ flag: { edit: true } })}>Editar proposta</Btn> : <Btn onClick={() => setUi({ flag: { refusing: true } })}>Recusar</Btn>}<Btn kind="pri" onClick={() => act('conf', { n: lv.n })}>Confirmar proposta</Btn></ActionBar>;
+    : <ActionBar>{org ? <Btn onClick={() => startEdit(p, lv, setUi, act)}>Editar proposta</Btn> : <Btn onClick={() => setUi({ flag: { refusing: true } })}>Recusar</Btn>}<Btn kind="pri" onClick={() => act('conf', { n: lv.n })}>Confirmar proposta</Btn></ActionBar>;
   const side = (
     <section className="side-card">
       <div className="row"><h3>Confirmações</h3><span className="muted small">{E.filter(x => lv.conf[x]?.v === 'ok').length} de {E.length}</span></div>
@@ -467,7 +483,7 @@ export function Confirmacao() {
     <Page bar={bar} side={side}>
       <Head title="Confirmação" sub="Leia a versão atual antes de confirmar ou recusar. A decisão é individual e silêncio não conta como confirmação." />
       {p.phase === 'consolidado' && <Banner>Todas as pessoas confirmaram. O registro do acordo está disponível.</Banner>}
-      {p.phase === 'confirmacao' && allOk && sem.length > 0 && <Banner k="warn" action={org && <Btn kind="sm" onClick={() => setUi({ flag: { edit: true } })}>Reabrir proposta</Btn>}>Todos confirmaram, mas {sem.join(', ')} ficou sem acordo. {org ? 'Quando a equipe decidir, reabra a proposta e registre a decisão.' : 'Quando a equipe decidir, ' + nm(p, p.org) + ' envia uma nova proposta.'}</Banner>}
+      {p.phase === 'confirmacao' && allOk && sem.length > 0 && <Banner k="warn" action={org && <Btn kind="sm" onClick={() => startEdit(p, lv, setUi, act)}>Reabrir proposta</Btn>}>Todos confirmaram, mas {sem.join(', ')} ficou sem acordo. {org ? 'Quando a equipe decidir, reabra a proposta e registre a decisão.' : 'Quando a equipe decidir, ' + nm(p, p.org) + ' envia uma nova proposta.'}</Banner>}
       <VerCard v={lv} curr>
         {can && (
           <div className="field" style={{ borderTop: '1px solid var(--color-line)', paddingTop: 16 }}>
@@ -496,14 +512,13 @@ export function Confirmacao() {
 
 /* ===== Registro do acordo ===== */
 export function Memorial() {
-  const { p, act, say } = useProject(), [text, setText] = useState(''), [res, setRes] = useState(null);
+  const { p, act, say } = useProject();
   /* Ver o registro libera o pedido de nota também na página do projeto. */
   const seen = !!p.memorials[0] && p.phase === 'consolidado';
   useEffect(() => { if (seen) markSeen(p.id); }, [seen, p.id]);
   if (!lastV(p)) return <Page><Head title="Registro do acordo" /><Banner>O registro do acordo fica disponível depois do envio da primeira proposta.</Banner></Page>;
   const m = p.memorials[0];
   const copy = async () => say(await copyText(memorialText(m)) ? 'Texto copiado.' : 'Não foi possível copiar. Selecione o texto e copie manualmente.');
-  const verify = async () => setRes(await post('/api/verify', { text }));
   return (
     <Page bar={m ? <ActionBar note={plural(p.memorials.length, 'cópia gerada', 'cópias geradas') + ' neste projeto.'}><Btn onClick={() => act('genmem')}>Gerar nova cópia</Btn><Btn kind="pri" onClick={copy}>Copiar texto</Btn></ActionBar> : <ActionBar><Btn kind="pri" onClick={() => act('genmem')}>Gerar registro do acordo</Btn></ActionBar>}>
       <Head title="Registro do acordo" sub="Reúne as decisões da equipe neste projeto." />
@@ -513,15 +528,6 @@ export function Memorial() {
       </div>
       {m && <div className="paper">{memorialText(m)}</div>}
       {m && p.phase === 'consolidado' && <Satisfaction projectId={p.id} where="memorial" />}
-      <details className="more">
-        <summary>Verificar se um registro foi alterado</summary>
-        <div className="page-main">
-          <p className="muted small">Cole o texto do registro. A MIP confere o código com os registros que gerou.</p>
-          <textarea value={text} onChange={e => setText(e.target.value)} style={{ minHeight: 110 }} aria-label="Texto do registro" />
-          <div className="row start"><Btn kind="sm" onClick={verify}>Verificar</Btn></div>
-          {res && <Banner k={res.ok ? '' : 'bad'}>{res.msg}</Banner>}
-        </div>
-      </details>
     </Page>
   );
 }

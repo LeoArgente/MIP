@@ -18,7 +18,7 @@ function Perfil() {
       <div className="qs-progress"><span style={{ width: '0%' }} /></div>
       <main className="qs-main"><div className="qs-col">
         <div className="qs-card">
-          <div className="qs-head"><p className="qs-step">Uma vez por projeto</p><h1 className="qs-title" ref={title} tabIndex={-1}>Antes de começar, conte sobre você</h1><p className="qs-hint">A equipe vê estas respostas só depois que as respostas forem encerradas.</p></div>
+          <div className="qs-head"><p className="qs-step">Uma vez por projeto</p><h1 className="qs-title" ref={title} tabIndex={-1}>Antes de começar, conte sobre você</h1><p className="qs-hint">Ninguém vê o que você responder aqui agora. A equipe só vê quando a etapa de perguntas terminar.</p></div>
           <div className="qs-q">
             <label className="qs-sub" htmlFor="pf-funcao">{PERFIL.funcao.label}</label>
             <input id="pf-funcao" type="text" value={f.funcao || ''} onChange={e => { setErr({}); editPerfil({ funcao: e.target.value }); }} placeholder={PERFIL.funcao.ph} autoFocus />
@@ -146,9 +146,9 @@ function Questions() {
         )}
         {block('origem')}{block('titularAtual')}
         <div className="qs-q">
-          <label className="qs-sub" htmlFor="ta-nome">Quem é indicado como titular hoje? <span className="muted">(se souber)</span></label>
+          <label className="qs-sub" htmlFor="ta-nome">Quem aparece como dono hoje? <span className="muted">(se souber)</span></label>
           <input id="ta-nome" type="text" value={d.titularAtualNome || ''} onChange={setText('titularAtualNome')} placeholder="Nome da pessoa, organização ou terceiro" disabled={dis} />
-          <label className="qs-sub" htmlFor="ta-base">Qual documento ou fato sustenta essa indicação? <span className="muted">(opcional)</span></label>
+          <label className="qs-sub" htmlFor="ta-base">Qual é o documento ou o combinado? <span className="muted">(opcional)</span></label>
           <input id="ta-base" type="text" value={d.titularAtualBase || ''} onChange={setText('titularAtualBase')} placeholder="Contrato, registro, licença ou relato" disabled={dis} />
         </div>
       </>

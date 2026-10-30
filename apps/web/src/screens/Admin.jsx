@@ -7,6 +7,7 @@ import { useSession } from '../session.jsx';
 import Header from '../components/Header.jsx';
 import { Banner, Chip, initials } from '../components/ui.jsx';
 import { RATINGS } from '../components/Feedback.jsx';
+import Select from '../components/Select.jsx';
 
 const img = id => '/api/admin/feedback/image/' + id;
 const hour = d => new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -19,6 +20,8 @@ function dayName(d) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 const ratingKind = r => (r >= 4 ? 'ok' : r <= 2 ? 'bad' : 'warn');
+/* O filtro usa só a seção ("Decisões"), não o detalhe ("Decisões · Logo · Uso comercial"), que continua em cada linha. */
+const section = r => r.screen.split(' · ')[0];
 
 /* Visualizador dos prints de um feedback: setas (ou ← →) passam entre eles; Esc, "Fechar" ou um clique fora fecham. */
 function Viewer({ view, onClose }) {
@@ -51,8 +54,9 @@ export default function Admin() {
   useEffect(() => { if (me?.admin) get('/api/admin/feedback').then(setRows).catch(e => setErr(e.message)); }, [me]);
   const all = rows || [];
   const sats = useMemo(() => all.filter(r => r.kind === 'satisfacao'), [all]);
-  const screens = useMemo(() => [...new Set(all.map(r => r.screen))].sort(), [all]);
-  const shown = all.filter(r => (!kind || r.kind === kind) && (!screen || r.screen === screen));
+  const ofKind = all.filter(r => !kind || r.kind === kind);
+  const screens = useMemo(() => [...new Set(all.map(section))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [all]);
+  const shown = ofKind.filter(r => !screen || section(r) === screen);
   const days = useMemo(() => { const g = []; for (const r of shown) { const k = dayKey(r.createdAt); if (g.at(-1)?.k !== k) g.push({ k, name: dayName(r.createdAt), rows: [] }); g.at(-1).rows.push(r); } return g; }, [shown]);
 
   if (!me.admin) return <><Header /><main className="admin"><h1>Feedback</h1><Banner>Só a equipe da MIP vê esta página.</Banner></main></>;
@@ -69,11 +73,13 @@ export default function Admin() {
         {rows && (
           <>
             <section className="admin-stats" aria-label="Resumo">
-              <div className="stat"><span>Comentários</span><b>{count('texto')}</b></div>
-              <div className="stat"><span>Avaliações</span><b>{sats.length}</b></div>
+              <div className="admin-counts">
+                <div className="stat"><span>Comentários</span><b>{count('texto')}</b></div>
+                <div className="stat"><span>Avaliações</span><b>{sats.length}</b></div>
+              </div>
               <div className="stat wide">
                 <span>Satisfação média</span>
-                {sats.length ? <b>{RATINGS[Math.round(avg) - 1]} <small>{avg.toFixed(1).replace('.', ',')} de 5</small></b> : <b className="muted">Sem avaliações</b>}
+                {sats.length ? <b>{RATINGS[Math.round(avg) - 1]} <small>{avg.toFixed(1).replace('.', ',')} de 5,0</small></b> : <b className="muted">Sem avaliações</b>}
                 {sats.length > 0 && (
                   <ul className="admin-dist" aria-label="Avaliações por opção">
                     {RATINGS.map((n, i) => { const k = sats.filter(r => r.rating === i + 1).length; return <li key={n}><span>{n}</span><span className="dec-bar"><i style={{ width: 100 * k / sats.length + '%' }} /></span><b>{k}</b></li>; })}
@@ -88,9 +94,9 @@ export default function Admin() {
                 <div className="seg" role="radiogroup" aria-label="Tipo">
                   {KINDS.map(([k, n]) => <button type="button" key={k} role="radio" aria-checked={kind === k} className={kind === k ? 'on' : ''} onClick={() => setKind(k)}>{n} <span>{count(k)}</span></button>)}
                 </div>
-                <label className="admin-screen"><span className="sr">Tela</span>
-                  <select value={screen} onChange={e => setScreen(e.target.value)}><option value="">Todas as telas</option>{screens.map(s => <option key={s}>{s}</option>)}</select>
-                </label>
+                <div className="admin-screen">
+                  <Select label="Tela" value={screen} onChange={setScreen} options={[{ value: '', label: 'Todas as telas', count: ofKind.length }, ...screens.map(s => ({ value: s, label: s, count: ofKind.filter(r => section(r) === s).length }))]} />
+                </div>
               </div>
               {!shown.length ? <p className="admin-empty">{all.length ? 'Nenhum feedback com esses filtros.' : 'Nenhum feedback ainda. Eles aparecem aqui assim que alguém enviar.'}</p> : days.map(d => (
                 <div className="admin-day" key={d.k}>

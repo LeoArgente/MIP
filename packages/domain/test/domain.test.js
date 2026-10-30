@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { itemStatus, partOf, taskFor, propDefault, propError, sendErrors, memorialBody, snapshot, approved, PCT_SIM, dsteps } from '../src/index.js';
+import { itemStatus, partOf, taskFor, propDefault, propError, sendErrors, memorialBody, snapshot, approved, PCT_SIM, dsteps, decPts } from '../src/index.js';
 
 /* Cenário do protótipo: Ana organiza, Bruno e Carla participam. */
 function demo() {
-  const base = { materiais: 'Só o que a própria pessoa fez', origem: 'Criada neste projeto', titularAtual: 'Ainda não sabemos', divisao: 'Ainda não, precisamos negociar', uso: 'Só quem for dono', comercial: 'Sim', portfolio: 'Todos que criaram', marcaRegistro: 'Sim, com evidência', desc: 'fiz', link: '' };
+  const base = { materiais: 'Só o que a própria pessoa fez', origem: 'Criada neste projeto', titularAtual: 'Não sei', divisao: 'Ainda não, precisamos negociar', uso: 'Só quem for dono', comercial: 'Sim', portfolio: 'Todos que criaram', marcaRegistro: 'Sim, com evidência', desc: 'fiz', link: '' };
   const sent = (o) => ({ draft: { ...base, ...o }, sent: { ...base, ...o, at: 1 } });
   return {
     id: 'p1', name: 'App Rotas', context: 'Disciplina', org: 'ana', phase: 'decisao', setupStep: 'resp',
@@ -28,11 +28,15 @@ test('respostas iguais convergem e diferentes divergem', () => {
   assert.equal(itemStatus(p, 'a1', 'notas').status, 'conv');
 });
 
-test('decisão passa só pelos pontos divergentes antes da revisão', () => {
-  const p = demo();
-  assert.deepEqual(dsteps(p, p.assets[0]), ['titular', 'review']);
+test('decisão passa por todos os pontos antes da revisão; só os divergentes contam como diferença', () => {
+  const p = demo(), S = dsteps(p, p.assets[0]);
+  assert.equal(S[0], 'notas');
+  assert.equal(S.at(-1), 'review');
+  assert.ok(S.includes('uso') && S.includes('titular'));
+  assert.deepEqual(decPts(p, p.assets[0]), ['titular']);
   p.answers.carla.a1 = p.answers.ana.a1;
-  assert.deepEqual(dsteps(p, p.assets[0]), ['review']);
+  assert.deepEqual(dsteps(p, p.assets[0]), S);
+  assert.deepEqual(decPts(p, p.assets[0]), []);
 });
 
 test('proposta inicial traz só o que todos responderam igual', () => {
