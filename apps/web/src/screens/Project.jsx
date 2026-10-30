@@ -123,7 +123,7 @@ export default function Project() {
   return (
     <Ctx.Provider value={value}><BusyCtx.Provider value={busy}>
       <div className="proj-wrap">
-        {/* Uma barra só no alto: dentro de uma etapa, "‹ Nome do projeto" ocupa o lugar da marca. */}
+        {/* Uma barra só no alto: dentro de uma etapa, "< Nome do projeto" ocupa o lugar da marca. */}
         <Header back={tab === 'proj' ? null : { label: p.name, onClick: () => go('proj') }} />
         <Screen />
       </div>

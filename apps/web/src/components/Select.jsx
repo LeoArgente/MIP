@@ -2,8 +2,8 @@
    Teclado: ↓, ↑, Enter ou Espaço abrem; setas, Home e End movem; Enter escolhe; Esc fecha; digitar uma letra pula
    para a opção que começa com ela. Um clique fora fecha. */
 import { useEffect, useId, useRef, useState } from 'react';
+import Icon from './Icon.jsx';
 
-const Chevron = () => <svg className="select-chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 const Check = () => <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 
 /* options: [{ value, label, count? }] */
@@ -46,7 +46,7 @@ export default function Select({ value, onChange, options, label }) {
       <button type="button" ref={btn} className="select-btn" aria-haspopup="listbox" aria-expanded={open} aria-label={label + ': ' + sel.label} onClick={() => (open ? close() : show())} onKeyDown={onBtnKey}>
         <span className="select-val">{sel.label}</span>
         {sel.count != null && <span className="select-n">{sel.count}</span>}
-        <Chevron />
+        <Icon name="chevron-down" className="select-chev" />
       </button>
       {open && (
         <ul ref={list} className="select-list" role="listbox" tabIndex={-1} aria-label={label} aria-activedescendant={id + '-' + act} onKeyDown={onListKey}>

@@ -1,11 +1,12 @@
 /* Topo: marca à esquerda e conta à direita, em todas as telas. Dentro de uma etapa do projeto,
-   "‹ Nome do projeto" aparece logo abaixo, para voltar à página do projeto.
+   "< Nome do projeto" aparece logo abaixo, para voltar à página do projeto.
    Sem conta: um botão que diz como se entra ("Entrar com e-mail").
    Com conta: botão com a inicial e o nome, que abre um menu com a conta, os projetos e "Sair da conta". */
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSession } from '../session.jsx';
 import { initials } from './ui.jsx';
+import Icon from './Icon.jsx';
 /* Logo como SVG no próprio HTML: usa a cor do texto (currentColor), então acompanha o tema claro e o escuro. */
 import logo from '../assets/logo/mip.svg?raw';
 
@@ -24,7 +25,7 @@ function AccountMenu({ me, onLogout }) {
       <button className="account-btn" aria-label={"Conta de " + me.name} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>
         <span className="avatar" aria-hidden="true">{initials(me.name)}</span>
         <span className="account-name">{me.name}</span>
-        <span className="chev" aria-hidden="true">⌄</span>
+        <Icon name="chevron-down" className="chev" />
       </button>
       {open && (
         <div className="menu" role="menu">
@@ -49,7 +50,7 @@ export default function Header({ back }) {
         {me ? <AccountMenu me={me} onLogout={async () => { await logout(); nav('/'); }} />
           : me === null && loc.pathname !== '/entrar' && <button className="btn sm" onClick={() => nav('/entrar' + (loc.pathname !== '/' ? '?next=' + encodeURIComponent(loc.pathname) : ''))}>{config.testLogin ? 'Entrar' : 'Entrar com e-mail'}</button>}
       </div>
-      {back && <button className="back-btn" onClick={back.onClick}>‹ {back.label}</button>}
+      {back && <button className="back-btn" onClick={back.onClick}><Icon name="chevron-left" /><span>{back.label}</span></button>}
     </header>
   );
 }

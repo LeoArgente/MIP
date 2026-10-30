@@ -7,6 +7,7 @@ import {
 import { useProject, Page } from './Project.jsx';
 import { ActionBar, Banner, Btn, Chip, Err, Head, Progress, copyText } from '../components/ui.jsx';
 import { Satisfaction, markSeen } from '../components/Feedback.jsx';
+import Icon from '../components/Icon.jsx';
 
 /* "Como funciona?" de cada aba: um mini tutorial em passos curtos. O subtítulo da tela só diz o que ela é. */
 export const TIPS = {
@@ -121,7 +122,7 @@ export function Hub() {
           {SECTIONS.map(([k, n], ix) => {
             const i = secInfo(p, me, k), st = ix < stage ? 'done' : ix === stage ? 'now' : 'later';
             const inner = <span className="g-step"><span className="dot" aria-hidden="true">{st === 'done' ? '✓' : ''}</span><span className="g-l"><b><span className="sr">{st === 'done' ? 'Feita: ' : st === 'now' ? 'Agora: ' : ''}</span>{n}</b><span>{i.s}</span></span></span>;
-            return i.on ? <button className={'g-row ' + st} key={k} onClick={() => go(k)}>{inner}<i aria-hidden="true">›</i></button> : <div className={'g-row off ' + st} key={k}>{inner}</div>;
+            return i.on ? <button className={'g-row ' + st} key={k} onClick={() => go(k)}>{inner}<Icon name="chevron-right" className="g-chev" /></button> : <div className={'g-row off ' + st} key={k}>{inner}</div>;
           })}
         </div>
       </section>

@@ -7,6 +7,7 @@ import { useProject } from './Project.jsx';
 import Header from '../components/Header.jsx';
 import { Banner, Btn, Chip, Err, Voters } from '../components/ui.jsx';
 import { usePlace } from '../components/Feedback.jsx';
+import Icon from '../components/Icon.jsx';
 
 export default function DecideFocus() {
   const { p, act, err, setErr, ui, setUi, editProp } = useProject();
@@ -106,7 +107,7 @@ export default function DecideFocus() {
     <div className="qs">
       <Header />
       <header className="qs-top">
-        <button className="qs-exit" onClick={exit}>‹ Voltar às decisões</button>
+        <button className="qs-exit" onClick={exit}><Icon name="chevron-left" />Voltar às decisões</button>
         <div className="qs-ctx"><b>Decisões · {a.name}</b><span>Criação {as.indexOf(a) + 1} de {as.length}</span></div>
         <span className="qs-count">{q === 'review' ? 'Revisão' : (s + 1) + ' de ' + nq}</span>
       </header>

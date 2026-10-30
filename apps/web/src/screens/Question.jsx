@@ -5,6 +5,7 @@ import { useProject } from './Project.jsx';
 import Header from '../components/Header.jsx';
 import { Banner, Btn, Err } from '../components/ui.jsx';
 import { usePlace } from '../components/Feedback.jsx';
+import Icon from '../components/Icon.jsx';
 
 /* Sobre você: uma vez por projeto, antes da primeira pergunta. */
 function Perfil() {
@@ -14,7 +15,7 @@ function Perfil() {
   return (
     <div className="qs">
       <Header />
-      <header className="qs-top"><button className="qs-exit" onClick={exit}>‹ Voltar ao projeto</button><div className="qs-ctx"><b>Sobre você</b><span>{p.name}</span></div><span className="qs-count">Antes de começar</span></header>
+      <header className="qs-top"><button className="qs-exit" onClick={exit}><Icon name="chevron-left" />Voltar ao projeto</button><div className="qs-ctx"><b>Sobre você</b><span>{p.name}</span></div><span className="qs-count">Antes de começar</span></header>
       <div className="qs-progress"><span style={{ width: '0%' }} /></div>
       <main className="qs-main"><div className="qs-col">
         <div className="qs-card">
@@ -173,7 +174,7 @@ function Questions() {
     <div className="qs" onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !['TEXTAREA', 'BUTTON'].includes(e.target.tagName)) { e.preventDefault(); if (g === 'review') { if (open) send(); } else next(); } }}>
       <Header />
       <header className="qs-top">
-        <button className="qs-exit" onClick={exit}>‹ Voltar ao projeto</button>
+        <button className="qs-exit" onClick={exit}><Icon name="chevron-left" />Voltar ao projeto</button>
         <div className="qs-ctx"><b>{a.name}</b><span>{a.cat} · {as.indexOf(a) + 1} de {as.length}</span></div>
         <span className="qs-count">{g === 'review' ? 'Revisão' : (s + 1) + ' de ' + nq}</span>
       </header>

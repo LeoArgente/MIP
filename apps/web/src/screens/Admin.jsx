@@ -8,6 +8,7 @@ import Header from '../components/Header.jsx';
 import { Banner, Chip, initials } from '../components/ui.jsx';
 import { RATINGS } from '../components/Feedback.jsx';
 import Select from '../components/Select.jsx';
+import Icon from '../components/Icon.jsx';
 
 const img = id => '/api/admin/feedback/image/' + id;
 const hour = d => new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -40,9 +41,9 @@ function Viewer({ view, onClose }) {
         <button type="button" className="btn sm" onClick={() => dlg.current.close()} autoFocus>Fechar</button>
       </div>
       <div className="viewer-stage">
-        {n > 1 && <button type="button" className="viewer-nav prev" onClick={() => setI(i - 1)} disabled={i === 0} aria-label="Print anterior">‹</button>}
+        {n > 1 && <button type="button" className="viewer-nav prev" onClick={() => setI(i - 1)} disabled={i === 0} aria-label="Print anterior"><Icon name="chevron-left" /></button>}
         <img src={img(view.images[i])} alt={'Print ' + (i + 1) + ' de ' + n + ' do feedback'} />
-        {n > 1 && <button type="button" className="viewer-nav next" onClick={() => setI(i + 1)} disabled={i === n - 1} aria-label="Próximo print">›</button>}
+        {n > 1 && <button type="button" className="viewer-nav next" onClick={() => setI(i + 1)} disabled={i === n - 1} aria-label="Próximo print"><Icon name="chevron-right" /></button>}
       </div>
     </dialog>
   );
