@@ -10,7 +10,7 @@
 export const QS = {
   notas: { label: 'Como você percebe a participação de cada pessoa?', hint: 'É uma percepção, não um cálculo de propriedade.', kind: 'scores', short: 'Participação percebida' },
   origem: { label: 'Qual é a origem desta criação?', opts: ['Criada neste projeto', 'Criada antes do projeto', 'Inclui material de terceiros', 'Origem mista', 'Não sei'], short: 'Origem', dec: true },
-  titularAtual: { label: 'Já existe algum documento dizendo quem é dono desta criação?', hint: 'Por exemplo, um contrato, um termo de cessão ou um registro no INPI.', opts: ['Sim, há contrato, termo ou registro', 'Não, só combinamos de boca', 'Não sei'], short: 'Documento de titularidade', dec: true },
+  titularAtual: { label: 'Já existe algum documento dizendo quem é dono desta criação?', hint: 'Por exemplo, um contrato, um termo de cessão ou um registro no INPI.', opts: ['Sim, há contrato, termo ou registro', 'Não, existe apenas um acordo verbal', 'Não sei'], short: 'Documento de titularidade', dec: true },
   titular: { label: 'Quem deve ser dono?', hint: 'É uma intenção: não comprova quem é dono hoje nem transfere direitos.', kind: 'people', short: 'Titularidade pretendida', dec: true },
   divisao: { label: 'A equipe já combinou quanto cada dono tem?', opts: ['Sim, a equipe combinou percentuais', 'Ainda não, precisamos negociar', 'Não se aplica a esta criação'], short: 'Percentuais combinados', dec: true },
   uso: { label: 'Quem sair do projeto pode continuar usando esta criação?', hint: 'Pense em alguém que deixa a equipe depois.', opts: ['Qualquer pessoa que participou', 'Só quem for dono', 'Ninguém, sem um novo acordo da equipe'], short: 'Uso após a saída', dec: true },

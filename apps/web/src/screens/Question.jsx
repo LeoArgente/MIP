@@ -148,7 +148,7 @@ function Questions() {
         <div className="qs-q">
           <label className="qs-sub" htmlFor="ta-nome">Quem aparece como dono hoje? <span className="muted">(se souber)</span></label>
           <input id="ta-nome" type="text" value={d.titularAtualNome || ''} onChange={setText('titularAtualNome')} placeholder="Nome da pessoa, organização ou terceiro" disabled={dis} />
-          <label className="qs-sub" htmlFor="ta-base">Qual é o documento ou o combinado? <span className="muted">(opcional)</span></label>
+          <label className="qs-sub" htmlFor="ta-base">Qual é o documento ou o acordo? <span className="muted">(opcional)</span></label>
           <input id="ta-base" type="text" value={d.titularAtualBase || ''} onChange={setText('titularAtualBase')} placeholder="Contrato, registro, licença ou relato" disabled={dis} />
         </div>
       </>
