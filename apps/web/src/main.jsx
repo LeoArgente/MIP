@@ -6,6 +6,7 @@ import './styles/app.css';
 import { SessionProvider, useSession } from './session.jsx';
 import { ToastProvider } from './components/ui.jsx';
 import { FeedbackProvider } from './components/Feedback.jsx';
+import { TutorialProvider } from './components/Tutorial.jsx';
 import Home from './screens/Home.jsx';
 import Login from './screens/Login.jsx';
 import NewProject from './screens/NewProject.jsx';
@@ -42,9 +43,11 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <SessionProvider>
         <ToastProvider>
-          <FeedbackProvider>
-            <App />
-          </FeedbackProvider>
+          <TutorialProvider>
+            <FeedbackProvider>
+              <App />
+            </FeedbackProvider>
+          </TutorialProvider>
         </ToastProvider>
       </SessionProvider>
     </BrowserRouter>

@@ -161,6 +161,12 @@ input[type=radio], input[type=checkbox] { width: 20px; height: 20px; margin: 0; 
 .menu .danger { color: var(--color-bad); }
 .menu-sep { height: 1px; margin: var(--space-1) var(--space-2); background: color-mix(in srgb, var(--color-line) 60%, transparent); }
 @media (max-width: 480px) { .account-name { display: none; } .account-btn { padding-right: var(--space-2); } }
+/* Botão "?" (ver o tutorial): ícone pequeno com área de toque de 44 px. */
+.top-actions { display: flex; align-items: center; gap: var(--space-2); }
+.help-btn { flex: none; width: var(--size-touch); height: var(--size-touch); display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--color-ink); cursor: pointer; transition: background .18s ease; }
+.help-btn svg { width: 24px; height: 24px; display: block; }
+.help-btn:hover { background: var(--color-surface-2); }
+.help-btn:active { filter: brightness(.85); }
 .back-btn { background: none; border: 0; padding: 0; min-height: var(--size-touch); min-width: 0; cursor: pointer; font-size: var(--text-headline-size); font-weight: var(--text-headline-weight); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .back-btn:hover { opacity: .7; }
 /* Telas do projeto: uma coluna só, com o topo alinhado ao conteúdo e preso no alto ao rolar. */
@@ -251,8 +257,8 @@ html { scroll-behavior: smooth; }
 .landing-copy h1 span { display: block; }
 .landing-copy p { color: var(--color-hero-muted); max-width: 46ch; }
 .landing-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-6); margin-top: var(--space-2); }
-.landing-actions a { display: inline-flex; align-items: center; min-height: var(--size-touch); font-weight: 600; font-size: var(--text-headline-size); text-decoration: none; color: var(--color-hero-ink); }
-.landing-actions a:hover { opacity: .75; }
+.landing-actions a, .landing-actions button.link { display: inline-flex; align-items: center; min-height: var(--size-touch); font-weight: 600; font-size: var(--text-headline-size); text-decoration: none; color: var(--color-hero-ink); }
+.landing-actions a:hover, .landing-actions button.link:hover { opacity: .75; }
 .landing-hero .btn.pri { background: #f5f5f5; color: #111; border-color: #f5f5f5; }
 .landing-art { position: relative; align-self: stretch; min-height: 400px; display: grid; place-items: center; isolation: isolate; background: radial-gradient(circle at 50% 48%, rgba(255,255,255,.14), transparent 62%); }
 .art-orbit { position: absolute; border: 1px solid rgba(255,255,255,.32); border-radius: 50%; aspect-ratio: 1; }
@@ -534,3 +540,89 @@ body:has(.fb-pill) .wrap { padding-bottom: calc(var(--space-12) + var(--space-12
 .viewer :focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 @media (max-width: 560px) { .viewer-stage { padding-inline: var(--space-2); gap: var(--space-1); } }
 @media (prefers-reduced-motion: reduce) { .viewer[open], .admin-imgs img { animation: none; transition: none; } }
+
+/* ===== Tutorial de primeiro uso =====
+   Celular: tela cheia, print da MIP no alto e cartão com o texto embaixo. Computador: janela centralizada. */
+.tut { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: var(--color-surface); color: var(--color-ink); overflow: hidden; }
+.tut[open] { display: flex; }
+.tut::backdrop { background: rgba(0, 0, 0, .55); }
+html:has(.tut[open]) { overflow: hidden; }
+.tut-box { flex: 1; display: flex; flex-direction: column; min-height: 0; background: var(--color-surface); }
+.tut-media { position: relative; flex: 1; min-height: 0; overflow: hidden; background: radial-gradient(circle at 50% 30%, rgba(255,255,255,.14), transparent 62%), var(--color-hero-bg); touch-action: pan-y; user-select: none; }
+.tut-track { display: flex; height: 100%; transition: transform .4s cubic-bezier(.2, .7, .2, 1); }
+.tut-slide { flex: 0 0 100%; height: 100%; display: flex; justify-content: center; align-items: flex-start; padding: var(--space-8) var(--space-6) 0; }
+.tut-shot { display: block; flex: none; height: calc(100% + 24px); aspect-ratio: 390 / 720; max-width: 82%; overflow: hidden; border: 6px solid rgba(255, 255, 255, .14); border-bottom: 0; border-radius: var(--radius-xl) var(--radius-xl) 0 0; box-shadow: 0 20px 60px rgba(0, 0, 0, .35); background: var(--color-bg); }
+.tut-shot img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; pointer-events: none; }
+.tut-box:focus { outline: none; }
+.tut-card { position: relative; margin-top: -24px; display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5) var(--space-6) max(var(--space-4), env(safe-area-inset-bottom)); border-radius: var(--radius-xl) var(--radius-xl) 0 0; background: var(--color-surface); }
+.tut-dots { display: flex; gap: var(--space-2); }
+.tut-dots span { flex: 1; height: 4px; border-radius: var(--radius-pill); background: var(--color-surface-2); transition: background .25s ease; }
+.tut-dots span.on { background: var(--color-ink); }
+.tut-texts { display: grid; }
+.tut-text { grid-area: 1 / 1; display: flex; flex-direction: column; gap: var(--space-2); }
+.tut-text[aria-hidden="true"] { visibility: hidden; }
+.tut-text:not([aria-hidden="true"]) { animation: qs-in .3s ease-out; }
+.tut-count { font-size: var(--text-footnote-size); line-height: var(--text-footnote-line); color: var(--color-muted); }
+.tut-text h2 { font-size: var(--text-title-2-size); font-weight: var(--text-title-2-weight); line-height: var(--text-title-2-line); letter-spacing: var(--text-title-2-tracking); }
+.tut-text p:last-child { font-size: var(--text-callout-size); line-height: var(--text-callout-line); color: var(--color-muted); }
+.tut-acts { display: flex; gap: var(--space-2); }
+.tut-acts .btn { flex: 1; }
+.tut-skip { align-self: center; padding-inline: var(--space-3); font-size: var(--text-subhead-size); color: var(--color-muted); text-decoration: underline; text-underline-offset: 3px; }
+/* Computador: janela larga, print da tela de computador numa moldura de navegador;
+   embaixo, o texto à esquerda, os botões à direita e "Pular tutorial" na mesma linha dos botões. */
+@media (min-width: 768px) {
+  .tut { background: transparent; justify-content: center; align-items: center; padding: var(--space-8); }
+  .tut-box { flex: 0 1 880px; height: min(760px, 100%); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-float); }
+  .tut-slide { padding: var(--space-10) var(--space-10) 0; }
+  .tut-shot { height: auto; width: 100%; max-width: none; aspect-ratio: auto; border-width: 1px; border-color: rgba(255, 255, 255, .18); border-radius: var(--radius-md) var(--radius-md) 0 0; }
+  .tut-shot::before { content: ''; display: block; height: 28px; border-bottom: 1px solid var(--color-line); background: radial-gradient(circle, var(--color-line) 4px, transparent 5px) 12px 50% / 16px 16px no-repeat, radial-gradient(circle, var(--color-line) 4px, transparent 5px) 32px 50% / 16px 16px no-repeat, radial-gradient(circle, var(--color-line) 4px, transparent 5px) 52px 50% / 16px 16px no-repeat, var(--color-surface-2); }
+  .tut-shot img { height: auto; object-fit: initial; }
+  .tut-card { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "dots dots" "text text" "skip acts"; align-items: center; column-gap: var(--space-6); padding: var(--space-6) var(--space-10) var(--space-8); }
+  .tut-dots { grid-area: dots; max-width: 240px; }
+  .tut-texts { grid-area: text; max-width: 600px; }
+  .tut-acts { grid-area: acts; }
+  .tut-acts .btn { flex: none; min-width: 160px; }
+  .tut-skip { grid-area: skip; justify-self: start; padding-inline: 0; }
+}
+
+/* ===== "Como funciona?" com vídeo =====
+   Pop-up pequeno: título, o vídeo da página funcionando, uma frase e "Entendi". */
+.how { width: min(640px, calc(100vw - var(--space-8))); max-height: calc(100dvh - var(--space-8)); margin: auto; padding: 0; border: 0; border-radius: var(--radius-lg); background: var(--color-surface); color: var(--color-ink); box-shadow: var(--shadow-float); overflow: auto; }
+.how::backdrop { background: rgba(0, 0, 0, .55); }
+.how[open] { animation: menu-in .16s ease-out; }
+html:has(.how[open]) { overflow: hidden; }
+.how-box { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5) var(--space-6) var(--space-6); }
+.how-box:focus { outline: none; }
+.how-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.how-head h2 { font-size: var(--text-title-3-size); font-weight: 700; line-height: var(--text-title-3-line); }
+.how-x { flex: none; width: var(--size-touch); height: var(--size-touch); margin-right: calc(-1 * var(--space-3)); display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--color-muted); font-size: var(--text-title-2-size); line-height: 1; cursor: pointer; }
+.how-x:hover { background: var(--color-surface-2); color: var(--color-ink); }
+.how-video { position: relative; display: grid; align-self: center; max-width: 100%; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--color-line); background: var(--color-bg); line-height: 0; }
+/* O vídeo encolhe (sem perder a proporção) para o pop-up caber na altura da tela com título, capítulos, texto e botões. */
+.how-video video { grid-area: 1 / 1; display: block; width: auto; max-width: 100%; height: auto; max-height: calc(100dvh - 360px); cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .15s ease; }
+.how-video video.on { opacity: 1; pointer-events: auto; }
+.how-play { position: absolute; right: var(--space-2); bottom: var(--space-2); width: var(--size-touch); height: var(--size-touch); display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: rgba(0, 0, 0, .6); color: #fff; cursor: pointer; opacity: .85; }
+.how-play:hover { opacity: 1; }
+.how-play svg { width: 20px; height: 20px; fill: currentColor; }
+.how-text { font-size: var(--text-callout-size); line-height: var(--text-callout-line); color: var(--color-muted); }
+.how-acts { display: flex; justify-content: flex-end; }
+@media (max-width: 767px) {
+  .how { width: calc(100vw - var(--space-8)); }
+  .how-box { padding: var(--space-4) var(--space-4) var(--space-5); gap: var(--space-3); }
+  .how-acts .btn { flex: 1; }
+  .how-video video { max-height: calc(100dvh - 400px); }
+}
+/* Capítulos: uma barra por capítulo (clicável), que enche enquanto o vídeo dele toca. */
+.how-chapters { display: flex; gap: var(--space-2); }
+.how-ch { flex: 1; position: relative; height: var(--space-5); padding: 0; border: 0; background: none; cursor: pointer; }
+.how-ch::before { content: ''; position: absolute; inset: 8px 0; border-radius: var(--radius-pill); background: var(--color-surface-2); }
+.how-ch span { position: absolute; left: 0; right: 0; top: 8px; bottom: 8px; border-radius: var(--radius-pill); background: var(--color-ink); transform: scaleX(0); transform-origin: left; will-change: transform; }
+.how-ch.done span { transform: scaleX(1); }
+.how-ch:hover::before { background: var(--color-line); }
+.how-texts { display: grid; }
+.how-part { grid-area: 1 / 1; display: flex; flex-direction: column; gap: var(--space-1); }
+.how-part[aria-hidden="true"] { visibility: hidden; }
+.how-part:not([aria-hidden="true"]) { animation: qs-in .3s ease-out; }
+.how-part h3 { font-size: var(--text-headline-size); font-weight: var(--text-headline-weight); line-height: var(--text-headline-line); }
+.how-part h3 span { color: var(--color-muted); font-weight: 500; margin-right: var(--space-1); }
+.how-acts { gap: var(--space-2); }

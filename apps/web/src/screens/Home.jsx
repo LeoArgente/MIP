@@ -6,6 +6,7 @@ import { get } from '../api.js';
 import { useSession } from '../session.jsx';
 import Header from '../components/Header.jsx';
 import { Btn, Chip } from '../components/ui.jsx';
+import { useTutorial } from '../components/Tutorial.jsx';
 import simbolo from '../assets/logo/mip-simbolo.svg?raw';
 
 const HOME_STEPS = [
@@ -36,7 +37,7 @@ function RecordPreview() {
 }
 
 export default function Home() {
-  const { me } = useSession(), nav = useNavigate();
+  const { me } = useSession(), nav = useNavigate(), tutorial = useTutorial();
   /* null enquanto a lista carrega, para a apresentação não aparecer e sumir em seguida. */
   const [mine, setMine] = useState(null);
   useEffect(() => { if (me) { setMine(null); get('/api/projects').then(setMine).catch(() => setMine([])); } else setMine([]); }, [me]);
@@ -86,7 +87,7 @@ export default function Home() {
           <div className="landing-copy">
             <h1><span>Criaram juntos.</span> <span>Combinem juntos.</span></h1>
             <p>A MIP ajuda vocês a reconhecer contribuições, conversar sobre quem é dono e registrar decisões com transparência.</p>
-            <div className="landing-actions">{!has && cta}<a href="#etapas">Conhecer as etapas ↓</a></div>
+            <div className="landing-actions">{!has && cta}<a href="#etapas">Conhecer as etapas ↓</a><button type="button" className="link" onClick={tutorial}>Ver tutorial</button></div>
           </div>
           <div className="landing-art" aria-hidden="true">
             <span className="art-orbit orbit-one" /><span className="art-orbit orbit-two" /><span className="art-core" dangerouslySetInnerHTML={{ __html: simbolo }} /><span className="art-caption">criar · conversar · decidir</span>

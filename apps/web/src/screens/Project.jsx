@@ -10,6 +10,8 @@ import { Banner, Btn, BusyCtx, Chip, useToast } from '../components/ui.jsx';
 import { Hub, Equipe, Criacoes, Sobre, Respostas, Andamento, Decidir, Confirmacao, Memorial, Welcome, TIPS } from './ProjectScreens.jsx';
 import Question from './Question.jsx';
 import DecideFocus from './DecideFocus.jsx';
+import { HOW, HowVideo, howSeen, markHowSeen } from '../components/HowItWorks.jsx';
+import { useTutorialOpen } from '../components/Tutorial.jsx';
 
 const Ctx = createContext(null);
 /* O que o botão diz enquanto a ação roda: o que está acontecendo, não "Carregando". */
@@ -25,6 +27,9 @@ export default function Project() {
   const setUi = useCallback(o => setUiState(s => ({ ...s, ...(typeof o === 'function' ? o(s) : o) })), []);
   const pending = useRef(new Map()), timer = useRef();
   const [busy, setBusy] = useState(null), running = useRef(false);
+  /* Vídeo da página do projeto: abre sozinho na primeira entrada e, depois, pelo "?" do topo. */
+  const tutorialOpen = useTutorialOpen(), [hubHow, setHubHow] = useState(false), loaded = !!p;
+  useEffect(() => { if (loaded && tab === 'proj' && user.seenWelcome && !tutorialOpen && !howSeen('proj')) setHubHow(true); }, [loaded, tab, user.seenWelcome, tutorialOpen]);
 
   const load = useCallback(async () => {
     try { setP(await get('/api/projects/' + id)); setLoadErr(null); } catch (x) { setLoadErr(x); }
@@ -124,8 +129,9 @@ export default function Project() {
     <Ctx.Provider value={value}><BusyCtx.Provider value={busy}>
       <div className="proj-wrap">
         {/* Uma barra só no alto: dentro de uma etapa, "‹ Nome do projeto" ocupa o lugar da marca. */}
-        <Header back={tab === 'proj' ? null : { label: p.name, onClick: () => go('proj') }} />
+        <Header back={tab === 'proj' ? null : { label: p.name, onClick: () => go('proj') }} onHelp={tab === 'proj' ? () => setHubHow(true) : undefined} />
         <Screen />
+        {hubHow && tab === 'proj' && <HowVideo tab="proj" onClose={() => { markHowSeen('proj'); setHubHow(false); }} />}
       </div>
     </BusyCtx.Provider></Ctx.Provider>
   );
@@ -134,14 +140,21 @@ export default function Project() {
 /* Layout das telas do projeto: fase e ajuda no alto, o conteúdo direto no fundo (sem cartão em volta),
    a barra de ações no fim e, quando houver, o complemento logo abaixo, na mesma coluna. */
 export function Page({ children, bar, side }) {
-  const { p, ui, setUi, tab } = useProject();
+  const { p, ui, setUi, tab, org } = useProject(), tutorialOpen = useTutorialOpen();
+  /* Páginas com vídeo (Criações e Sobre o projeto, para quem organiza, enquanto ainda dá para editar):
+     "Como funciona?" abre o vídeo, e ele abre sozinho na primeira entrada. Nas outras, o texto de sempre. */
+  const video = !!HOW[tab] && org && p.phase === 'coleta';
+  const [how, setHow] = useState(false);
+  useEffect(() => { if (video && !tutorialOpen && !howSeen(tab)) setHow(true); }, [video, tutorialOpen, tab]);
+  const closeHow = () => { markHowSeen(tab); setHow(false); };
   return (
     <div className="page">
       <div className="page-main">
         <div className="page-meta">
           <Chip>{phaseName(p)}</Chip>
-          {TIPS[tab] && ui.tipOpen !== tab && <button className="link" onClick={() => setUi({ tipOpen: tab })}>Como funciona?</button>}
+          {TIPS[tab] && ui.tipOpen !== tab && <button className="link" onClick={() => (video ? setHow(true) : setUi({ tipOpen: tab }))}>Como funciona?</button>}
         </div>
+        {how && <HowVideo tab={tab} onClose={closeHow} />}
         {ui.tipOpen === tab && TIPS[tab] && <div className="tip-card"><p>{TIPS[tab]}</p><Btn kind="sm" onClick={() => setUi({ tipOpen: null })}>Fechar</Btn></div>}
         <div className="step-card">{children}{bar}</div>
       </div>
