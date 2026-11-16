@@ -44,6 +44,7 @@ Com `DEV_LOGIN=1` no `.env`, o topo mostra **Entrar como** para trocar de pessoa
 ```bash
 npm test                                         # regras (packages/domain)
 npm run db:seed && npm test -w @mip/api          # jornada completa pela API (servidor rodando, DEV_LOGIN=1)
+node packages/domain/scripts/mutantes.mjs        # mutação: inverte uma condição por vez em src/index.js, roda os testes e restaura; lista as condições que nenhum teste pega
 ```
 
 ## Publicar online (Vercel)
