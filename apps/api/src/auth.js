@@ -1,6 +1,6 @@
 /* Entrada por link no e-mail (sem senha) e sessões em cookie httpOnly. */
 import { randomBytes, createHash } from 'node:crypto';
-import { sendMail } from './mail.js';
+import { sendMail, mailMode } from './mail.js';
 
 export const COOKIE = 'mip_session';
 const SESSION_DAYS = 30, LINK_MINUTES = 30;
@@ -72,4 +72,74 @@ export function rateLimited(key, max = 5, windowMs = 10 * 60e3) {
   const nowMs = Date.now(), arr = (hits.get(key) || []).filter(x => nowMs - x < windowMs);
   arr.push(nowMs); hits.set(key, arr);
   return arr.length > max;
+}
+
+/* Rotas de conta: /api/auth, /api/me, /api/dev (só com DEV_LOGIN=1) e /api/config. */
+export function routes(app, { prisma, wrap, auth, prod, devLogin, testLogin, feedbackOn, isAdmin }) {
+  const meJson = u => ({ id: u.id, email: u.email, name: u.name, seenWelcome: u.seenWelcome, admin: isAdmin(u) });
+
+  /* ===== Conta ===== */
+  app.post('/api/auth/request', wrap(async (req, res) => {
+    const email = String(req.body.email || '').trim().toLowerCase(), name = String(req.body.name || '').trim().slice(0, 80);
+    if (!validEmail(email)) return res.status(400).json({ err: { email: 'Informe um e-mail válido' } });
+    if (rateLimited('link:' + email) || rateLimited('ip:' + req.ip, 20)) return res.status(429).json({ err: { email: 'Muitos pedidos. Espere alguns minutos e tente de novo.' } });
+    const r = await sendLoginLink(prisma, { email, name, next: req.body.next });
+    if (!r.sent && mailMode() !== 'console') return res.status(502).json({ err: { email: 'Não conseguimos enviar o e-mail agora. Tente de novo em alguns minutos.' } });
+    /* Em desenvolvimento, sem serviço de e-mail, o link volta na resposta para facilitar os testes. */
+    res.json({ ok: true, sent: r.sent, devLink: !prod && !r.sent ? r.link : undefined });
+  }));
+
+  app.get('/api/auth/verify', wrap(async (req, res) => {
+    const r = await verifyLink(prisma, String(req.query.token || ''));
+    if (!r) return res.redirect('/entrar?expirado=1');
+    await startSession(prisma, res, r.user.id);
+    res.redirect(r.next);
+  }));
+
+  if (testLogin) {
+    console.warn('TEST_LOGIN ativo: entrar não exige confirmação por e-mail. Use só em testes, sem dados sensíveis.');
+    app.post('/api/auth/test-login', wrap(async (req, res) => {
+      const email = String(req.body.email || '').trim().toLowerCase(), name = String(req.body.name || '').trim().slice(0, 80), err = {};
+      if (!name) err.name = 'Diga como a equipe conhece você';
+      if (!validEmail(email)) err.email = 'Informe um e-mail válido';
+      if (Object.keys(err).length) return res.status(400).json({ err });
+      if (rateLimited('test:' + req.ip, 30)) return res.status(429).json({ err: { email: 'Muitas tentativas. Espere alguns minutos.' } });
+      const existing = await prisma.user.findUnique({ where: { email } });
+      /* Quem foi adicionado por e-mail recebeu um nome provisório; o nome digitado agora vale. */
+      const u = existing ? await prisma.user.update({ where: { id: existing.id }, data: { name } }) : await prisma.user.create({ data: { email, name } });
+      await startSession(prisma, res, u.id);
+      res.json(meJson(u));
+    }));
+  }
+
+  app.post('/api/auth/logout', wrap(async (req, res) => { await endSession(prisma, req, res); res.json({ ok: true }); }));
+
+  app.get('/api/me', (req, res) => (req.user ? res.json(meJson(req.user)) : res.status(401).json({ err: { _: 'Sem sessão.' } })));
+
+  app.patch('/api/me', auth, wrap(async (req, res) => {
+    const data = {};
+    if (typeof req.body.name === 'string') {
+      const n = req.body.name.trim().slice(0, 80);
+      if (!n) return res.status(400).json({ err: { person: 'Informe seu nome' } });
+      data.name = n;
+    }
+    if (req.body.seenWelcome === true) data.seenWelcome = true;
+    const u = await prisma.user.update({ where: { id: req.user.id }, data });
+    res.json(meJson(u));
+  }));
+
+  /* ===== Só para testes locais: entrar como qualquer pessoa sem e-mail (DEV_LOGIN=1). ===== */
+  if (devLogin) {
+    console.warn('DEV_LOGIN ativo: qualquer pessoa pode entrar como outra. Não use em produção com dados reais.');
+    app.get('/api/dev/users', wrap(async (_req, res) => res.json(await prisma.user.findMany({ select: { id: true, name: true, email: true }, orderBy: { createdAt: 'asc' } }))));
+    app.post('/api/dev/login', wrap(async (req, res) => {
+      const u = await prisma.user.findUnique({ where: { id: String(req.body.id || '') } });
+      if (!u) return res.status(404).json({ err: { _: 'Pessoa não encontrada.' } });
+      await endSession(prisma, req, res);
+      await startSession(prisma, res, u.id);
+      res.json(meJson(u));
+    }));
+  }
+
+  app.get('/api/config', (_req, res) => res.json({ devLogin, testLogin, feedback: feedbackOn, appUrl: appUrl(), mail: mailMode() }));
 }
