@@ -48,12 +48,13 @@ test('jornada completa com privacidade, decisão, recusa e confirmação', async
     assert.equal((await act(carla.c, pid, 'qsend', { aid: a.id })).status, 200);
   }
 
-  /* Ana encerra; as estatísticas chegam sem autor. */
+  /* Ana encerra; a partir daqui a equipe vê quem escolheu o quê. */
   r = await act(ana.c, pid, 'closeok');
   assert.equal(r.status, 200);
   assert.equal(r.data.project.phase, 'decisao');
   const st = r.data.project.stats[back.id].titular;
-  assert.ok(st.vals.every(v => !('pid' in v)));
+  assert.ok(st.vals.length && st.vals.every(v => typeof v.pid === 'string'), 'cada resposta chega com o autor');
+  for (const who of [bruno, carla]) assert.deepEqual(st.vals.find(v => v.pid === who.u.id)?.v, [ana.u.id, bruno.u.id], 'resposta de ' + who.u.email + ' com o autor');
   pb = (await bruno.c.get('/api/projects/' + pid)).data;
   assert.ok(Object.values(pb.answers[carla.u.id]).every(a => !a.draft));
 
@@ -89,6 +90,39 @@ test('jornada completa com privacidade, decisão, recusa e confirmação', async
   r = await act(carla.c, pid, 'genmem');
   const m = r.data.project.memorials[0];
   assert.match(m.body, /CONFIRMAÇÕES DA PROPOSTA 2/);
+});
+
+test('durante a coleta, ninguém recebe o conteúdo nem o autor das respostas de outra pessoa', async () => {
+  const at = String.fromCharCode(64), org = client(), par = client();
+  await org.post('/api/auth/test-login', { name: 'Org Coleta', email: 'org.coleta' + at + 'teste.local' });
+  const { data: { id } } = await org.post('/api/projects', { person: 'Org Coleta', name: 'Coleta Teste' });
+  await org.post(`/api/projects/${id}/invite`, { email: 'par.coleta' + at + 'teste.local' });
+  await act(org, id, 'setupnext');
+  await act(org, id, 'addasset', { type: 'codigo', name: 'App' });
+  await act(org, id, 'setupnext');
+  await act(org, id, 'sobre', { sobre: { contas: 'Domínio com a Org', acordo: 'Nenhum', edital: 'Não' } });
+  assert.equal((await act(org, id, 'setupassets')).status, 200);
+  await par.post('/api/auth/test-login', { name: 'Par Coleta', email: 'par.coleta' + at + 'teste.local' });
+
+  /* Quem organiza envia uma resposta completa com um texto marcado. */
+  const vo = (await org.get('/api/projects/' + id)).data, aid = vo.assets[0].id, orgId = vo.org, parId = vo.members.find(m => m.pid !== orgId).pid;
+  const SEGREDO = 'segredo-da-org-' + Date.now();
+  await act(org, id, 'draft', { aid, draft: { notas: { [orgId]: 7, [parId]: 4 }, origem: 'Criada neste projeto', titularAtual: 'Não sei', titular: [orgId], divisao: 'Ainda não, precisamos negociar', uso: 'Só quem for dono', materiais: 'Só o que a própria pessoa fez', comercial: 'Sim', portfolio: 'Todos que criaram', licenca: 'Não publicar por enquanto', marcaRegistro: 'Sim, com evidência', desc: SEGREDO, link: '' } });
+  const sent = await act(org, id, 'qsend', { aid });
+  assert.equal(sent.status, 200, JSON.stringify(sent.data));
+
+  /* A outra pessoa recebe só o marcador de "já enviou": nada do conteúdo, nada de vals com autor. */
+  const r = await par.get('/api/projects/' + id);
+  assert.equal(r.status, 200);
+  const vp = r.data;
+  assert.equal(vp.phase, 'coleta');
+  assert.deepEqual(Object.keys(vp.answers[orgId][aid]), ['sent']);
+  assert.deepEqual(Object.keys(vp.answers[orgId][aid].sent), ['at']);
+  assert.equal(vp.stats, undefined);
+  assert.equal(vp.parts, undefined);
+  const json = JSON.stringify(vp);
+  assert.ok(!json.includes(SEGREDO), 'o conteúdo da resposta não pode chegar a outra pessoa');
+  assert.ok(!json.includes('"vals"'), 'nenhuma lista de respostas com autor durante a coleta');
 });
 
 test('sobre o projeto, sobre você e privacidade do perfil', async () => {

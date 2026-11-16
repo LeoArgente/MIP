@@ -1,0 +1,21 @@
+name: Mutantes
+
+# Lento demais para cada push: roda só sob demanda (aba Actions → Mutantes → Run workflow).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mutantes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Sai com código 1 se algum mutante sobreviver (ou se algum trecho não for encontrado), o que falha o job.
+      - run: node packages/domain/scripts/mutantes.mjs

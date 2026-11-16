@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regras:
+    name: regras (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  api:
+    name: api (jornada)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mip_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d mip_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mip_test
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/mip_test
+      DEV_LOGIN: '1'
+      TEST_LOGIN: '1'
+      PORT: '3001'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # O Prisma Client precisa ser gerado a partir de apps/api/prisma/schema.prisma antes do seed e do servidor.
+      - run: npm run db:generate -w @mip/api
+      - run: npm run db:deploy -w @mip/api
+      - run: npm run db:seed
+      - name: Subir o servidor em background
+        run: nohup npm run start -w @mip/api > server.log 2>&1 &
+      - name: Esperar /api/config responder
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3001/api/config; then echo; exit 0; fi
+            sleep 1
+          done
+          echo "Servidor não respondeu em 60s"
+          cat server.log
+          exit 1
+      - run: npm test -w @mip/api
+      - name: Log do servidor
+        if: always()
+        run: cat server.log || true
