@@ -16,8 +16,9 @@ import * as feedback from './feedback/index.js';
 
 const MODULES = { projetos, ativos, respostas, decisoes, versoes, memorial, comparacao, historico, feedback };
 
-/* Mapa de todas as ações, de todos os módulos. Um nome repetido em dois módulos é erro de montagem. */
-export const ACTIONS = {};
+/* Mapa de todas as ações, de todos os módulos. Um nome repetido em dois módulos é erro de montagem.
+   Sem protótipo: o nome da ação vem da URL, e "constructor", "toString" etc. não podem virar ação. */
+export const ACTIONS = Object.create(null);
 for (const [name, m] of Object.entries(MODULES)) {
   for (const type of Object.keys(m.ACTIONS)) {
     if (Object.hasOwn(ACTIONS, type)) throw new Error(`Ação "${type}" do módulo ${name} já existe em outro módulo.`);
@@ -26,8 +27,8 @@ for (const [name, m] of Object.entries(MODULES)) {
 }
 
 export function apply(p, me, type, d = {}) {
-  const fn = ACTIONS[type];
-  if (!fn) throw new ActionError('Ação desconhecida.', 404);
+  const fn = Object.hasOwn(ACTIONS, type) ? ACTIONS[type] : undefined;
+  if (typeof fn !== 'function') throw new ActionError('Ação desconhecida.', 404);
   const m = mem(p, me);
   if (!m || m.status === 'pendente') deny('Você não participa deste projeto.');
   return fn(p, me, d) || {};

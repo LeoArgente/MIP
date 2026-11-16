@@ -21,6 +21,25 @@ async function as(email) {
 }
 const act = (c, pid, type, body) => c.post(`/api/projects/${pid}/actions/${type}`, body);
 
+/* Roda antes da jornada, enquanto o App Rotas do cenário ainda está na coleta. */
+test('nomes herdados de Object não viram ação nem devolvem o projeto cru', async () => {
+  const ana = await as('ana@demo.mip'), bruno = await as('bruno@demo.mip');
+  const pa = (await ana.c.get('/api/projects')).data.find(x => x.name === 'App Rotas');
+  const pid = pa.id;
+  const va = (await ana.c.get('/api/projects/' + pid)).data;
+  assert.equal(va.phase, 'coleta');
+  const textos = Object.values(va.answers[ana.u.id]).map(a => a.sent?.desc).filter(Boolean);
+  assert.ok(textos.length, 'a Ana precisa ter enviado respostas com texto no cenário');
+
+  for (const nome of ['constructor', 'toString', 'valueOf', 'hasOwnProperty']) {
+    const r = await act(bruno.c, pid, nome);
+    assert.equal(r.status, 404, nome + ' deve ser ação desconhecida');
+    const json = JSON.stringify(r.data);
+    for (const t of textos) assert.ok(!json.includes(t), nome + ' não pode devolver o texto que a Ana enviou');
+    assert.equal(r.data.result, undefined, nome);
+  }
+});
+
 test('jornada completa com privacidade, decisão, recusa e confirmação', async () => {
   const ana = await as('ana@demo.mip'), bruno = await as('bruno@demo.mip'), carla = await as('carla@demo.mip');
   const pid = (await ana.c.get('/api/projects')).data.find(x => x.name === 'App Rotas').id;
