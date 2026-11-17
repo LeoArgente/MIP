@@ -10,6 +10,7 @@ import '@mip/tokens/tokens.css';
 import './styles/base.css';
 import './styles/ds.css';
 import './styles/site.css';
+import './styles/auth.css';
 import './styles/app.css';
 import { SessionProvider, useSession } from './session.jsx';
 import { ToastProvider } from './components/ui.jsx';
@@ -17,7 +18,11 @@ import { FeedbackProvider } from './components/Feedback.jsx';
 import AppHome from './screens/Home.jsx';
 import SiteLayout from './components/site/SiteLayout.jsx';
 import SiteHome from './screens/site/Home.jsx';
-import Login from './screens/Login.jsx';
+import Sobre from './screens/site/Sobre.jsx';
+import Proposito from './screens/site/Proposito.jsx';
+import Equipe from './screens/site/Equipe.jsx';
+import Contato from './screens/site/Contato.jsx';
+import Auth from './screens/Auth.jsx';
 import NewProject from './screens/NewProject.jsx';
 import Invite from './screens/Invite.jsx';
 import Project from './screens/Project.jsx';
@@ -42,11 +47,16 @@ function App() {
     <Routes>
       <Route element={<SiteLayout />}>
         <Route path="/" element={<SiteHome />} />
+        <Route path="/sobre" element={<Sobre />} />
+        <Route path="/proposito" element={<Proposito />} />
+        <Route path="/equipe" element={<Equipe />} />
+        <Route path="/contato" element={<Contato />} />
       </Route>
+      <Route path="/entrar" element={<Auth mode="entrar" />} />
+      <Route path="/criar-conta" element={<Auth mode="criar" />} />
       {DesignSystem && <Route path="/_ds" element={<Suspense fallback={null}><DesignSystem /></Suspense>} />}
       <Route element={<AppShell />}>
         <Route path="/inicio" element={<AppHome />} />
-        <Route path="/entrar" element={<Login />} />
         <Route path="/novo" element={<Private><NewProject /></Private>} />
         <Route path="/convite/:code" element={<Invite />} />
         <Route path="/p/:id/:tab?" element={<Private><Project /></Private>} />

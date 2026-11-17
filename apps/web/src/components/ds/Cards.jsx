@@ -36,12 +36,12 @@ export function FeatureCard({ to, icon, title, text, linkLabel, image, imageAlt 
 }
 
 /* Cartão de integrante da equipe (retrato placeholder quando não há foto). */
-export function TeamCard({ name, role, photo }) {
+export function TeamCard({ name, role, photo, site = false }) {
   return (
-    <figure className="ds-team">
+    <figure className={'ds-team' + (site ? ' ds-team--site' : '')}>
       {photo ? <img className="ds-team-photo" src={photo} alt={name} loading="lazy" /> : <div className="ds-team-photo" role="img" aria-label={'Retrato de ' + name} />}
       <p className="ds-team-name type-v2-name">{name}</p>
-      <p className="ds-team-role type-v2-body-small">{role}</p>
+      <p className={'ds-team-role ' + (site ? 'type-v2-site-small-14' : 'type-v2-body-small')}>{role}</p>
     </figure>
   );
 }

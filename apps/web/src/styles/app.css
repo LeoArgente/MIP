@@ -118,13 +118,13 @@ button.g-row:hover b { text-decoration: underline; text-underline-offset: 3px; }
 /* ===== Campos ===== */
 .field { display: flex; flex-direction: column; gap: var(--space-2); }
 .field > label, .q { font-weight: 600; }
-input[type=text], input[type=email], input[type=number], select, textarea {
+.wrap input[type=text], .wrap input[type=email], .wrap input[type=number], .wrap select, .wrap textarea {
   width: 100%; min-width: 0; background: transparent; border: 1px solid var(--color-line); border-radius: var(--radius-sm);
   padding: var(--space-3); font-size: var(--text-body-size); line-height: var(--text-body-line); transition: border-color .18s ease;
 }
-input:focus, textarea:focus, select:focus { border-color: var(--color-ink); outline: none; }
-textarea { min-height: 112px; resize: vertical; }
-input[type=radio], input[type=checkbox] { width: 20px; height: 20px; margin: 0; accent-color: var(--color-ink); flex: none; }
+.wrap input:focus, .wrap textarea:focus, .wrap select:focus { border-color: var(--color-ink); outline: none; }
+.wrap textarea { min-height: 112px; resize: vertical; }
+.wrap input[type=radio], .wrap input[type=checkbox] { width: 20px; height: 20px; margin: 0; accent-color: var(--color-ink); flex: none; }
 .opts { display: flex; flex-direction: column; }
 .opt { display: inline-flex; align-items: center; gap: var(--space-3); padding: var(--space-2) 0; min-height: 40px; cursor: pointer; }
 .types { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-1) var(--space-4); }

@@ -13,7 +13,7 @@ export default function SiteLayout() {
     <>
       <SiteHeader />
       <main className="site-main"><Outlet /></main>
-      <SiteFooter />
+      <SiteFooter compact={pathname === '/contato'} />
     </>
   );
 }

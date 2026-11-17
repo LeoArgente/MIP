@@ -55,7 +55,7 @@
 .ds-hero-text { display: flex; flex-direction: column; align-items: center; gap: var(--spacing-md); text-align: center; animation: ds-rise .9s ease-out both; }
 .ds-hero-crumb { color: var(--color-text-secondary); text-transform: uppercase; white-space: pre; }
 .ds-hero-title { color: var(--color-text-primary); }
-@keyframes ds-rise { from { opacity: .55; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+@keyframes ds-rise { from { opacity: .55; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
 /* ===== Marca ===== */
 .ds-logo { display: block; flex: none; height: var(--logo-h, 32px); /* figma */
@@ -184,3 +184,12 @@
   .ds-hero-crumb { text-transform: none; }
   .ds-hero-title { font-size: var(--type-v2-hero-mobile-size); font-weight: var(--type-v2-hero-mobile-weight); line-height: var(--type-v2-hero-mobile-line); letter-spacing: var(--type-v2-hero-mobile-tracking); }
 }
+
+/* Retrato e nome do cartão de equipe nas páginas do site. */
+.ds-team--site { width: 310px; gap: 14px; /* figma */ }
+.ds-team--site .ds-team-photo { aspect-ratio: auto; height: 280px; /* figma */ }
+.ds-team--site .ds-team-name { text-transform: none; }
+
+/* Caixa de seleção e área de texto do formulário de contato. */
+textarea.ds-field { height: 120px; resize: none; /* figma */ }
+select.ds-field { appearance: none; color: var(--color-text-muted); }
