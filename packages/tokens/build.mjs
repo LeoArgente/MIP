@@ -42,8 +42,7 @@ ${style}
 ${text}
 ${vars('spacing', t.spacing)}
 ${vars('radius', t.radius)}
-  --effect-glass-header-blur: ${t.effect['glass-header-blur']};
-  --effect-glass-header-shadow: ${t.effect['glass-header-shadow']};
+${vars('effect', t.effect)}
 ${vars('space', t.space)}
 ${vars('shadow', t.shadow)}
 ${vars('size', t.size)}

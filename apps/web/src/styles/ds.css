@@ -1,0 +1,186 @@
+/* Componentes do design system (Figma, página "Design System"). Valores vêm dos tokens (@mip/tokens).
+   Medidas que vêm direto do Figma e não estão na grade de 4 px levam o comentário figma na linha.
+   Telas pequenas (celular) abaixo de 1024 px; computador a partir de 1024 px. */
+
+/* ===== Botão v2 ===== */
+.ds-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: var(--spacing-md) var(--spacing-xl);
+  border: 1px solid var(--color-border-strong); border-radius: var(--radius-full);
+  background: transparent; color: var(--color-text-primary);
+  text-transform: uppercase; white-space: nowrap; text-decoration: none; cursor: pointer;
+  transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+}
+.ds-btn:hover { background: var(--color-action-primary-bg); color: var(--color-action-primary-text); }
+.ds-btn--fill { border-color: transparent; background: var(--color-action-primary-bg); color: var(--color-action-primary-text); }
+.ds-btn--fill:hover { background: var(--primitive-neutral-200); }
+.ds-btn--ghost { border-color: var(--color-border-default); }
+.ds-btn--ghost:hover { background: var(--effect-ghost-hover-fill); color: var(--color-text-primary); }
+.ds-btn--block { display: flex; width: 100%; }
+/* Chamada do header: tamanho e peso próprios no Figma. */
+.ds-btn--cta { border-color: var(--effect-glass-cta-border); background: var(--color-action-primary-bg); color: var(--color-action-primary-text); }
+.ds-btn--cta:hover { background: var(--primitive-neutral-200); }
+
+/* ===== Item de menu e link com traço ===== */
+.ds-nav-item { display: flex; justify-content: center; min-width: 100px; color: var(--color-text-primary); text-decoration: none; white-space: nowrap; transition: opacity .2s ease; }
+.ds-nav-item:hover { opacity: .6; }
+
+.ds-link-dash { display: inline-flex; align-items: center; gap: var(--spacing-md); height: 100px; color: var(--color-text-primary); text-transform: uppercase; white-space: nowrap; text-decoration: none; cursor: pointer; }
+.ds-link-dash::before { content: ''; width: 40px; height: 1px; background: var(--color-border-strong); transition: width .25s ease; }
+.ds-link-dash:hover::before, .ds-feature:hover .ds-link-dash::before { width: 72px; }
+
+/* ===== Ícone, número e retrato ===== */
+.ds-icon-tile { display: flex; align-items: center; justify-content: center; flex: none; width: 56px; height: 56px; border-radius: var(--radius-lg); background: var(--color-bg-tile); color: var(--color-text-on-panel); }
+.ds-stat { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--spacing-md); width: 240px; color: var(--color-text-on-panel); }
+.ds-stat-label { text-transform: uppercase; white-space: nowrap; }
+
+.ds-team { display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-sm); width: 280px; max-width: 100%; margin: 0; }
+.ds-team-photo { width: 100%; aspect-ratio: 1; border-radius: var(--radius-xl); background: var(--color-bg-surface-raised); object-fit: cover; }
+.ds-team-name { color: var(--color-text-accent); text-transform: uppercase; white-space: nowrap; }
+.ds-team-role { color: var(--color-text-primary); }
+
+/* ===== Cartão de serviço ===== */
+.ds-feature { display: flex; flex-direction: column; width: 384px; max-width: 100%; overflow: hidden; border-radius: var(--radius-xl); color: var(--color-text-on-panel); text-decoration: none; }
+.ds-feature-image { width: 100%; background: var(--color-bg-surface-raised); object-fit: cover;
+  height: 230px; /* figma */
+}
+.ds-feature-bar, .ds-feature-body { background: var(--color-bg-panel); transition: background-color .2s ease; }
+.ds-feature:hover .ds-feature-bar, .ds-feature:hover .ds-feature-body { background: var(--primitive-neutral-700); }
+.ds-feature-bar { display: flex; align-items: center; gap: var(--spacing-md); }
+.ds-feature-title { text-transform: uppercase; }
+.ds-feature-body { display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-lg); padding: var(--spacing-xl); }
+.ds-feature-text { color: var(--color-text-on-panel-muted); }
+
+/* ===== Título animado das páginas internas: sobe e aparece em 0,9 s ===== */
+.ds-hero-text { display: flex; flex-direction: column; align-items: center; gap: var(--spacing-md); text-align: center; animation: ds-rise .9s ease-out both; }
+.ds-hero-crumb { color: var(--color-text-secondary); text-transform: uppercase; white-space: pre; }
+.ds-hero-title { color: var(--color-text-primary); }
+@keyframes ds-rise { from { opacity: .55; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+
+/* ===== Marca ===== */
+.ds-logo { display: block; flex: none; height: var(--logo-h, 32px); /* figma */
+  width: var(--logo-w, auto); aspect-ratio: 148 / 41; color: var(--color-text-primary); }
+.ds-logo > svg { display: block; width: 100%; height: 100%; }
+
+/* ===== Header (vidro) e menu do celular ===== */
+.ds-header { position: fixed; inset: 0 0 auto 0; z-index: 50; padding: var(--spacing-md) var(--spacing-md) 0; pointer-events: none; }
+.ds-header-bar {
+  position: relative; display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md);
+  padding: var(--spacing-md); border: 1px solid var(--effect-glass-header-border); border-radius: var(--radius-full);
+  background-image: var(--effect-glass-header-fill); box-shadow: var(--effect-glass-header-shadow);
+  -webkit-backdrop-filter: blur(var(--effect-glass-header-blur)); backdrop-filter: blur(var(--effect-glass-header-blur));
+  pointer-events: auto;
+}
+.ds-header .ds-logo { --logo-h: 32px; }
+.ds-header-nav, .ds-header-cta { display: none; }
+.ds-burger { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 0; background: none; color: var(--color-text-primary); cursor: pointer; }
+
+.ds-menu {
+  pointer-events: auto;
+  position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; gap: var(--spacing-2xl);
+  padding: var(--spacing-lg); overflow-y: auto; background: var(--color-bg-page);
+  transform: translateX(100%); visibility: hidden; transition: transform .35s ease, visibility 0s linear .35s;
+}
+.ds-menu.is-open { transform: none; visibility: visible; transition: transform .35s ease, visibility 0s; }
+.ds-menu-top { display: flex; align-items: center; justify-content: space-between; }
+.ds-menu-top .ds-logo { --logo-h: 32px; }
+.ds-menu-items { display: flex; flex-direction: column; gap: var(--spacing-lg); }
+.ds-menu-item { padding-bottom: var(--spacing-md); border-bottom: 1px solid var(--color-border-default); color: var(--color-text-primary); text-transform: uppercase; text-decoration: none; }
+
+@media (min-width: 1024px) {
+  .ds-header { padding: 37px var(--spacing-3xl) 0; /* figma */ }
+  .ds-header-bar { padding: var(--spacing-md) 42px var(--spacing-md) 41px; /* figma */ }
+  .ds-header .ds-logo { --logo-h: 50px; --logo-w: 180px; /* figma */ }
+  .ds-header-nav { display: flex; flex: 0 1 743px; align-items: center; justify-content: space-between; gap: var(--spacing-md); /* figma */ }
+  .ds-header-cta { display: inline-flex; }
+  .ds-burger, .ds-menu { display: none; }
+}
+
+/* ===== Rodapé ===== */
+.ds-footer { display: flex; flex-direction: column; gap: var(--spacing-2xl); padding: var(--spacing-3xl) var(--spacing-lg); border-radius: var(--radius-2xl) var(--radius-2xl) 0 0; background: var(--color-bg-surface); }
+.ds-footer-brand, .ds-footer-col { display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-md); min-width: 0; }
+.ds-footer-brand { gap: var(--spacing-lg); }
+.ds-footer .ds-logo { --logo-h: 32px; }
+.ds-footer-about { color: var(--color-text-secondary); }
+.ds-footer-head { align-self: stretch; color: var(--color-text-secondary); text-transform: uppercase; }
+.ds-footer-link { align-self: stretch; padding-bottom: var(--spacing-md); border-bottom: 1px solid var(--color-border-default); color: var(--color-text-primary); text-decoration: none; }
+.ds-footer-grid { display: contents; }
+.ds-footer-social, .ds-footer-contact { display: none; }
+.ds-footer-copy { color: var(--color-text-muted); }
+.ds-footer-copy--mobile { display: block; }
+
+@media (min-width: 1024px) {
+  .ds-footer { align-items: center; padding: var(--spacing-4xl) var(--spacing-4xl) var(--spacing-3xl); border-radius: 48px 48px 0 0; /* figma */ }
+  .ds-footer-grid { display: flex; align-items: flex-start; gap: var(--spacing-2xl); width: min(1200px, 100%); }
+  .ds-footer-grid > * { flex: 1 0 0; }
+  .ds-footer .ds-logo { --logo-h: 40px; }
+  .ds-footer-social { display: flex; gap: var(--spacing-sm); }
+  .ds-footer-contact { display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-lg); }
+  .ds-footer-copy--mobile { display: none; }
+}
+.ds-social { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: var(--radius-full); background: var(--color-bg-tile); }
+.ds-contact-box { display: inline-flex; padding: var(--spacing-lg); border: 1px solid var(--color-border-strong); border-radius: var(--radius-full); color: var(--color-text-primary); text-transform: uppercase; white-space: nowrap; text-decoration: none; }
+
+/* ===== Autenticação ===== */
+.ds-auth-field { display: flex; flex-direction: column; gap: var(--spacing-sm); width: 100%; }
+.ds-auth-label { color: var(--color-text-secondary); text-transform: uppercase; }
+.ds-auth-box { display: flex; align-items: center; gap: var(--spacing-md); padding: var(--spacing-md) var(--spacing-lg); border: 1px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-input); }
+.ds-auth-box:focus-within { outline: 2px solid var(--color-text-primary); outline-offset: 2px; }
+.ds-auth-input { flex: 1 0 0; min-width: 0; padding: 0; border: 0; outline: 0; background: none; color: var(--color-text-primary); }
+.ds-auth-input::placeholder, .ds-field::placeholder { color: var(--color-text-muted); opacity: 1; }
+.ds-auth-action { padding: 0; border: 0; background: none; color: var(--color-text-secondary); text-transform: uppercase; cursor: pointer; }
+
+.ds-check { position: relative; display: flex; align-items: flex-start; gap: var(--spacing-md); min-height: 24px; color: var(--color-text-secondary); cursor: pointer; }
+.ds-check-box { position: relative; flex: none; width: 20px; height: 20px; border: 1.5px solid var(--color-border-strong); border-radius: 5px; /* figma */ }
+.ds-check-mark { position: absolute; top: -1.5px; left: -1.5px; display: none; width: 20px; height: 20px; padding: 4px; border-radius: 5px; background: var(--color-action-primary-bg); /* figma */ }
+.ds-check input:checked + .ds-check-box { border-color: transparent; }
+.ds-check input:checked + .ds-check-box .ds-check-mark { display: block; }
+.ds-check input:focus-visible + .ds-check-box { outline: 2px solid var(--color-text-primary); outline-offset: 2px; }
+
+.ds-social-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--spacing-md); height: 52px; padding: var(--spacing-md) var(--spacing-lg); border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); background: none; color: var(--color-text-primary); cursor: pointer; }
+.ds-social-btn-icon { display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border: 1px solid var(--color-border-strong); border-radius: 11px; /* figma */ text-transform: uppercase; }
+
+.ds-tabs { display: flex; align-items: center; gap: 4px; width: 100%; height: 48px; padding: 4px; border-radius: var(--radius-full); background: var(--color-bg-input); }
+.ds-tab { display: flex; flex: 1 0 0; align-items: center; justify-content: center; min-width: 0; padding: var(--spacing-md) var(--spacing-lg); border-radius: var(--radius-full); color: var(--color-text-secondary); text-transform: uppercase; white-space: nowrap; text-decoration: none; }
+.ds-tab[aria-current="page"] { background: var(--color-action-primary-bg); color: var(--color-action-primary-text); }
+
+/* Campo do formulário de contato. */
+.ds-field { display: block; width: 100%; height: 52px; padding: var(--spacing-md) var(--spacing-lg); border: 0; border-radius: var(--radius-lg); background: var(--color-bg-input); color: var(--color-text-primary); }
+.ds-field:focus-visible { outline: 2px solid var(--color-text-primary); outline-offset: 2px; }
+
+/* ===== App: chip, botão, avatar, opção e barra superior ===== */
+.ds-chip { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: var(--radius-full); background: var(--color-bg-surface-raised); color: var(--color-text-secondary); white-space: nowrap; /* figma */ }
+.ds-chip--accent { color: var(--color-text-primary); }
+.ds-chip--ok { background: var(--color-status-ok-bg); color: var(--color-status-ok); }
+.ds-chip--warn { background: var(--color-status-warn-bg); color: var(--color-status-warn); }
+.ds-chip--bad { background: var(--color-status-bad-bg); color: var(--color-status-bad); }
+
+.ds-app-btn { display: inline-flex; align-items: center; justify-content: center; padding: 14px 24px; border: 0; border-radius: var(--radius-md); background: var(--color-action-primary-bg); color: var(--color-action-primary-text); white-space: nowrap; text-decoration: none; cursor: pointer; /* figma */ }
+.ds-app-btn:disabled { opacity: .4; cursor: not-allowed; }
+.ds-app-btn--secondary { border: 1px solid var(--color-border-strong); background: none; color: var(--color-text-primary); }
+.ds-app-btn--small { padding: 10px 16px; border: 0; border-radius: var(--radius-full); background: var(--color-bg-surface-raised); color: var(--color-text-primary); /* figma */ }
+.ds-app-btn--danger { border: 1px solid var(--color-status-bad); background: none; color: var(--color-status-bad); }
+
+.ds-avatar { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: var(--radius-full); background: var(--color-bg-surface-raised); color: var(--color-text-primary); white-space: nowrap; }
+
+.ds-radio { position: relative; display: flex; align-items: center; gap: var(--spacing-md); min-height: 52px; padding: 14px 16px; border: 1px solid var(--color-border-default); border-radius: var(--radius-md); color: var(--color-text-primary); cursor: pointer; /* figma */ }
+.ds-radio-dot { position: relative; flex: none; width: 20px; height: 20px; border: 1.5px solid var(--color-border-strong); border-radius: var(--radius-full); }
+.ds-radio-mark { position: absolute; top: -1.5px; left: -1.5px; display: none; width: 20px; height: 20px; }
+.ds-radio-label { flex: 1 0 0; min-width: 0; }
+.ds-radio:has(input:checked) { border: 1.5px solid var(--color-text-primary); }
+.ds-radio:has(input:checked) .ds-radio-dot { border-color: transparent; }
+.ds-radio:has(input:checked) .ds-radio-mark { display: block; }
+.ds-radio:has(input:focus-visible) { outline: 2px solid var(--color-text-primary); outline-offset: 2px; }
+
+.ds-topbar { background: var(--color-bg-page); border-bottom: 1px solid var(--color-border-default); }
+.ds-topbar-row { display: flex; align-items: center; justify-content: space-between; padding: var(--spacing-md) var(--spacing-2xl); }
+.ds-topbar .ds-logo { --logo-h: 34px; }
+.ds-topbar-account { display: flex; align-items: center; gap: var(--spacing-md); color: var(--color-text-primary); }
+.ds-topbar-back { display: flex; align-items: center; gap: var(--spacing-sm); padding: 0 var(--spacing-2xl) 12px; color: var(--color-text-secondary); text-decoration: none; }
+.ds-topbar-chevron { color: var(--color-text-secondary); }
+
+/* Título animado no celular: estilo Hero Mobile e trilha sem caixa-alta. */
+@media (max-width: 1023px) {
+  .ds-hero-crumb { text-transform: none; }
+  .ds-hero-title { font-size: var(--type-v2-hero-mobile-size); font-weight: var(--type-v2-hero-mobile-weight); line-height: var(--type-v2-hero-mobile-line); letter-spacing: var(--type-v2-hero-mobile-tracking); }
+}

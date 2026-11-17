@@ -25,7 +25,7 @@ export default [
     }
   },
   {
-    files: ['apps/web/scripts/**/*.mjs', 'packages/tokens/**/*.mjs', 'eslint.config.js'],
+    files: ['apps/web/scripts/**/*.mjs', 'packages/**/*.mjs','eslint.config.js'],
     languageOptions: { ecmaVersion: 'latest', sourceType: 'module', globals: globals.node }
   }
 ];

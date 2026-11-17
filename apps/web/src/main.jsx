@@ -1,4 +1,4 @@
-import { StrictMode } from 'react';
+import { StrictMode, Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import '@fontsource/montserrat/300.css';
@@ -8,6 +8,7 @@ import '@fontsource/montserrat/600.css';
 import '@fontsource/montserrat/700.css';
 import '@mip/tokens/tokens.css';
 import './styles/base.css';
+import './styles/ds.css';
 import './styles/app.css';
 import { SessionProvider, useSession } from './session.jsx';
 import { ToastProvider } from './components/ui.jsx';
@@ -18,6 +19,9 @@ import NewProject from './screens/NewProject.jsx';
 import Invite from './screens/Invite.jsx';
 import Project from './screens/Project.jsx';
 import Admin from './screens/Admin.jsx';
+
+/* Galeria de componentes: só em desenvolvimento. */
+const DesignSystem = import.meta.env.DEV ? lazy(() => import('./screens/DesignSystem.jsx')) : null;
 
 /* Telas que exigem conta mandam para /entrar e voltam depois. */
 function Private({ children }) {
@@ -36,6 +40,7 @@ function App() {
         <Route path="/novo" element={<Private><NewProject /></Private>} />
         <Route path="/convite/:code" element={<Invite />} />
         <Route path="/p/:id/:tab?" element={<Private><Project /></Private>} />
+        {DesignSystem && <Route path="/_ds" element={<Suspense fallback={null}><DesignSystem /></Suspense>} />}
         <Route path="/admin" element={<Private><Admin /></Private>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
