@@ -1,7 +1,7 @@
 /* Grupo 3 — Validações: propError, stepErrors, sendErrors, sobreErrors, perfilErrors, perfilDone. */
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { propError, propDefault, stepErrors, sendErrors, sobreErrors, perfilErrors, perfilDone, PCT_SIM, PCT_NEG } from '../src/index.js';
+import { propError, propDefault, stepErrors, sendErrors, sobreErrors, perfilErrors, perfilDone, PCT_SIM, PCT_NEG } from '@mip/domain';
 import { projeto, addMembro, BASE } from './fixtures.js';
 
 const MSG_PCT = 'Informe percentuais válidos para todos os titulares pretendidos, somando 100%.';

@@ -1,7 +1,7 @@
 /* Grupo 1 — Comparação das respostas: itemStatus, norm, distRows, diffCount, decPts. */
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { itemStatus, norm, distRows, diffCount, decPts } from '../src/index.js';
+import { itemStatus, norm, distRows, diffCount, decPts } from '@mip/domain';
 import { projeto, responder, semResposta, addMembro, resposta } from './fixtures.js';
 
 describe('itemStatus', () => {

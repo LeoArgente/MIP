@@ -1,7 +1,7 @@
 /* Grupo 6 — Memorial (registro do acordo): snapshot, memorialBody, memorialText. */
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { snapshot, memorialBody, memorialText, partOf, decQs, propDefault, LIMITS, PCT_SIM, PCT_NEG } from '../src/index.js';
+import { snapshot, memorialBody, memorialText, partOf, decQs, propDefault, LIMITS, PCT_SIM, PCT_NEG } from '@mip/domain';
 import { projeto, responder, semResposta, addMembro, enviarVersao, T, T_TXT } from './fixtures.js';
 
 describe('snapshot', () => {

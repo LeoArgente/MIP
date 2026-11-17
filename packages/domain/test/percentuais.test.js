@@ -2,7 +2,7 @@
    shares, partOf, partTxt, pctTxt, contribOf, notasOf, hasNota. */
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { shares, partOf, partTxt, pctTxt, contribOf, notasOf, hasNota, PCT_SIM, PCT_NEG } from '../src/index.js';
+import { shares, partOf, partTxt, pctTxt, contribOf, notasOf, hasNota, PCT_SIM, PCT_NEG } from '@mip/domain';
 import { projeto, responder, semResposta, addMembro } from './fixtures.js';
 
 describe('shares', () => {
