@@ -2,7 +2,7 @@
    Rascunhos (respostas e proposta) são salvos sozinhos alguns instantes depois da última mudança. */
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { approved, mem, phaseName, clone, propOf } from '@mip/domain';
+import { approved, mem, phaseName, clone, propOf, elig, lastV } from '@mip/domain';
 import { get, post, patch } from '../api.js';
 import { useSession } from '../session.jsx';
 import { AppFrame } from '../components/journey/Shell.jsx';
@@ -10,9 +10,14 @@ import { Painel, ProjectHeader } from './project/Painel.jsx';
 import { Andamento } from './project/Andamento.jsx';
 import { SetupCriacoes, SetupEquipe, SetupRevisar, SetupSobre } from './project/Setup.jsx';
 import { Banner, Btn, BusyCtx, Chip, useToast } from '../components/ui.jsx';
-import { Hub, Equipe, Criacoes, Sobre, Respostas, Decidir, Confirmacao, Memorial, Welcome, TIPS } from './ProjectScreens.jsx';
+import { AppButton } from '../components/ds/index.js';
+import { TIPS } from './project/tips.js';
+import { Equipe, Criacoes, Sobre, Respostas } from './project/Abas.jsx';
+import { Decidir, Ponto } from './project/Decisoes.jsx';
+import { Confirmacao, ConfirmarProposta } from './project/Confirmacao.jsx';
+import { Registro } from './project/Registro.jsx';
+import { Boas } from './project/Boas.jsx';
 import Question from './Question.jsx';
-import DecideFocus from './DecideFocus.jsx';
 
 const Ctx = createContext(null);
 /* O que o botão diz enquanto a ação roda: o que está acontecendo, não "Carregando". */
@@ -21,7 +26,7 @@ export const useProject = () => useContext(Ctx);
 
 export default function Project() {
   const { id, tab = 'proj' } = useParams(), nav = useNavigate(), say = useToast();
-  const { me: user, update, config } = useSession(), me = user.id;
+  const { me: user, update } = useSession(), me = user.id;
   const [p, setP] = useState(null), [loadErr, setLoadErr] = useState(null), [err, setErr] = useState({});
   /* Estado da tela (não vai para o servidor). */
   const [ui, setUiState] = useState({ qasset: null, qstep: 0, dq: null, dstep: 0, dedit: null, flag: {}, tipOpen: null });
@@ -105,8 +110,8 @@ export default function Project() {
     });
   }, [queue]);
 
-  if (loadErr) return <AppFrame><div className="proj-wrap"><Banner k="bad" action={<Btn kind="sm" onClick={() => nav('/inicio')}>Voltar ao início</Btn>}>{loadErr.message}</Banner></div></AppFrame>;
-  if (!p) return <AppFrame><div className="proj-wrap" /></AppFrame>;
+  if (loadErr) return <AppFrame><div className="jr-pjframe"><Banner k="bad" action={<AppButton kind="small" onClick={() => nav('/inicio')}>Voltar ao início</AppButton>}>{loadErr.message}</Banner></div></AppFrame>;
+  if (!p) return <AppFrame><div className="jr-pjframe" /></AppFrame>;
 
   const m = mem(p, me), org = p.org === me;
   /* Sobre o projeto e sobre você: salvos sozinhos, como os rascunhos. */
@@ -117,9 +122,15 @@ export default function Project() {
   /* Modo foco: responder perguntas ou decidir uma criação, uma tela por vez. */
   const inQuestion = tab === 'resp' && m?.status === 'ativo' && m.elig && approved(p).some(a => a.id === ui.qasset);
   const inDecide = tab === 'decidir' && p.phase === 'decisao' && org && approved(p).some(a => a.id === ui.dq);
-  if (user.seenWelcome && (inQuestion || inDecide)) return <Ctx.Provider value={value}><BusyCtx.Provider value={busy}>{inQuestion ? <Question /> : <DecideFocus />}</BusyCtx.Provider></Ctx.Provider>;
+  if (user.seenWelcome && (inQuestion || inDecide)) return <Ctx.Provider value={value}><BusyCtx.Provider value={busy}>{inQuestion ? <Question /> : <Ponto />}</BusyCtx.Provider></Ctx.Provider>;
 
-  if (!user.seenWelcome) return <AppFrame><div className="proj-wrap"><div className="hub"><header className="proj"><h1>{p.name}</h1><span>{org ? 'Você organiza' : 'Você participa'}</span></header><Welcome name={user.name} askName={!config.testLogin} onStart={async name => { await update({ name, seenWelcome: true }); load(); }} /></div></div></AppFrame>;
+  if (!user.seenWelcome) {
+    const comecar = async (name, resp) => {
+      await update({ name, seenWelcome: true }); await load();
+      if (resp) { const nx = approved(p).find(a => !p.answers[me]?.[a.id]?.sent); if (nx) setUi({ qasset: nx.id, qstep: 0 }); go('resp'); }
+    };
+    return <Boas name={user.name} onStart={comecar} />;
+  }
 
   /* Preparar o projeto: quem organiza vê o passo a passo do Figma (C2 a C5). */
   const preparing = org && p.phase === 'coleta' && ['equipe', 'ativos', 'sobre'].includes(p.setupStep);
@@ -128,8 +139,11 @@ export default function Project() {
     const Step = SETUP[tab];
     return <Ctx.Provider value={value}><BusyCtx.Provider value={busy}><AppFrame><Step /></AppFrame></BusyCtx.Provider></Ctx.Provider>;
   }
-  const screens = { proj: Painel, equipe: Equipe, ativos: Criacoes, sobre: Sobre, resp: Respostas, coleta: Andamento, decidir: Decidir, conf: Confirmacao, memorial: Memorial };
-  const Screen = screens[tab] || Hub;
+  /* Convidado com a proposta para confirmar (D7): tela própria. */
+  const lvAtual = lastV(p);
+  if (!org && p.phase === 'confirmacao' && ['conf', 'decidir'].includes(tab) && lvAtual && elig(p).includes(me) && !lvAtual.conf[me]) return <Ctx.Provider value={value}><BusyCtx.Provider value={busy}><AppFrame><ConfirmarProposta /></AppFrame></BusyCtx.Provider></Ctx.Provider>;
+  const screens = { proj: Painel, equipe: Equipe, ativos: Criacoes, sobre: Sobre, resp: Respostas, coleta: Andamento, decidir: Decidir, conf: Confirmacao, memorial: Registro };
+  const Screen = screens[tab] || Painel;
   return (
     <Ctx.Provider value={value}><BusyCtx.Provider value={busy}>
       <AppFrame><div className="jr-pjframe"><ProjectHeader /><Screen /></div></AppFrame>

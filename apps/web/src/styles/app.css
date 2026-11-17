@@ -135,7 +135,9 @@ button.g-row:hover b { text-decoration: underline; text-underline-offset: 3px; }
 .tok { background: var(--color-surface-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; font-size: var(--text-subhead-size); }
 
 /* ===== Topo e navegação ===== */
-.top { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); padding: var(--space-1) 0 var(--space-6); }
+.top { position: sticky; top: 0; z-index: 40; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); padding: var(--space-1) 0 var(--space-6); background: var(--color-bg-page); transition: transform 300ms ease; }
+.top.is-hidden { transform: translateY(-100%); }
+@media (prefers-reduced-motion: reduce) { .top { transition: none; } }
 .top-row { width: 100%; display: flex; gap: var(--space-3); align-items: center; justify-content: space-between; min-height: 56px; }
 .brand { background: none; border: 0; padding: 0; cursor: pointer; color: var(--color-ink); min-height: var(--size-touch); display: inline-flex; align-items: center; }
 .brand-logo { display: block; }
@@ -431,9 +433,12 @@ details.dec-more summary { list-style: none; cursor: pointer; font-size: var(--t
 /* ===== Feedback (fase de testes) ===== */
 /* Pílula fixa no canto: fica acima do conteúdo, e o fim da página ganha espaço para ela não tapar o último botão. */
 body:has(.fb-pill) .wrap { padding-bottom: calc(var(--space-12) + var(--space-12)); }
-.fb-pill { position: fixed; right: max(var(--space-4), env(safe-area-inset-right)); bottom: max(var(--space-4), env(safe-area-inset-bottom)); z-index: 30; min-height: var(--size-touch); padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill); border: 1px solid color-mix(in srgb, var(--color-line) 70%, transparent); background: var(--color-surface); color: var(--color-ink); font-size: var(--text-subhead-size); font-weight: 600; box-shadow: var(--shadow-float); cursor: pointer; }
-.fb-pill:hover { border-color: var(--color-muted); }
+.fb-pill { position: fixed; right: max(var(--space-4), env(safe-area-inset-right)); bottom: max(var(--space-4), env(safe-area-inset-bottom)); z-index: 30; min-height: var(--size-touch); padding: var(--space-2) var(--space-4); border: 0; border-radius: var(--radius-full); background: var(--color-action-primary-bg); color: var(--color-action-primary-text); font-size: var(--text-subhead-size); font-weight: 600; box-shadow: var(--shadow-float); cursor: pointer; }
+.fb-pill:hover { background: var(--primitive-neutral-200); }
 .fb-pill:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }
+.fb-field textarea { box-sizing: border-box; width: 100%; min-height: 120px; padding: var(--spacing-md); border: 1px solid var(--color-border-default); border-radius: var(--radius-lg); background: var(--color-bg-surface); color: var(--color-text-primary); resize: none; }
+.fb-field textarea::placeholder { color: var(--color-text-muted); }
+.fb-field textarea:focus, .fb-field textarea:focus-visible { border-color: var(--color-text-primary); outline: none; box-shadow: 0 0 0 3px rgba(255, 255, 255, .12); }
 .fb-dialog { width: min(480px, calc(100vw - var(--space-8))); margin: auto; padding: 0; border: 0; border-radius: var(--radius-lg); background: var(--color-surface); color: var(--color-ink); box-shadow: var(--shadow-float); }
 .fb-dialog::backdrop { background: rgba(0, 0, 0, .45); }
 .fb-dialog[open] { animation: menu-in .16s ease-out; }

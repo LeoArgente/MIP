@@ -5,6 +5,8 @@ import { Link } from 'react-router-dom';
 import { PERFIL, perfilDone, mem, QS, GROUPS, GNAME, LV, approved, elig, nm, ansOf, isP, qsFor, hasNota, lvOf, notasOf, fmtAns, steps, stepOf, stepErrors } from '@mip/domain';
 import { AppButton, Avatar, AuthField, Logo, RadioRow } from '../components/ds/index.js';
 import { Panel, TextButton } from '../components/journey/Shell.jsx';
+import useHideOnScroll from '../hooks/useHideOnScroll.js';
+import Dicas, { DICAS_RESPONDER } from '../components/journey/Dicas.jsx';
 import { Banner } from '../components/ui.jsx';
 import { usePlace } from '../components/Feedback.jsx';
 import { useProject } from './Project.jsx';
@@ -13,9 +15,10 @@ import checkBox from '../assets/icons/checkbox-check.svg';
 
 /* Barra no alto: marca, aviso de salvamento e "Salvar e sair". */
 function Frame({ onExit, children }) {
+  const top = useRef(null), hidden = useHideOnScroll(top);
   return (
     <div className="jr-page">
-      <header className="jr-top jr-top--q">
+      <header ref={top} className={'jr-top jr-top--q' + (hidden ? ' is-hidden' : '')}>
         <div className="jr-top-row">
           <Link to="/inicio" aria-label="MIP, ir para o início"><Logo /></Link>
           <div className="jr-row">
@@ -25,6 +28,7 @@ function Frame({ onExit, children }) {
         </div>
       </header>
       {children}
+      <Dicas id="responder" passos={DICAS_RESPONDER} />
     </div>
   );
 }
@@ -33,6 +37,11 @@ function Frame({ onExit, children }) {
 function Trilho({ count, frac, perfil, current }) {
   const { p, me } = useProject(), as = approved(p);
   return (
+    <>
+    <div className="jr-railm">
+      <div className="jr-row"><span className="type-app-small">{count.split(' · ')[1] || count}</span><span className="jr-muted type-app-small">{Math.round(100 * frac)}%</span></div>
+      <div className="jr-progress" aria-hidden="true"><span style={{ width: (100 * frac) + '%' }} /></div>
+    </div>
     <aside className="jr-rail jr-rail--q" aria-label="Suas respostas">
       <p className="jr-eyebrow type-v2-eyebrow">Suas respostas</p>
       <p className="jr-muted type-app-small">{count}</p>
@@ -53,6 +62,7 @@ function Trilho({ count, frac, perfil, current }) {
         })}
       </ol>
     </aside>
+    </>
   );
 }
 

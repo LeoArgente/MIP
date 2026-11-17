@@ -4,10 +4,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { get } from '../api.js';
 import { useSession } from '../session.jsx';
-import Header from '../components/Header.jsx';
-import { Banner, Chip, initials } from '../components/ui.jsx';
+import { AppFrame, Panel } from '../components/journey/Shell.jsx';
+import { Avatar, Chip, Field } from '../components/ds/index.js';
+import { Banner } from '../components/ui.jsx';
 import { RATINGS } from '../components/Feedback.jsx';
-import Select from '../components/Select.jsx';
 import Icon from '../components/Icon.jsx';
 
 const img = id => '/api/admin/feedback/image/' + id;
@@ -53,75 +53,68 @@ export default function Admin() {
   const { me } = useSession();
   const [rows, setRows] = useState(null), [err, setErr] = useState(''), [kind, setKind] = useState(''), [screen, setScreen] = useState(''), [view, setView] = useState(null);
   useEffect(() => { if (me?.admin) get('/api/admin/feedback').then(setRows).catch(e => setErr(e.message)); }, [me]);
-  const all = rows || [];
+  const all = useMemo(() => rows || [], [rows]);
   const sats = useMemo(() => all.filter(r => r.kind === 'satisfacao'), [all]);
   const ofKind = all.filter(r => !kind || r.kind === kind);
   const screens = useMemo(() => [...new Set(all.map(section))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [all]);
   const shown = ofKind.filter(r => !screen || section(r) === screen);
   const days = useMemo(() => { const g = []; for (const r of shown) { const k = dayKey(r.createdAt); if (g.at(-1)?.k !== k) g.push({ k, name: dayName(r.createdAt), rows: [] }); g.at(-1).rows.push(r); } return g; }, [shown]);
 
-  if (!me.admin) return <><Header /><main className="admin"><h1>Feedback</h1><Banner>Só a equipe da MIP vê esta página.</Banner></main></>;
+  if (!me.admin) return <AppFrame><main className="jr-adm"><h1 className="type-app-title">Feedback</h1><Banner>Só a equipe da MIP vê esta página.</Banner></main></AppFrame>;
   const avg = sats.length ? sats.reduce((s, r) => s + r.rating, 0) / sats.length : 0;
   const count = k => all.filter(r => !k || r.kind === k).length;
   const KINDS = [['', 'Todos'], ['texto', 'Comentários'], ['satisfacao', 'Satisfação']];
   return (
-    <>
-      <Header />
-      <main className="admin">
-        <h1>Feedback</h1>
+    <AppFrame>
+      <main className="jr-adm">
+        <h1 className="type-app-title">Feedback</h1>
         {err && <Banner k="bad">{err}</Banner>}
-        {!rows && !err && <p className="muted" role="status">Buscando os feedbacks…</p>}
+        {!rows && !err && <p className="jr-muted type-app-small" role="status">Buscando os feedbacks…</p>}
         {rows && (
           <>
-            <section className="admin-stats" aria-label="Resumo">
-              <div className="admin-counts">
-                <div className="stat"><span>Comentários</span><b>{count('texto')}</b></div>
-                <div className="stat"><span>Avaliações</span><b>{sats.length}</b></div>
-              </div>
-              <div className="stat wide">
-                <span>Satisfação média</span>
-                {sats.length ? <b>{RATINGS[Math.round(avg) - 1]} <small>{avg.toFixed(1).replace('.', ',')} de 5,0</small></b> : <b className="muted">Sem avaliações</b>}
+            <section className="jr-two" aria-label="Resumo">
+              <Panel><span className="jr-muted type-app-small">Comentários</span><b className="type-app-title">{count('texto')}</b></Panel>
+              <Panel><span className="jr-muted type-app-small">Avaliações</span><b className="type-app-title">{sats.length}</b></Panel>
+              <Panel className="jr-grow">
+                <span className="jr-muted type-app-small">Satisfação média</span>
+                {sats.length ? <b className="type-app-title-3">{RATINGS[Math.round(avg) - 1]} <span className="jr-muted type-app-small">{avg.toFixed(1).replace('.', ',')} de 5,0</span></b> : <b className="jr-muted type-app-title-3">Sem avaliações</b>}
                 {sats.length > 0 && (
-                  <ul className="admin-dist" aria-label="Avaliações por opção">
-                    {RATINGS.map((n, i) => { const k = sats.filter(r => r.rating === i + 1).length; return <li key={n}><span>{n}</span><span className="dec-bar"><i style={{ width: 100 * k / sats.length + '%' }} /></span><b>{k}</b></li>; })}
+                  <ul className="jr-dist" aria-label="Avaliações por opção">
+                    {RATINGS.map((n, i) => { const k = sats.filter(r => r.rating === i + 1).length; return <li key={n} className="type-app-small"><span>{n}</span><span className="jr-progress jr-progress--thin"><span style={{ width: 100 * k / sats.length + '%' }} /></span><b>{k}</b></li>; })}
                   </ul>
                 )}
-              </div>
+              </Panel>
             </section>
 
-            <section className="admin-list" aria-labelledby="adm-list">
+            <section aria-labelledby="adm-list" className="jr-fields">
               <h2 id="adm-list" className="sr">Feedbacks</h2>
-              <div className="admin-filters">
-                <div className="seg" role="radiogroup" aria-label="Tipo">
-                  {KINDS.map(([k, n]) => <button type="button" key={k} role="radio" aria-checked={kind === k} className={kind === k ? 'on' : ''} onClick={() => setKind(k)}>{n} <span>{count(k)}</span></button>)}
+              <div className="jr-row jr-wraprow">
+                <div className="jr-wrap" role="radiogroup" aria-label="Tipo">
+                  {KINDS.map(([k, n]) => <button type="button" key={k} role="radio" aria-checked={kind === k} className={'jr-pill type-app-small' + (kind === k ? ' is-on' : '')} onClick={() => setKind(k)}>{n} {count(k)}</button>)}
                 </div>
-                <div className="admin-screen">
-                  <Select label="Tela" value={screen} onChange={setScreen} options={[{ value: '', label: 'Todas as telas', count: ofKind.length }, ...screens.map(s => ({ value: s, label: s, count: ofKind.filter(r => section(r) === s).length }))]} />
-                </div>
+                <Field as="select" aria-label="Tela" className="jr-select" value={screen} onChange={e => setScreen(e.target.value)}>
+                  <option value="">Todas as telas ({ofKind.length})</option>
+                  {screens.map(sc => <option key={sc} value={sc}>{sc} ({ofKind.filter(r => section(r) === sc).length})</option>)}
+                </Field>
               </div>
-              {!shown.length ? <p className="admin-empty">{all.length ? 'Nenhum feedback com esses filtros.' : 'Nenhum feedback ainda. Eles aparecem aqui assim que alguém enviar.'}</p> : days.map(d => (
-                <div className="admin-day" key={d.k}>
-                  <h3>{d.name}</h3>
-                  <ul className="admin-rows">
-                    {d.rows.map(r => (
-                      <li key={r.id} className="admin-row">
-                        <span className="avatar" aria-hidden="true">{r.user ? initials(r.user.name) : '?'}</span>
-                        <div className="admin-body">
-                          <div className="admin-head">
-                            <p><b>{r.user ? r.user.name : 'Sem conta'}</b>{r.user && <span className="admin-mail"> {r.user.email}</span>}</p>
-                            <time dateTime={r.createdAt}>{hour(r.createdAt)}</time>
+              {!shown.length ? <p className="jr-muted type-app-small">{all.length ? 'Nenhum feedback com esses filtros.' : 'Nenhum feedback ainda. Eles aparecem aqui assim que alguém enviar.'}</p> : days.map(d => (
+                <div className="jr-fields" key={d.k}>
+                  <p className="jr-eyebrow type-v2-eyebrow">{d.name}</p>
+                  {d.rows.map(r => (
+                    <Panel key={r.id} className="jr-adm-row">
+                      <Avatar name={r.user ? r.user.name : '?'} />
+                      <div className="jr-person-text jr-grow">
+                        <div className="jr-row"><p className="type-app-body"><b>{r.user ? r.user.name : 'Sem conta'}</b>{r.user && <span className="jr-muted type-app-small"> {r.user.email}</span>}</p><time className="jr-muted type-app-caption" dateTime={r.createdAt}>{hour(r.createdAt)}</time></div>
+                        <p className="jr-row jr-row--start type-app-small">{r.kind === 'satisfacao' && <Chip tone={ratingKind(r.rating)}>{RATINGS[r.rating - 1]}</Chip>}<span className="jr-muted">{r.screen}{r.project?.name && ' · ' + r.project.name} · {r.device}</span></p>
+                        {r.text && <p className="type-app-small">{r.text}</p>}
+                        {r.images?.length > 0 && (
+                          <div className="jr-row jr-row--start jr-wraprow">
+                            {r.images.map((id, n) => <button type="button" className="jr-thumb" key={id} onClick={() => setView({ images: r.images, index: n, title: (r.user ? r.user.name : 'Sem conta') + ' · ' + r.screen })} aria-label={'Ver print ' + (n + 1) + ' de ' + r.images.length}><img src={img(id)} alt="" loading="lazy" /></button>)}
                           </div>
-                          <p className="admin-where">{r.kind === 'satisfacao' && <Chip k={ratingKind(r.rating)}>{RATINGS[r.rating - 1]}</Chip>}<span>{r.screen}{r.project?.name && ' · ' + r.project.name} · {r.device}</span></p>
-                          {r.text && <p className="admin-text">{r.text}</p>}
-                          {r.images?.length > 0 && (
-                            <div className="admin-imgs">
-                              {r.images.map((id, n) => <button type="button" key={id} onClick={() => setView({ images: r.images, index: n, title: (r.user ? r.user.name : 'Sem conta') + ' · ' + r.screen })} aria-label={'Ver print ' + (n + 1) + ' de ' + r.images.length}><img src={img(id)} alt="" loading="lazy" /></button>)}
-                            </div>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                        )}
+                      </div>
+                    </Panel>
+                  ))}
                 </div>
               ))}
             </section>
@@ -129,6 +122,6 @@ export default function Admin() {
         )}
       </main>
       {view && <Viewer view={view} onClose={() => setView(null)} />}
-    </>
+    </AppFrame>
   );
 }

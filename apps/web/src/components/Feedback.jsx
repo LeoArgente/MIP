@@ -7,7 +7,9 @@ import { useLocation } from 'react-router-dom';
 import { SECTIONS } from '@mip/domain';
 import { get, post } from '../api.js';
 import { useSession } from '../session.jsx';
-import { Btn, Err, useToast } from './ui.jsx';
+import { Err, useToast } from './ui.jsx';
+import { AppButton } from './ds/index.js';
+import { Panel, TextButton } from './journey/Shell.jsx';
 
 const SEC = Object.fromEntries([['proj', 'Página do projeto'], ['coleta', 'Andamento das respostas'], ...SECTIONS]);
 /* Nome da tela a partir do endereço; telas com mais detalhe (uma pergunta, um ponto) usam usePlace. */
@@ -144,30 +146,30 @@ export function Satisfaction({ projectId, where }) {
     try { if (text.trim()) await save(rating, text); setStep('done'); } catch (x) { setErr(x.message); }
   };
   return (
-    <section className="sat" aria-labelledby={'sat-' + where}>
+    <Panel>
       {step === 'done' ? (
-        <p className="sat-done" role="status"><b>Obrigado!</b> Sua avaliação: {RATINGS[rating - 1].toLowerCase()}. <button className="link" onClick={() => setStep('ask')}>Mudar</button></p>
+        <p className="type-app-small" role="status"><b>Obrigado!</b> Sua avaliação: {RATINGS[rating - 1].toLowerCase()}. <TextButton onClick={() => setStep('ask')}>Mudar</TextButton></p>
       ) : (
         <>
-          <div className="sat-head">
-            <h2 id={'sat-' + where}>Como foi usar a MIP neste projeto?</h2>
-            <p>Sua avaliação vai para a equipe da MIP, não para o grupo do projeto.</p>
+          <div className="jr-person-text">
+            <h2 id={'sat-' + where} className="type-app-title-3">Como foi usar a MIP neste projeto?</h2>
+            <p className="jr-muted type-app-small">Sua avaliação vai para a equipe da MIP, não para o grupo do projeto.</p>
           </div>
-          <div className="sat-scale" role="radiogroup" aria-labelledby={'sat-' + where}>
-            {RATINGS.map((n, i) => <label className="sat-opt" key={n}><input type="radio" name={'sat-r-' + where} checked={rating === i + 1} onChange={() => pick(i + 1)} /><span>{n}</span></label>)}
+          <div className="jr-levels jr-levels--wide" role="radiogroup" aria-labelledby={'sat-' + where}>
+            {RATINGS.map((n, i) => <label className={'jr-level type-app-caption' + (rating === i + 1 ? ' is-on' : '')} key={n}><input type="radio" className="sr" name={'sat-r-' + where} checked={rating === i + 1} onChange={() => pick(i + 1)} />{n}</label>)}
           </div>
           {step === 'more' && (
-            <div className="sat-more">
-              <label htmlFor={'sat-text-' + where}>Quer contar mais? <span className="muted">(opcional)</span></label>
-              <textarea id={'sat-text-' + where} value={text} onChange={e => setText(e.target.value)} maxLength={2000} placeholder="O que ajudou ou atrapalhou?" />
+            <div className="jr-qblock">
+              <label className="type-app-title-3" htmlFor={'sat-text-' + where}>Quer contar mais? <span className="jr-muted">(opcional)</span></label>
+              <textarea id={'sat-text-' + where} className="jr-area type-app-small" value={text} onChange={e => setText(e.target.value)} maxLength={2000} placeholder="O que ajudou ou atrapalhou?" />
             </div>
           )}
-          <Err msg={err} />
-          <div className="sat-acts">
-            {step === 'more' ? <Btn kind="pri" onClick={sendMore}>{text.trim() ? 'Enviar' : 'Concluir'}</Btn> : where === 'hub' && <Btn kind="sm" onClick={later}>Agora não</Btn>}
+          {err && <p className="jr-err type-app-small" role="alert">{err}</p>}
+          <div className="jr-row jr-row--start">
+            {step === 'more' ? <AppButton onClick={sendMore}>{text.trim() ? 'Enviar' : 'Concluir'}</AppButton> : where === 'hub' && <AppButton kind="small" onClick={later}>Agora não</AppButton>}
           </div>
         </>
       )}
-    </section>
+    </Panel>
   );
 }

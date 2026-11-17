@@ -4,11 +4,13 @@ import { ChevronDown, ChevronLeft } from 'lucide-react';
 import { Avatar, Logo } from '../ds/index.js';
 import { useSession } from '../../session.jsx';
 import checkOk from '../../assets/icons/check-ok.svg';
+import useHideOnScroll from '../../hooks/useHideOnScroll.js';
 
 /* Barra do app: marca, conta (com menu) e, dentro de uma etapa, "‹ Nome do projeto" logo abaixo. */
 export function JourneyTopbar({ back }) {
   const { me, logout } = useSession(), nav = useNavigate();
-  const [open, setOpen] = useState(false), box = useRef(null);
+  const [open, setOpen] = useState(false), box = useRef(null), top = useRef(null);
+  const hidden = useHideOnScroll(top, open);
   useEffect(() => {
     if (!open) return undefined;
     const close = e => { if (!box.current?.contains(e.target)) setOpen(false); };
@@ -18,7 +20,7 @@ export function JourneyTopbar({ back }) {
   }, [open]);
   const go = path => { setOpen(false); nav(path); };
   return (
-    <header className="jr-top">
+    <header ref={top} className={'jr-top' + (hidden ? ' is-hidden' : '')}>
       <div className="jr-top-row">
         <Link to="/inicio" aria-label="MIP, ir para o início"><Logo /></Link>
         {me && (
@@ -55,7 +57,13 @@ export function AppFrame({ back, children }) {
 
 /* Trilho de passos (esquerda): título, "n de m passos", barra e a lista com feito / agora / depois. */
 export function Rail({ title, count, value, total, items }) {
+  const agora = items.find(it => it.state === 'now');
   return (
+    <>
+    <div className="jr-railm">
+      <div className="jr-row"><span className="type-app-small">{count}</span><span className="jr-muted type-app-small">{agora?.label}</span></div>
+      <div className="jr-segs" aria-hidden="true">{items.map((it, i) => <span key={it.label} className={i < value ? 'is-on' : ''} />)}</div>
+    </div>
     <aside className="jr-rail" aria-label={title}>
       <p className="jr-eyebrow type-v2-eyebrow">{title}</p>
       {count && <p className="jr-muted type-app-small">{count}</p>}
@@ -70,6 +78,7 @@ export function Rail({ title, count, value, total, items }) {
         ))}
       </ol>
     </aside>
+    </>
   );
 }
 

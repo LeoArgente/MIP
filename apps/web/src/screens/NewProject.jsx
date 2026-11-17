@@ -36,7 +36,7 @@ export default function NewProject() {
             <AuthField label="O que a equipe está criando? (opcional)" placeholder="Conte em uma frase" value={f.context} onChange={set('context')} />
             <div className="jr-box jr-box--bare">
               <p className="jr-label type-app-caption">Ou escolha um ponto de partida</p>
-              <div className="jr-wrap">{ATALHOS.map(a => <button key={a} type="button" className="jr-pill type-app-small" onClick={() => setF({ ...f, context: a })}>{a}</button>)}</div>
+              <div className="jr-wrap">{ATALHOS.map(a => { const on = f.context === a; return <button key={a} type="button" className={'jr-pill type-app-small' + (on ? ' is-on' : '')} aria-pressed={on} onClick={() => setF({ ...f, context: on ? '' : a })}>{a}</button>; })}</div>
             </div>
             {err._ && <p className="jr-err type-app-small" role="alert">{err._}</p>}
           </div>

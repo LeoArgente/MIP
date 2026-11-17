@@ -3,7 +3,7 @@
    Pendente de decisão de back-end: senha e entrada com Google/Apple (botões só visuais). */
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { AuthField, AuthTabs, Button, Checkbox, Field, LinkDash, Logo, SocialButton } from '../components/ds/index.js';
+import { AuthField, AuthTabs, Button, Checkbox, LinkDash, Logo, SocialButton } from '../components/ds/index.js';
 import { Banner, Err } from '../components/ui.jsx';
 import { useSession } from '../session.jsx';
 import { post } from '../api.js';
@@ -126,12 +126,6 @@ export default function Auth({ mode }) {
                 <div className="auth-strength" aria-live="polite">
                   <div className="auth-bars" aria-hidden="true">{[1, 2, 3, 4].map(n => <span key={n} className={'auth-bar' + (n <= score ? ' is-on' : '')} />)}</div>
                   <p className="type-v2-body-small">{score ? `Força da senha: ${LEVEL[score]}. ` : ''}Use 8 ou mais caracteres, com letras e números.</p>
-                </div>
-              )}
-              {signup && (
-                <div className="ds-auth-field">
-                  <label htmlFor="auth-tipo" className="ds-auth-label type-v2-caption">Tipo de projeto</label>
-                  <div className="ds-auth-box"><Field as="select" id="auth-tipo" className="auth-select" defaultValue=""><option value="">Selecione o tipo de projeto</option></Field></div>
                 </div>
               )}
 

@@ -4,6 +4,7 @@ import { Menu, X } from 'lucide-react';
 import Logo from './Logo.jsx';
 import Button from './Button.jsx';
 import { NavItem } from './Links.jsx';
+import useHideOnScroll from '../../hooks/useHideOnScroll.js';
 
 const ITEMS = [
   ['/sobre', 'Sobre a MIP'],
@@ -15,7 +16,8 @@ const ITEMS = [
 /* Header "liquid glass" fixo. No celular, o menu desliza da direita. */
 export default function SiteHeader() {
   const [open, setOpen] = useState(false);
-  const burger = useRef(null), close = useRef(null);
+  const burger = useRef(null), close = useRef(null), bar = useRef(null);
+  const hidden = useHideOnScroll(bar, open);
   const { pathname } = useLocation();
 
   useEffect(() => setOpen(false), [pathname]);
@@ -30,7 +32,7 @@ export default function SiteHeader() {
   }, [open]);
 
   return (
-    <header className="ds-header">
+    <header ref={bar} className={'ds-header' + (hidden ? ' is-hidden' : '')}>
       <div className="ds-header-bar">
         <Link to="/" aria-label="MIP, página inicial"><Logo /></Link>
         <nav className="ds-header-nav" aria-label="Principal">

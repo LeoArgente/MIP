@@ -7,6 +7,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useSession } from '../session.jsx';
 import { initials } from './ui.jsx';
 import Icon from './Icon.jsx';
+import useHideOnScroll from '../hooks/useHideOnScroll.js';
 /* Logo como SVG no próprio HTML: usa a cor do texto (currentColor), então acompanha o tema claro e o escuro. */
 import logo from '../assets/logo/mip.svg?raw';
 
@@ -43,8 +44,9 @@ function AccountMenu({ me, onLogout }) {
 
 export default function Header({ back }) {
   const { me, logout, config } = useSession(), nav = useNavigate(), loc = useLocation();
+  const top = useRef(null), hidden = useHideOnScroll(top);
   return (
-    <header className="top">
+    <header ref={top} className={'top' + (hidden ? ' is-hidden' : '')}>
       <div className="top-row">
         <button className="brand" onClick={() => nav('/')} aria-label="MIP, ir para o início"><span className="brand-logo" aria-hidden="true" dangerouslySetInnerHTML={{ __html: logo }} /></button>
         {me ? <AccountMenu me={me} onLogout={async () => { await logout(); nav('/'); }} />

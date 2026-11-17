@@ -92,8 +92,8 @@ export function Andamento() {
                 <div className="jr-tperson" role="cell"><Avatar name={nm(p, m.pid)} /><span className="type-app-body jr-grow">{nome}</span>{org && open && falta && m.pid !== me && <TextButton onClick={() => act('remind', { pid: m.pid }, `/api/projects/${p.id}/remind`)}>Lembrar</TextButton>}</div>
                 <div className="jr-tcols">
                   {isE ? <>
-                    <span role="cell">{perfilDone(p, m.pid) ? <Chip tone="ok">Enviou</Chip> : <Chip>Não começou</Chip>}</span>
-                    {as.map(a => { const [tone, txt] = estado(ansOf(p, m.pid, a.id)); return <span key={a.id} role="cell"><Chip tone={tone}>{txt}</Chip></span>; })}
+                    <span role="cell" data-l="Sobre você">{perfilDone(p, m.pid) ? <Chip tone="ok">Enviou</Chip> : <Chip>Não começou</Chip>}</span>
+                    {as.map(a => { const [tone, txt] = estado(ansOf(p, m.pid, a.id)); return <span key={a.id} role="cell" data-l={a.name}><Chip tone={tone}>{txt}</Chip></span>; })}
                   </> : <span role="cell" className="jr-tall"><Chip>{m.status === 'naopart' ? 'Não responde' : 'Entrou depois'}</Chip></span>}
                 </div>
               </div>

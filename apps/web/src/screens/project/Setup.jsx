@@ -181,7 +181,7 @@ export function SetupRevisar() {
   const nomes = as.map(a => a.name), lista = nomes.length > 1 ? nomes.slice(0, -1).join(', ') + ' e ' + nomes.at(-1) : nomes[0] || '';
   const Row = ({ title, text, to }) => (
     <Panel className="jr-panel--row">
-      <div className="jr-row jr-grow"><span className="jr-tick"><img src={checkOk} alt="" width="12" height="12" /></span><div className="jr-person-text"><span className="type-app-title-3">{title}</span><span className="jr-muted type-app-small">{text}</span></div></div>
+      <div className="jr-sumitem"><span className="jr-tick"><img src={checkOk} alt="" width="12" height="12" /></span><div className="jr-person-text"><span className="type-app-title-3">{title}</span><span className="jr-muted type-app-small">{text}</span></div></div>
       <TextButton onClick={() => go(to)}>Editar</TextButton>
     </Panel>
   );

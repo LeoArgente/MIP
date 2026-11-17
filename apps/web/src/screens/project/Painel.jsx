@@ -1,11 +1,12 @@
 /* Painel do projeto (Figma C6): cabeçalho, abas, trilha de fases, próximo passo, equipe e atividade.
    As regras (próxima tarefa, quem respondeu, histórico) vêm de @mip/domain, como antes. */
-import { approved, ansOf, elig, fmt, nm, phaseName, taskFor, secInfo } from '@mip/domain';
+import { approved, ansOf, elig, fmt, nm, perfilDone, phaseName, propOf, qsFor, taskFor, secInfo } from '@mip/domain';
 import { AppButton, Avatar, Chip } from '../../components/ds/index.js';
 import { Panel, PanelHead, TextButton } from '../../components/journey/Shell.jsx';
 import { Satisfaction } from '../../components/Feedback.jsx';
+import Dicas, { DICAS_PAINEL } from '../../components/journey/Dicas.jsx';
 import { useProject } from '../Project.jsx';
-import { TIPS } from '../ProjectScreens.jsx';
+import { TIPS } from './tips.js';
 import checkOk from '../../assets/icons/check-ok.svg';
 
 const FASES = [['Preparação', ''], ['Respostas', 'Cada pessoa responde'], ['Conversa', 'Só o que diverge'], ['Confirmação', 'Todos confirmam'], ['Acordo', 'Documento final']];
@@ -18,10 +19,20 @@ const plural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
 export const TABS = [['proj', 'Resumo'], ['equipe', 'Equipe'], ['ativos', 'Criações'], ['resp', 'Respostas'], ['decidir', 'Decisões'], ['memorial', 'Registro']];
 const ABA_DE = { sobre: 'ativos', coleta: 'resp', conf: 'decidir' };
 
+/* Etiqueta de situação ao lado do nome do projeto. */
+function situacao(p, me, org) {
+  const as = approved(p), E = elig(p), minhaVez = !org && E.includes(me) && as.length && !as.every(a => ansOf(p, me, a.id)?.sent);
+  if (p.phase === 'coleta' && p.setupStep === 'resp' && minhaVez) return ['warn', 'Sua vez'];
+  if (p.phase === 'coleta' && p.setupStep === 'resp') return as.length && E.length && E.every(x => as.every(a => ansOf(p, x, a.id)?.sent)) ? ['ok', 'Todos responderam'] : ['warn', phaseName(p)];
+  if (p.phase === 'decisao' || p.phase === 'encerrada') return as.length && as.every(a => propOf(p, a.id).saved) ? ['accent', 'Proposta pronta'] : ['warn', 'Para conversar'];
+  if (p.phase === 'confirmacao') return ['warn', 'Aguardando confirmações'];
+  if (p.phase === 'consolidado') return ['ok', 'Acordo concluído'];
+  return ['neutral', phaseName(p)];
+}
+
 export function ProjectHeader() {
-  const { p, me, org, tab, go } = useProject(), fase = phaseName(p);
+  const { p, me, org, tab, go } = useProject(), [tone, fase] = situacao(p, me, org);
   const ativa = ABA_DE[tab] || tab;
-  const tone = p.phase === 'consolidado' ? 'ok' : p.phase === 'coleta' && p.setupStep === 'resp' ? 'warn' : 'neutral';
   const people = p.members.filter(m => m.status !== 'pendente');
   const on = k => (k === 'proj' ? true : secInfo(p, me, k === 'ativos' ? 'ativos' : k).on);
   return (
@@ -52,6 +63,11 @@ export function ProjectHeader() {
 export function Fases() {
   const { p } = useProject(), idx = faseIdx(p), fim = p.phase === 'consolidado';
   return (
+    <>
+    <div className="jr-fasem" role="img" aria-label={`Fase ${idx + 1} de 5, ${FASES[Math.min(idx, 4)][0]}`}>
+      <div className="jr-row"><span className="type-app-title-3">Fase {Math.min(idx, 4) + 1} de 5 · {FASES[Math.min(idx, 4)][0]}</span><span className="jr-muted type-app-small">{FASES[Math.min(idx, 4)][1]}</span></div>
+      <div className="jr-segs">{FASES.map((f, i) => <span key={f[0]} className={i < idx || (fim && i === 4) ? 'is-ok' : i === idx ? 'is-on' : ''} />)}</div>
+    </div>
     <ol className="jr-fases" aria-label="Fases do projeto">
       {FASES.map(([nome, sub], i) => {
         const st = i < idx || (fim && i === 4) ? 'done' : i === idx ? 'now' : 'later';
@@ -64,14 +80,28 @@ export function Fases() {
         );
       })}
     </ol>
+    </>
   );
 }
 
 function ProximoPasso() {
-  const { p, me, go, setUi, ui } = useProject(), t = taskFor(p, me, qposOf(p, me)), as = approved(p);
+  const { p, me, org, go, setUi, ui } = useProject(), t = taskFor(p, me, qposOf(p, me)), as = approved(p);
   const feitas = as.filter(a => ansOf(p, me, a.id)?.sent).length;
   const start = () => { if (t.tab === 'resp') { const nx = as.find(a => !ansOf(p, me, a.id)?.sent); if (nx) setUi({ qasset: nx.id, qstep: ansOf(p, me, nx.id)?.step || 0 }); } go(t.tab); };
   const tip = TIPS[t.tab];
+  const vez = !org && p.phase === 'coleta' && p.setupStep === 'resp' && elig(p).includes(me) && as.length > 0 && feitas < as.length && t.tab === 'resp';
+  if (vez) {
+    return (
+      <section className="jr-next" aria-labelledby="next-title">
+        <div className="jr-next-text">
+          <p className="jr-eyebrow type-v2-eyebrow">Sua vez · cerca de 10 minutos</p>
+          <h2 id="next-title" className="type-app-title">Conte o que você fez em cada criação</h2>
+          <p className="jr-sub type-v2-body">{nm(p, p.org)} organiza este projeto. Suas respostas ficam privadas até todos terminarem.</p>
+        </div>
+        <div className="jr-next-actions"><AppButton onClick={start}>Começar a responder</AppButton></div>
+      </section>
+    );
+  }
   return (
     <section className="jr-next" aria-labelledby="next-title">
       <div className="jr-next-text">
@@ -91,12 +121,12 @@ function ProximoPasso() {
   );
 }
 
-function EquipeCard() {
+function EquipeCard({ guest }) {
   const { p, me, org, act } = useProject(), E = elig(p), as = approved(p), open = p.phase === 'coleta' && p.setupStep === 'resp';
   const resp = E.filter(x => as.length && as.every(a => ansOf(p, x, a.id)?.sent)).length;
   return (
-    <Panel className="jr-grow">
-      <PanelHead title="Equipe" chip={<Chip>{resp} de {E.length} {E.length === 1 ? 'já respondeu' : 'já responderam'}</Chip>} />
+    <Panel className={guest ? 'jr-side-card' : 'jr-grow'}>
+      <PanelHead title="Equipe" chip={<Chip>{resp} de {E.length} {guest ? (resp === 1 ? 'respondeu' : 'responderam') : E.length === 1 ? 'já respondeu' : 'já responderam'}</Chip>} />
       {p.members.filter(m => m.status !== 'pendente').map(m => {
         const isE = E.includes(m.pid), sent = as.filter(a => ansOf(p, m.pid, a.id)?.sent).length, done = as.length && sent === as.length;
         const pct = as.length ? (100 * sent / as.length) : 0;
@@ -106,11 +136,11 @@ function EquipeCard() {
               <Avatar name={nm(p, m.pid)} />
               <div className="jr-person-text jr-grow">
                 <span className="type-app-body">{nm(p, m.pid)}{m.pid === me && ' (você)'}</span>
-                <div className="jr-bar-mini" aria-hidden="true"><span className={done ? 'is-ok' : ''} style={{ width: Math.max(pct, 0.6) + '%' }} /></div>
+                {!guest && <div className="jr-bar-mini" aria-hidden="true"><span className={done ? 'is-ok' : ''} style={{ width: Math.max(pct, 0.6) + '%' }} /></div>}
               </div>
             </div>
             <div className="jr-state">
-              {!isE ? <Chip>Não responde</Chip> : done ? <Chip tone="ok">Respondeu</Chip> : sent ? <Chip tone="warn">Respondendo</Chip> : <Chip>Não começou</Chip>}
+              {guest && m.pid === p.org ? <Chip tone="accent">Organiza</Chip> : guest && m.pid === me && !done ? <Chip tone="warn">Sua vez</Chip> : !isE ? <Chip>Não responde</Chip> : done ? <Chip tone="ok">Respondeu</Chip> : sent ? <Chip tone="warn">Respondendo</Chip> : <Chip>Não começou</Chip>}
               {org && open && isE && !done && m.pid !== me && <TextButton onClick={() => act('remind', { pid: m.pid }, `/api/projects/${p.id}/remind`)}>Lembrar</TextButton>}
             </div>
           </div>
@@ -136,17 +166,41 @@ function Atividade() {
   );
 }
 
+/* O que a pessoa convidada vai responder: Sobre você e cada criação. */
+function Responder() {
+  const { p, me, setUi, go } = useProject(), as = approved(p);
+  const estado = an => (an?.sent ? ['ok', 'Enviou'] : an && (an.step > 0 || Object.keys(an.draft || {}).length) ? ['warn', 'Respondendo'] : ['neutral', 'Não começou']);
+  const abrir = a => { setUi({ qasset: a ? a.id : as[0]?.id, qstep: a ? ansOf(p, me, a.id)?.step || 0 : 0 }); go('resp'); };
+  const linhas = [['perfil', 'Sobre você', 'Função e investimento · 2 perguntas', perfilDone(p, me) ? ['ok', 'Enviou'] : ['neutral', 'Não começou'], null], ...as.map(a => [a.id, a.name, a.cat + ' · ' + qsFor(a).length + ' perguntas', estado(ansOf(p, me, a.id)), a])];
+  return (
+    <Panel className="jr-grow">
+      <h2 className="type-app-title-3">O que você vai responder</h2>
+      {linhas.map(([k, t, sub, [tone, txt], a]) => (
+        <button key={k} type="button" className="jr-listrow" onClick={() => abrir(a)}>
+          <span className="jr-person-text"><span className="type-app-body">{t}</span><span className="jr-muted type-app-caption">{sub}</span></span>
+          <Chip tone={tone}>{txt}</Chip>
+        </button>
+      ))}
+    </Panel>
+  );
+}
+
 export function Painel() {
-  const { p } = useProject();
+  const { p, me, org } = useProject(), convidada = !org && p.phase === 'coleta' && p.setupStep === 'resp' && elig(p).includes(me);
   return (
     <div className="jr-pj">
       <Fases />
       <ProximoPasso />
+      {p.phase === 'coleta' && p.setupStep === 'resp' && <Dicas id="painel" passos={DICAS_PAINEL} />}
       {p.phase === 'consolidado' && <Satisfaction projectId={p.id} where="hub" />}
-      <div className="jr-two">
-        <EquipeCard />
-        <Atividade />
-      </div>
+      {convidada ? (
+        <div className="jr-two"><Responder /><EquipeCard guest /></div>
+      ) : (
+        <div className="jr-two">
+          <EquipeCard />
+          <Atividade />
+        </div>
+      )}
     </div>
   );
 }

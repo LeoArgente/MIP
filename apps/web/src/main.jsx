@@ -26,7 +26,7 @@ import Equipe from './screens/site/Equipe.jsx';
 import Contato from './screens/site/Contato.jsx';
 import Auth from './screens/Auth.jsx';
 import NewProject from './screens/NewProject.jsx';
-import Invite from './screens/Invite.jsx';
+import Invite, { ConviteConta } from './screens/Invite.jsx';
 import Project from './screens/Project.jsx';
 import Admin from './screens/Admin.jsx';
 
@@ -60,9 +60,10 @@ function App() {
       <Route path="/entrar" element={<Auth mode="entrar" />} />
       <Route path="/criar-conta" element={<Auth mode="criar" />} />
       {DesignSystem && <Route path="/_ds" element={<Suspense fallback={null}><DesignSystem /></Suspense>} />}
+      <Route path="/convite/:code" element={<Invite />} />
+      <Route path="/convite/:code/conta" element={<ConviteConta />} />
+      <Route path="/admin" element={<Private><Admin /></Private>} />
       <Route element={<AppShell />}>
-        <Route path="/convite/:code" element={<Invite />} />
-        <Route path="/admin" element={<Private><Admin /></Private>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

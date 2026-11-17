@@ -63,7 +63,8 @@
 .ds-logo > svg { display: block; width: 100%; height: 100%; }
 
 /* ===== Header (vidro) e menu do celular ===== */
-.ds-header { position: fixed; inset: 0 0 auto 0; z-index: 50; padding: var(--spacing-md) var(--spacing-md) 0; pointer-events: none; }
+.ds-header { position: fixed; inset: 0 0 auto 0; z-index: 50; padding: var(--spacing-md) var(--spacing-md) 0; pointer-events: none; transition: transform 300ms ease; }
+.ds-header.is-hidden { transform: translateY(-100%); }
 .ds-header-bar {
   position: relative; display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md);
   padding: var(--spacing-md); border: 1px solid var(--effect-glass-header-border); border-radius: var(--radius-full);
@@ -193,3 +194,15 @@
 /* Caixa de seleção e área de texto do formulário de contato. */
 textarea.ds-field { height: 120px; resize: none; /* figma */ }
 select.ds-field { appearance: none; color: var(--color-text-muted); }
+
+/* Cabeçalhos que somem ao rolar: sem animação para quem prefere menos movimento (só aparece e some). */
+@media (prefers-reduced-motion: reduce) { .ds-header, .jr-top { transition: none; } }
+
+/* Cartões clicáveis sobem 4px ao passar o mouse ou receber foco do teclado. */
+@media (prefers-reduced-motion: no-preference) {
+  .ds-radio, .jr-optrow, .jr-opt, a.ds-feature { transition: transform 200ms ease, box-shadow 200ms ease; }
+  .ds-radio:has(input:focus-visible), .jr-optrow:has(input:focus-visible), .jr-opt:focus-visible, a.ds-feature:focus-visible { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0, 0, 0, .4); }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .ds-radio:has(input:not(:disabled)):hover, .jr-optrow:not(.is-dis):hover, .jr-opt:hover, a.ds-feature:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0, 0, 0, .4); }
+}
