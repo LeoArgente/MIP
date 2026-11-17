@@ -1,6 +1,6 @@
 /* Respostas: o rascunho de cada pessoa, o envio e o encerramento das respostas. */
 import { QS, approved, elig, sendErrors, clone } from '@mip/domain';
-import { ActionError, deny, fail, now, needOrg, needPhase, assetOf, ensureProp } from '../shared.js';
+import { ActionError, deny, fail, now, needOrg, needPhase, assetOf, ensureProp, ehObjeto, errosDeFormato } from '../shared.js';
 import { log } from '../historico/index.js';
 import type { Pid, Aid } from '@mip/domain';
 import type { ProjetoCompleto, RespostaGravada } from '../../store.js';
@@ -15,12 +15,16 @@ export const ACTIONS: Acoes = {
   /* Rascunho salvo sozinho enquanto a pessoa responde. */
   draft(p, me, d) {
     if (p.phase !== 'coleta' || !elig(p).includes(me)) deny('As respostas foram encerradas. Você pode ver o que respondeu, mas não pode mudar.');
-    assetOf(p, d.aid);
-    /* Garantido: assetOf acima lança sem um aid de criação do projeto. */
-    const an = ensureAns(p, me, d.aid!), patch = d.draft || {};
-    /* Sem garantia: filtra as chaves (DRAFT_KEYS), mas grava cada valor como veio. Um titular em texto, por exemplo,
-       é aceito e gravado no banco, e o qsend dessa resposta depois estoura no domínio (500 em vez de 400). */
-    Object.keys(patch).forEach(k => { if (DRAFT_KEYS.has(k)) (an.draft as Record<string, unknown>)[k] = (patch as Record<string, unknown>)[k]; });
+    const a = assetOf(p, d.aid);
+    /* O corpo chega sem tipo: confere o formato de cada valor antes de gravar qualquer coisa. Chaves fora de
+       DRAFT_KEYS continuam ignoradas; um valor no formato errado recusa o rascunho inteiro (400, nada gravado). */
+    const patch: unknown = d.draft ?? {};
+    if (!ehObjeto(patch)) fail('_', 'Envie o rascunho como objeto.');
+    const err = errosDeFormato(patch, DRAFT_KEYS, a.id + ':', 'ignora');
+    if (Object.keys(err).length) throw new ActionError(err);
+    const an = ensureAns(p, me, a.id);
+    /* Garantido: errosDeFormato acima conferiu cada valor de DRAFT_KEYS contra o formato da pergunta ou o limite do texto. */
+    Object.keys(patch).forEach(k => { if (DRAFT_KEYS.has(k)) (an.draft as Record<string, unknown>)[k] = patch[k]; });
     /* Garantido: Number.isInteger acima. */
     if (Number.isInteger(d.step)) an.step = d.step!;
     return { quiet: true };

@@ -1,21 +1,43 @@
 /* Decisões: a proposta de cada criação, editada por quem organiza, e os comentários da equipe. */
-import { approved, elig, propOf, propError } from '@mip/domain';
-import { deny, fail, now, needOrg, needPhase, assetOf, ensureProp } from '../shared.js';
+import { approved, elig, propOf, propError, decQs } from '@mip/domain';
+import { ActionError, deny, fail, now, needOrg, needPhase, assetOf, ensureProp, ehObjeto, ehId, erroDeFormato, errosDeFormato } from '../shared.js';
 import { log } from '../historico/index.js';
-import type { Proposta } from '@mip/domain';
+import type { Ativo, Proposta } from '@mip/domain';
 import type { Acoes } from '../shared.js';
 
 const PROP_KEYS: (keyof Proposta)[] = ['v', 'externo', 'percentual', 'texto', 'semAcordo'];
+
+/* Percentual: a tela manda o valor do input numérico como veio (texto, '' quando vazio); o propError já trata os dois.
+   Aceita número ou texto numérico curto; recusa o resto. */
+const ehPercentual = (n: unknown) => (typeof n === 'number' && Number.isFinite(n)) || (typeof n === 'string' && (n === '' || (n.length <= 32 && n.trim() !== '' && Number.isFinite(Number(n)))));
+
+/* Erros de formato do rascunho da proposta, com a chave 'p' + aid + ':' + campo. Chaves fora de PROP_KEYS
+   continuam ignoradas; dentro de `v`, só entram as perguntas de decQs do tipo da criação. */
+function errosDaProposta(a: Ativo, prop: Record<string, unknown>): Record<string, string> {
+  const k = 'p' + a.id + ':', err: Record<string, string> = {};
+  if ('v' in prop) {
+    if (!ehObjeto(prop.v)) err[k + 'v'] = 'Envie as decisões como objeto.';
+    else Object.assign(err, errosDeFormato(prop.v, new Set<string>(decQs(a)), k, 'recusa'));
+  }
+  for (const c of ['externo', 'texto'] as const) if (c in prop) { const e = erroDeFormato(c, prop[c]); if (e) err[k + c] = e; }
+  if ('percentual' in prop && !(ehObjeto(prop.percentual) && Object.entries(prop.percentual).every(([pid, n]) => ehId(pid) && ehPercentual(n)))) err[k + 'percentual'] = 'Envie cada percentual como número.';
+  if ('semAcordo' in prop && typeof prop.semAcordo !== 'boolean') err[k + 'semAcordo'] = 'Envie "sem acordo" como verdadeiro ou falso.';
+  return err;
+}
 
 export const ACTIONS: Acoes = {
   /* Quem organiza edita a proposta de uma criação (salvo sozinho). */
   propdraft(p, me, d) {
     needOrg(p, me); needPhase(p, 'decisao');
-    assetOf(p, d.aid);
-    /* Garantido: assetOf acima lança sem um aid de criação do projeto. */
-    const pr = ensureProp(p, d.aid!), patch = d.prop || {};
-    /* Sem garantia: o corpo não é conferido. As chaves de cima são filtradas (PROP_KEYS), mas os valores entram
-       como vieram e `v` aceita qualquer chave. Um titular que não seja lista quebra o .filter abaixo (500). */
+    const a = assetOf(p, d.aid);
+    /* O corpo chega sem tipo: confere tudo antes de gravar qualquer coisa (400 com erro por campo, nada gravado). */
+    const raw: unknown = d.prop ?? {};
+    if (!ehObjeto(raw)) fail('p' + a.id, 'Envie a proposta como objeto.');
+    const err = errosDaProposta(a, raw);
+    if (Object.keys(err).length) throw new ActionError(err);
+    const pr = ensureProp(p, a.id), patch = raw as Partial<Proposta>;
+    /* Garantido: errosDaProposta acima. As chaves de cima são filtradas (PROP_KEYS) e `v` só traz chaves de decQs(a),
+       cada uma no formato da pergunta, então o spread não deixa entrar chave nenhuma além delas. */
     PROP_KEYS.forEach(k => { if (k in patch) (pr as Record<keyof Proposta, unknown>)[k] = k === 'v' ? { ...pr.v, ...patch.v } : patch[k]; });
     if (pr.v.titular) pr.v.titular = pr.v.titular.filter(x => elig(p).includes(x));
     pr.saved = false;

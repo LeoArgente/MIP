@@ -5,7 +5,7 @@ import { SOBRE, PERFIL, sobreErrors, perfilErrors, approved, mem, nm, taskFor, p
 import { load, withProject } from '../../store.js';
 import { viewFor } from '../../view.js';
 import { sendLoginLink, validEmail, nameFromEmail } from '../../auth.js';
-import { ActionError, deny, fail, now, needOrg, needPhase } from '../shared.js';
+import { ActionError, deny, fail, now, needOrg, needPhase, ehObjeto, errosDeFormato } from '../shared.js';
 import { log } from '../historico/index.js';
 import type { Express, Response } from 'express';
 import type { Contexto, AuthedRequest } from '../../server.js';
@@ -23,9 +23,15 @@ export const ACTIONS: Acoes = {
   /* Sobre o projeto: quem organiza responde (pode ajustar enquanto as respostas estão abertas). */
   sobre(p, me, d) {
     needOrg(p, me); needPhase(p, 'coleta');
+    /* O corpo chega sem tipo: confere o formato de cada valor antes de gravar (400 com erro por campo, nada gravado).
+       Chaves fora de SOBRE continuam ignoradas. */
+    const raw: unknown = d.sobre ?? {};
+    if (!ehObjeto(raw)) fail('_', 'Envie as respostas sobre o projeto como objeto.');
+    const err = errosDeFormato(raw, new Set(Object.keys(SOBRE)), 'sobre:', 'ignora');
+    if (Object.keys(err).length) throw new ActionError(err);
     const cur = { ...(p.sobre || {}) };
-    /* Garantido: as chaves vêm de SOBRE e d.sobre só é lido quando tem a chave. O valor vira texto com limite. */
-    (Object.keys(SOBRE) as ChaveSobre[]).forEach(k => { if (k in (d.sobre || {})) cur[k] = String(d.sobre![k] ?? '').slice(0, 500); });
+    /* Garantido: errosDeFormato acima conferiu cada valor (texto, uma das opções quando há opts, limite do texto). */
+    (Object.keys(SOBRE) as ChaveSobre[]).forEach(k => { if (k in raw) cur[k] = raw[k] as string; });
     if (cur.edital !== 'Sim') delete cur.editalQual;
     p.sobre = cur;
     if (d.check) { const e = sobreErrors(cur); if (Object.keys(e).length) throw new ActionError(e); }
@@ -36,9 +42,14 @@ export const ACTIONS: Acoes = {
   perfil(p, me, d) {
     if (p.phase !== 'coleta') deny('As respostas foram encerradas.');
     /* Garantido: apply só chama a ação para quem é integrante e não está pendente. */
+    const raw: unknown = d.perfil ?? {};
+    if (!ehObjeto(raw)) fail('_', 'Envie as respostas sobre você como objeto.');
+    /* Chaves fora de PERFIL continuam ignoradas (a tela reenvia o próprio perfil, que pode trazer outras). */
+    const err = errosDeFormato(raw, new Set(Object.keys(PERFIL)), 'perfil:', 'ignora');
+    if (Object.keys(err).length) throw new ActionError(err);
     const m = mem(p, me)!, cur = { ...(m.perfil || {}) };
-    /* Garantido: as chaves vêm de PERFIL e d.perfil só é lido quando tem a chave. O valor vira texto com limite. */
-    (Object.keys(PERFIL) as ChavePerfil[]).forEach(k => { if (k in (d.perfil || {})) cur[k] = String(d.perfil![k] ?? '').slice(0, 200); });
+    /* Garantido: errosDeFormato acima conferiu cada valor (texto, uma das opções quando há opts, limite do texto). */
+    (Object.keys(PERFIL) as ChavePerfil[]).forEach(k => { if (k in raw) cur[k] = raw[k] as string; });
     m.perfil = cur;
     if (d.check) { const e = perfilErrors(cur); if (Object.keys(e).length) throw new ActionError(e); }
     return { quiet: !d.check };
