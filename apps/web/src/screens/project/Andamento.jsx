@@ -11,23 +11,24 @@ import { Fases } from './Painel.jsx';
 const plural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
 
 /* Estado de uma resposta: enviada, com rascunho ou ainda sem começar. */
-const estado = an => (an?.sent ? ['ok', 'Enviou'] : an && (an.step > 0 || Object.values(an.draft || {}).some(v => (Array.isArray(v) ? v.length : v && (typeof v !== 'object' || Object.keys(v).length)))) ? ['warn', 'Respondendo'] : ['neutral', 'Não começou']);
+const estado = an => (an?.sent ? ['ok', 'Enviou'] : an && (an.step > 0 || Object.values(an.draft || {}).some(v => (Array.isArray(v) ? v.length : v && (typeof v !== 'object' || Object.keys(v).length)))) ? ['warn', 'Respondendo'] : ['warn', 'Sem resposta']);
 
 /* C9: pergunta antes de encerrar. */
-function Encerrar({ miss, total, onCancel, onOk }) {
+function Encerrar({ faltas, total, onCancel, onOk }) {
   useEffect(() => {
     const key = e => { if (e.key === 'Escape') onCancel(); };
     document.addEventListener('keydown', key);
     return () => document.removeEventListener('keydown', key);
   }, [onCancel]);
-  const quem = miss.length ? miss.join(', ') + (miss.length > 1 ? ' ficarão' : ' ficará') + ' como “Sem resposta”, nunca como concordância.' : `Todas as ${total} pessoas já responderam.`;
+  const miss = faltas.length;
   return (
     <div className="jr-overlay" onClick={onCancel}>
       <div className="jr-modal" role="dialog" aria-modal="true" aria-labelledby="enc-t" aria-describedby="enc-d" onClick={e => e.stopPropagation()}>
         <span className="jr-modal-mark type-app-title-2" aria-hidden="true">!</span>
         <div className="jr-modal-text">
-          <h2 id="enc-t" className="type-app-title-2">Encerrar a coleta de respostas?</h2>
-          <p id="enc-d" className="type-v2-body">{quem} Ao encerrar, as respostas ficam travadas e a equipe vê o que concorda e o que diverge. Não dá para voltar atrás.</p>
+          <h2 id="enc-t" className="type-app-title-2">{miss ? 'Encerrar mesmo com respostas faltando?' : 'Encerrar a coleta de respostas?'}</h2>
+          {miss ? <p id="enc-d" className="type-v2-body">Faltam respostas de {plural(miss, 'pessoa', 'pessoas')}. Se você encerrar agora, elas ficam como “Sem resposta” e não poderão mais responder.</p> : <p id="enc-d" className="type-v2-body">Todas as {total} pessoas já responderam. Ao encerrar, as respostas ficam travadas e a equipe vê o que concorda e o que diverge. Não dá para voltar atrás.</p>}
+          {miss > 0 && <div className="jr-faltas">{faltas.map(f => <div key={f.nome} className="jr-row"><span className="type-app-small">{f.nome}</span><span className="jr-row jr-row--start jr-wraprow">{f.itens.map(i => <Chip key={i} tone="warn">Sem resposta · {i}</Chip>)}</span></div>)}</div>}
         </div>
         <div className="jr-modal-actions">
           <AppButton kind="secondary" onClick={onCancel}>Ainda não</AppButton>
@@ -58,9 +59,9 @@ export function Andamento() {
           <div className="jr-next-text">
             <p className="jr-eyebrow type-v2-eyebrow">Seu próximo passo</p>
             <h2 id="and-t" className="type-app-title">{miss.length ? 'Faltam respostas de ' + plural(miss.length, 'pessoa', 'pessoas') : 'Todos responderam. Encerre a coleta para ver as respostas'}</h2>
-            <p className="jr-sub type-v2-body">{miss.length ? 'Você pode encerrar mesmo assim. ' : ''}Depois de encerrar, ninguém muda mais as respostas e a equipe passa a comparar o que cada um disse. Isso não pode ser desfeito.</p>
+            <p className="jr-sub type-v2-body">{miss.length ? 'Quem não responder fica como “Sem resposta” na comparação. Você pode esperar ou encerrar mesmo assim.' : 'Depois de encerrar, ninguém muda mais as respostas e a equipe passa a comparar o que cada um disse. Isso não pode ser desfeito.'}</p>
           </div>
-          <div className="jr-next-actions"><AppButton onClick={() => setUi({ flag: { close: true } })}>Encerrar e comparar respostas</AppButton></div>
+          <div className="jr-next-actions"><AppButton kind={miss.length ? 'secondary' : 'primary'} onClick={() => setUi({ flag: { close: true } })}>{miss.length ? 'Encerrar mesmo assim' : 'Encerrar e comparar respostas'}</AppButton></div>
         </section>
       )}
       {org && open && !as.length && <Banner k="warn" action={<AppButton kind="small" onClick={() => go('ativos')}>Ir para Criações</AppButton>}>Cadastre ao menos uma criação antes de encerrar as respostas.</Banner>}
@@ -103,7 +104,7 @@ export function Andamento() {
         {org && open && as.length > 0 && miss.length > 0 && <div className="jr-row jr-row--start"><TextButton onClick={copyGroup}>Copiar mensagem para o grupo</TextButton></div>}
         {grp && <p className="jr-muted type-app-small">{grp}</p>}
       </Panel>
-      {ui.flag.close && <Encerrar miss={miss.map(x => nm(p, x))} total={E.length} onCancel={() => setUi({ flag: {} })} onOk={closeNow} />}
+      {ui.flag.close && <Encerrar faltas={miss.map(x => ({ nome: nm(p, x), itens: as.filter(a => !ansOf(p, x, a.id)?.sent).map(a => a.name) }))} total={E.length} onCancel={() => setUi({ flag: {} })} onOk={closeNow} />}
     </div>
   );
 }

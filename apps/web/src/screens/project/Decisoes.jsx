@@ -167,7 +167,8 @@ const Pessoa = ({ name, checked, onChange }) => (
 export function Ponto() {
   const { p, act, err, setErr, ui, setUi, editProp } = useProject(), as = approved(p), a = as.find(x => x.id === ui.dq), pr = propOf(p, a.id), E = elig(p);
   const pts = ptsOf(p, a), S = [...pts, 'review'], s = Math.min(S.length - 1, Math.max(0, ui.dstep)), q = S[s];
-  const [cm, setCm] = useState(''), title = useRef(null);
+  const [cm, setCm] = useState(''), title = useRef(null), [fora, setFora] = useState(!!pr.externo);
+  const soma = Object.values(pr.percentual || {}).reduce((n, x) => n + (parseFloat(x) || 0), 0);
   usePlace('Decisões · ' + a.name + ' · ' + (q === 'review' ? 'revisão' : QS[q].short));
   useEffect(() => { title.current?.focus({ preventScroll: true }); window.scrollTo(0, 0); setCm(''); }, [a.id, s]);
 
@@ -190,8 +191,8 @@ export function Ponto() {
   if (q === 'review') {
     const same = decQs(a).filter(k => !pts.includes(k)), holders = (pr.v.titular || []).concat(pr.externo ? ['__externo__'] : []), cs = p.comments.filter(x => x.aid === a.id);
     const Row = ({ k, v, to }) => <div className="jr-ans"><span className="jr-ans-k type-app-caption">{k}</span><span className="type-app-small jr-grow">{v}</span>{to != null && <TextButton onClick={() => goStep(to)}>Editar</TextButton>}</div>;
-    eyebrow = a.name + ' · revisão'; titulo = 'Decisões de ' + a.name;
-    sub = pts.length ? 'Confira antes de salvar. Escolha um ponto para editar.' : 'Todos responderam igual. Confira e salve.';
+    eyebrow = 'Decisões · ' + a.name; titulo = 'Decisões de ' + a.name;
+    sub = `Confira o que a equipe combinou para ${a.name}. Você pode ajustar antes de enviar a proposta.`;
     body = (
       <div className="jr-fields jr-fields--xl">
         {pts.length > 0 && <Panel><PanelHead title="Pontos com respostas diferentes" />{pts.map((k, i) => <Row key={k} k={QS[k].short} v={decPick(p, k, pr) || 'Falta decidir'} to={i} />)}</Panel>}
@@ -201,19 +202,34 @@ export function Ponto() {
           {same.map(k => <Row key={k} k={QS[k].short} v={decPick(p, k, pr) || 'Falta decidir'} />)}
         </Panel>
         {pr.v.divisao === PCT_NEG && <p className="jr-muted type-app-small">Percentuais ficam como pendência no registro do acordo. Para informar agora, escolha “Percentuais combinados” acima.</p>}
-        <AuthField label="Titular pretendido fora da equipe (opcional)" placeholder="Pessoa, empresa ou instituição" value={pr.externo || ''} onChange={e => editProp(a.id, { externo: e.target.value })} />
+        <Panel>
+          <PanelHead title="Titular fora da equipe" />
+          <p className="jr-muted type-app-small">Alguém de fora também aparece como dono de {a.name}?</p>
+          <div className="jr-opts" role="radiogroup" aria-label="Titular fora da equipe">
+            <RadioRow name={'ext-' + a.id} label="Só pessoas da equipe" checked={!fora} onChange={() => { setFora(false); editProp(a.id, { externo: '' }); }} />
+            <RadioRow name={'ext-' + a.id} label="Há titular fora da equipe (ex.: universidade, empresa)" checked={fora} onChange={() => setFora(true)} />
+          </div>
+          {fora && <AuthField label="Quem é o titular de fora?" placeholder="Nome da pessoa ou instituição" value={pr.externo || ''} onChange={e => editProp(a.id, { externo: e.target.value })} />}
+        </Panel>
         {pr.v.divisao === PCT_SIM && (
           <Panel>
-            <PanelHead title="Percentuais acordados para a titularidade pretendida" />
-            <p className="jr-muted type-app-small">A soma deve ser 100%. Estes números não são calculados pelas avaliações de contribuição.</p>
-            {holders.map(pid => <AuthField key={pid} label={(pid === '__externo__' ? pr.externo : nm(p, pid)) + ' (%)'} type="number" min="0" max="100" step="0.01" value={(pr.percentual || {})[pid] ?? ''} onChange={e => editProp(a.id, cur => ({ percentual: { ...(cur.percentual || {}), [pid]: e.target.value } }))} />)}
+            <PanelHead title="Percentuais combinados" />
+            <p className="jr-muted type-app-small">A soma precisa dar 100%.</p>
+            {holders.map(pid => (
+              <div key={pid} className="jr-row">
+                <span className="jr-row jr-row--start"><Avatar name={pid === '__externo__' ? pr.externo : nm(p, pid)} /><span className="type-app-body">{pid === '__externo__' ? pr.externo : nm(p, pid)}</span></span>
+                <label className="jr-pct"><span className="sr">Percentual de {pid === '__externo__' ? pr.externo : nm(p, pid)}</span><input className="jr-input type-app-small" type="number" min="0" max="100" step="0.01" value={(pr.percentual || {})[pid] ?? ''} onChange={e => editProp(a.id, cur => ({ percentual: { ...(cur.percentual || {}), [pid]: e.target.value } }))} /> %</label>
+              </div>
+            ))}
+            <div className="jr-row"><span className="jr-muted type-app-small">Total</span><Chip tone={Math.abs(soma - 100) < 0.01 ? 'ok' : 'warn'}>{Math.abs(soma - 100) < 0.01 ? 'Soma 100%' : 'Soma ' + String(+soma.toFixed(2)).replace('.', ',') + '%' + (soma < 100 ? ' · faltam ' + String(+(100 - soma).toFixed(2)).replace('.', ',') + '%' : ' · passou ' + String(+(soma - 100).toFixed(2)).replace('.', ',') + '%')}</Chip></div>
           </Panel>
         )}
         <div className="jr-qblock">
-          <label className="type-app-title-3" htmlFor={'pt-' + a.id}>Quer explicar alguma decisão ou registrar algo pendente? (opcional)</label>
-          <p className="jr-muted type-app-small">As escolhas acima já estão registradas. Escreva aqui apenas o motivo de alguma escolha ou algo que ainda precisa ser conferido, como um contrato ou uma autorização. Se não houver nada a acrescentar, deixe em branco.</p>
-          <textarea id={'pt-' + a.id} className="jr-area type-app-small" value={pr.texto || ''} onChange={e => editProp(a.id, { texto: e.target.value })} placeholder="Ex.: O logo pode ir ao portfólio após autorização de Ana. Falta conferir a licença da fonte." />
+          <label className="type-app-title-3" htmlFor={'pt-' + a.id}>Explique ou registre algo pendente</label>
+          <p className="jr-muted type-app-small">Ex.: combinamos conversar sobre a parte do Bruno depois do lançamento.</p>
+          <textarea id={'pt-' + a.id} className="jr-area type-app-small" value={pr.texto || ''} onChange={e => editProp(a.id, { texto: e.target.value })} placeholder="Opcional. Fica no registro do acordo." />
         </div>
+        {(pts.length > 0 || pr.semAcordo) && <p className="type-app-title-3">Se ainda não houver acordo</p>}
         {(pts.length > 0 || pr.semAcordo) && (
           <label className={'jr-optrow' + (pr.semAcordo ? ' is-on' : '')}>
             <input type="checkbox" className="sr" checked={!!pr.semAcordo} onChange={e => editProp(a.id, { semAcordo: e.target.checked })} />
@@ -273,7 +289,7 @@ export function Ponto() {
           </ol>
         </aside>
         <div className="jr-main jr-main--d">
-          {pr.ajuste && !pr.saved && <Banner k="warn">{nm(p, pr.ajuste.by)} pediu ajuste: “{pr.ajuste.comment}”</Banner>}
+          {pr.ajuste && !pr.saved && <Banner k="warn" title={nm(p, pr.ajuste.by).split(' ')[0] + ' pediu ajuste neste ponto'}>“{pr.ajuste.comment}”</Banner>}
           {savedName && s === 0 && <Banner>Decisões de {savedName} salvas. Agora, {a.name}.</Banner>}
           <header className="jr-head">
             <p className="jr-eyebrow type-v2-eyebrow">{eyebrow}</p>

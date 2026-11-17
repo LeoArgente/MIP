@@ -1,6 +1,6 @@
 /* Responder (Figma C7a–C7f): Sobre você, as 3 partes de cada criação (contribuição, titularidade, uso), a revisão e "Respostas enviadas".
    As perguntas, as regras e a validação vêm de @mip/domain e ficam como antes. */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PERFIL, perfilDone, mem, QS, GROUPS, GNAME, LV, approved, elig, nm, ansOf, isP, qsFor, hasNota, lvOf, notasOf, fmtAns, steps, stepOf, stepErrors } from '@mip/domain';
 import { AppButton, Avatar, AuthField, Logo, RadioRow } from '../components/ds/index.js';
@@ -128,6 +128,7 @@ function Questions() {
   const as = approved(p), open = p.phase === 'coleta', a = as.find(x => x.id === ui.qasset);
   const an = ansOf(p, me, a.id) || { draft: {}, sent: null }, d = an.draft || {}, S = steps(), s = Math.min(S.length - 1, Math.max(0, ui.qstep)), g = S[s], nq = S.length - 1;
   const E = elig(p), qs = qsFor(a), dis = !open, title = useRef(null);
+  const [outra, setOutra] = useState(() => { const t = (ansOf(p, me, a.id)?.draft || {}).titularAtualNome; return !!t && t !== 'A equipe toda' && !E.some(pid => nm(p, pid) === t); });
   const doneN = 1 + as.filter(x => ansOf(p, me, x.id)?.sent).length, total = as.length + 1;
   usePlace('Perguntas · ' + a.name + ' · ' + (g === 'review' ? 'revisão' : GNAME[g] || 'parte ' + (s + 1)));
 
@@ -261,8 +262,15 @@ function Questions() {
           </div>
         )}
         {block('origem')}{block('titularAtual')}
-        <AuthField label="Quem aparece como dono hoje? (se souber)" placeholder="Nome da pessoa, organização ou terceiro" value={d.titularAtualNome || ''} onChange={setText('titularAtualNome')} disabled={dis} />
-        <AuthField label="Qual é o documento ou o acordo? (opcional)" placeholder="Contrato, registro, licença ou relato" value={d.titularAtualBase || ''} onChange={setText('titularAtualBase')} disabled={dis} />
+        <div className="jr-qblock" role="radiogroup" aria-labelledby={'dh-' + a.id}>
+          <p id={'dh-' + a.id} className="type-app-title-3">Quem aparece como dono hoje?</p>
+          <div className="jr-opts">
+            {[...E.map(pid => nm(p, pid)), 'A equipe toda'].map(o => <RadioRow key={o} name={'dh-' + a.id} label={o} checked={!outra && d.titularAtualNome === o} disabled={dis} onChange={() => { setOutra(false); editDraft(a.id, { titularAtualNome: o }); }} />)}
+            <RadioRow name={'dh-' + a.id} label="Outra pessoa ou instituição" checked={outra} disabled={dis} onChange={() => { setOutra(true); editDraft(a.id, { titularAtualNome: '' }); }} />
+          </div>
+          {outra && <AuthField label="Quem?" placeholder="Nome da pessoa ou instituição" value={d.titularAtualNome || ''} onChange={setText('titularAtualNome')} disabled={dis} />}
+        </div>
+        <AuthField label="Qual é o documento ou o acordo? (opcional)" placeholder="Ex.: contrato, edital, e-mail combinado" value={d.titularAtualBase || ''} onChange={setText('titularAtualBase')} disabled={dis} />
       </div>
     );
   } else {

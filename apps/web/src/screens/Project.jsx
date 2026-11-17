@@ -6,7 +6,8 @@ import { approved, mem, clone, propOf, elig, lastV } from '@mip/domain';
 import { get, post } from '../api.js';
 import { useSession } from '../session.jsx';
 import { AppFrame } from '../components/journey/Shell.jsx';
-import { Painel, ProjectHeader } from './project/Painel.jsx';
+import { Fases, Painel, ProjectHeader } from './project/Painel.jsx';
+import { Panel } from '../components/journey/Shell.jsx';
 import { Andamento } from './project/Andamento.jsx';
 import { SetupCriacoes, SetupEquipe, SetupRevisar, SetupSobre } from './project/Setup.jsx';
 import { Banner, BusyCtx, useToast } from '../components/ui.jsx';
@@ -109,7 +110,7 @@ export default function Project() {
     });
   }, [queue]);
 
-  if (loadErr) return <AppFrame><div className="jr-pjframe"><Banner k="bad" action={<AppButton kind="small" onClick={() => nav('/inicio')}>Voltar ao início</AppButton>}>{loadErr.message}</Banner></div></AppFrame>;
+  if (loadErr && !p) return <AppFrame><div className="jr-pjframe"><Banner k="bad" action={<AppButton kind="small" onClick={() => nav('/inicio')}>Voltar ao início</AppButton>}>{loadErr.message}</Banner></div></AppFrame>;
   if (!p) return <AppFrame><div className="jr-pjframe" /></AppFrame>;
 
   const m = mem(p, me), org = p.org === me;
@@ -145,7 +146,7 @@ export default function Project() {
   const Screen = screens[tab] || Painel;
   return (
     <Ctx.Provider value={value}><BusyCtx.Provider value={busy}>
-      <AppFrame><div className="jr-pjframe"><ProjectHeader /><Screen /></div></AppFrame>
+      <AppFrame><div className="jr-pjframe"><ProjectHeader />{loadErr ? <div className="jr-pj"><Fases /><Banner k="bad" title="Não foi possível carregar o painel" action={<AppButton kind="small" onClick={load}>Tentar de novo</AppButton>}>Verifique sua conexão e tente de novo.</Banner><Panel><h2 className="type-v2-heading-h3">Não conseguimos mostrar esta parte agora</h2><p className="jr-sec type-app-small">Suas respostas continuam salvas. Tente de novo em instantes.</p></Panel></div> : <Screen />}</div></AppFrame>
     </BusyCtx.Provider></Ctx.Provider>
   );
 }

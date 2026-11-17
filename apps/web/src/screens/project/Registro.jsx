@@ -2,7 +2,7 @@
    O texto e o código (hash) vêm das cópias geradas por @mip/domain e pela API, como antes. */
 import { useEffect } from 'react';
 import { QS, elig, fmtAns, lastV, memorialText, nm, pctTxt } from '@mip/domain';
-import { AppButton } from '../../components/ds/index.js';
+import { AppButton, Chip } from '../../components/ds/index.js';
 import { Panel } from '../../components/journey/Shell.jsx';
 import { Banner, copyText } from '../../components/ui.jsx';
 import { Satisfaction, markSeen } from '../../components/Feedback.jsx';
@@ -10,7 +10,6 @@ import { useProject } from '../Project.jsx';
 import { Fases } from './Painel.jsx';
 import checkOk from '../../assets/icons/check-ok.svg';
 
-const plural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
 const lista = xs => (xs.length > 1 ? xs.slice(0, -1).join(', ') + ' e ' + xs.at(-1) : xs[0] || '');
 /* Código curto no formato MIP-XXXX-XXXX-XXXX, a partir do hash da cópia. */
 const codigo = h => 'MIP-' + (String(h || '').replace(/[^0-9a-f]/gi, '').slice(0, 12).toUpperCase().match(/.{1,4}/g) || []).join('-');
@@ -65,11 +64,14 @@ export function Registro() {
             <h3 className="type-app-title-3">Guardar este acordo</h3>
             {m ? (
               <>
-                <AppButton className="jr-block" onClick={() => window.print()}>Baixar PDF</AppButton>
-                <AppButton kind="secondary" className="jr-block" disabled>Enviar por e-mail à equipe</AppButton>
                 <AppButton kind="secondary" className="jr-block" onClick={() => copiar(memorialText(m))}>Copiar texto</AppButton>
                 <AppButton kind="secondary" className="jr-block" onClick={() => act('genmem')}>Gerar nova cópia</AppButton>
-                <p className="jr-muted type-app-small">{plural(p.memorials.length, 'cópia gerada', 'cópias geradas')} neste projeto.</p>
+                <p className="jr-muted type-app-small">Cópias geradas: {p.memorials.length}</p>
+                <AppButton className="jr-block" onClick={() => window.print()}>Imprimir ou salvar em PDF</AppButton>
+                <p className="jr-muted type-app-small">Abre a impressão do navegador. Escolha “Salvar como PDF”.</p>
+                <AppButton kind="secondary" className="jr-block" disabled>Enviar por e-mail à equipe</AppButton>
+                <div><Chip tone="warn">Pendente de back-end</Chip></div>
+                <p className="jr-muted type-app-small">O envio por e-mail ainda não está disponível.</p>
               </>
             ) : <AppButton className="jr-block" onClick={() => act('genmem')}>Gerar registro do acordo</AppButton>}
           </Panel>

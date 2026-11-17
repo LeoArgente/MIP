@@ -1,16 +1,15 @@
 /* Confirmação da equipe (Figma C13): quem já confirmou a proposta, e a proposta para ler, confirmar ou recusar.
    As regras (quem pode confirmar, recusar e editar) vêm de @mip/domain e da API, como antes. */
 import { useState } from 'react';
-import { QS, ansOf, approved, elig, fmt, fmtAns, lastV, nm, pctTxt, partTxt } from '@mip/domain';
-import { AppButton, AuthField, Avatar, Chip } from '../../components/ds/index.js';
-import { Panel, PanelHead } from '../../components/journey/Shell.jsx';
+import { QS, ansOf, approved, elig, fmt, fmtAns, isP, lastV, nm, pctTxt } from '@mip/domain';
+import { AppButton, AuthField, Avatar, Chip, RadioRow } from '../../components/ds/index.js';
+import { Panel, PanelHead, TextButton } from '../../components/journey/Shell.jsx';
 import { Banner } from '../../components/ui.jsx';
 import { useProject } from '../Project.jsx';
 import { Fases } from './Painel.jsx';
 import { keyOf, ptsOf, votesOf } from './pontos.js';
 import checkBox from '../../assets/icons/checkbox-check.svg';
 
-const plural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
 export const confirmedBy = (p, lv) => elig(p).filter(x => lv.conf[x]?.v === 'ok');
 /* Editar durante a confirmação: só pede confirmação da edição quando alguém já confirmou. */
 function editNote(p, lv, me) {
@@ -20,9 +19,9 @@ function editNote(p, lv, me) {
   return s.charAt(0).toUpperCase() + s.slice(1) + ' já ' + (ns.length > 1 ? 'confirmaram' : 'confirmou') + '. Se você editar, quem já confirmou precisa confirmar de novo.';
 }
 
-/* Uma versão da proposta: criação por criação, com o que mudou desde a anterior. */
+/* Uma versão da proposta: os pontos que divergiam, com o que mudou desde a anterior. */
 function Versao({ v, curr }) {
-  const { p } = useProject(), E = elig(p), pv = curr && p.versions.find(x => x.n === v.n - 1);
+  const { p } = useProject(), E = elig(p), pv = curr && p.versions.find(x => x.n === v.n - 1), as = approved(p);
   const chg = (aid, q) => {
     if (!pv) return false;
     const a = pv.snap[aid], b = v.snap[aid];
@@ -32,33 +31,28 @@ function Versao({ v, curr }) {
     if (q === 'externo') return (a.externo || '') !== (b.externo || '');
     return fmtAns(p, q, a.v[q]) !== fmtAns(p, q, b.v[q]);
   };
-  const Mk = ({ x }) => (x ? <Chip tone="warn">mudou</Chip> : null);
-  const Row = ({ k, children }) => <div className="jr-ans"><span className="jr-ans-k type-app-caption">{k}</span><span className="type-app-small jr-grow">{children}</span></div>;
-  const nChg = pv ? Object.keys(v.snap).reduce((t, aid) => t + (chg(aid, 'semAcordo') ? 1 : v.snap[aid].qs.filter(q => chg(aid, q)).length + (chg(aid, 'pct') ? 1 : 0) + (chg(aid, 'externo') ? 1 : 0)), 0) : 0;
+  const Item = ({ k, children, mudou }) => <div className="jr-ver-item"><div className="jr-person-text jr-grow"><span className="jr-muted type-app-small">{k}</span><span className="type-app-body">{children}</span></div>{mudou && <Chip tone="warn">mudou</Chip>}</div>;
+  const ok = E.filter(x => v.conf[x]?.v === 'ok').length;
   return (
     <Panel>
-      <PanelHead title={'Proposta ' + v.n} chip={<span className="jr-row jr-row--start">{curr ? <Chip tone="accent">Atual</Chip> : <Chip>Anterior</Chip>}<span className="jr-muted type-app-caption">{fmt(v.at)}</span></span>} />
-      {pv && <p className="jr-muted type-app-small">{nChg ? plural(nChg, 'ponto mudou', 'pontos mudaram') + ' desde a proposta ' + pv.n + '.' : 'Nada mudou desde a proposta ' + pv.n + '.'}</p>}
-      {Object.entries(v.snap).map(([aid, s]) => (
-        <div key={aid} className="jr-prop-group">
-          <div className="jr-row jr-row--start"><h3 className="type-app-title-3">{s.name}</h3><Chip>{s.cat}</Chip></div>
-          {s.semAcordo ? <Row k="Situação">Ainda sem acordo <Mk x={chg(aid, 'semAcordo')} /></Row> : (
-            <>
-              {s.part && <Row k="Participação percebida">{partTxt(p, s.part)}</Row>}
-              {s.qs.map(q => <Row key={q} k={QS[q].short}>{fmtAns(p, q, s.v[q])} <Mk x={chg(aid, q)} /></Row>)}
-              {s.externo && <Row k="Titular pretendido fora da equipe">{s.externo} <Mk x={chg(aid, 'externo')} /></Row>}
-              <Row k="Percentuais acordados">{pctTxt(p, s)} <Mk x={chg(aid, 'pct')} /></Row>
-            </>
-          )}
-          {s.texto && <p className="jr-muted type-app-small">{s.texto}</p>}
-        </div>
-      ))}
-      {!curr && (
-        <>
-          {E.map(pid => { const c = v.conf[pid]; return <Row key={pid} k={nm(p, pid)}>{c ? (c.v === 'ok' ? 'Confirmou' : 'Recusou: ' + c.comment) + ' · ' + fmt(c.at) : 'Pendente'}</Row>; })}
-          <p className="jr-muted type-app-small">Versão anterior, disponível apenas para consulta.</p>
-        </>
-      )}
+      <PanelHead title={'Proposta ' + v.n} chip={curr ? <Chip tone="ok">Atual</Chip> : <Chip>Anterior</Chip>} />
+      <p className="jr-muted type-app-small">Enviada {fmt(v.at)}{!curr && ' · ' + ok + ' de ' + E.length + ' confirmaram'}</p>
+      {Object.entries(v.snap).map(([aid, s]) => {
+        const a = as.find(x => x.id === aid), pts = a ? ptsOf(p, a) : s.qs;
+        return (
+          <div key={aid} className="jr-prop-group">
+            {s.semAcordo ? <Item k={s.name + ' · situação'} mudou={chg(aid, 'semAcordo')}>Ainda sem acordo</Item> : (
+              <>
+                {pts.map(q => <Item key={q} k={QS[q].short + ' · ' + s.name} mudou={chg(aid, q)}>{fmtAns(p, q, s.v[q])}</Item>)}
+                {s.externo && <Item k={'Titular pretendido fora da equipe · ' + s.name} mudou={chg(aid, 'externo')}>{s.externo}</Item>}
+                <Item k={'Percentuais acordados · ' + s.name} mudou={chg(aid, 'pct')}>{pctTxt(p, s)}</Item>
+              </>
+            )}
+            {s.texto && <p className="jr-muted type-app-small">{s.texto}</p>}
+          </div>
+        );
+      })}
+      {!curr && E.map(pid => { const c = v.conf[pid]; return <p key={pid} className="jr-muted type-app-small">{nm(p, pid)}: {c ? (c.v === 'ok' ? 'Confirmou' : 'Recusou: ' + c.comment) + ' · ' + fmt(c.at) : 'Pendente'}</p>; })}
     </Panel>
   );
 }
@@ -110,35 +104,12 @@ export function Confirmacao() {
         })}
       </Panel>
 
+      <header className="jr-head"><h2 className="type-app-title">Proposta {lv.n} · {fim ? 'confirmada' : 'aguardando a equipe'}</h2><p className="jr-sub type-v2-body">Você está lendo a versão atual. O que mudou desde a anterior aparece marcado.</p></header>
       <Versao v={lv} curr />
 
       {can && (
         <Panel strong>
-          {ui.flag.refusing ? (
-            <>
-              <PanelHead title={'Recusar a proposta ' + lv.n} />
-              <p className="type-app-title-3" id="rfa">O que precisa mudar?</p>
-              <p className="jr-muted type-app-small">Marque as criações. Elas voltam para {nm(p, p.org)} revisar.</p>
-              <div className="jr-opts" role="group" aria-labelledby="rfa">
-                {Object.entries(lv.snap).map(([aid, s]) => { const on = ra.includes(aid); return (
-                  <label key={aid} className={'jr-optrow' + (on ? ' is-on' : '')}>
-                    <input type="checkbox" className="sr" checked={on} onChange={() => setRa(on ? ra.filter(x => x !== aid) : [...ra, aid])} />
-                    <span className="jr-box20" aria-hidden="true">{on && <img src={checkBox} alt="" width="12" height="12" />}</span>
-                    <span className="type-app-body jr-grow">{s.name}</span>
-                  </label>
-                ); })}
-              </div>
-              {err.refa && <p className="jr-err type-app-small" role="alert">{err.refa}</p>}
-              <label htmlFor="rf" className="type-app-title-3">Por quê?</label>
-              <textarea id="rf" className="jr-area type-app-small" value={why} onChange={e => setWhy(e.target.value)} placeholder="Ex.: Acho que a divisão do Backend deveria seguir a contribuição" autoFocus />
-              {err.refuse && <p className="jr-err type-app-small" role="alert">{err.refuse}</p>}
-              <p className="jr-muted type-app-small">A equipe vê seu nome e o motivo. A proposta volta para ajuste e todos confirmam a nova versão.</p>
-              <div className="jr-modal-actions">
-                <AppButton kind="secondary" onClick={() => { setUi({ flag: {} }); setRa([]); setWhy(''); setErr({}); }}>Cancelar</AppButton>
-                <AppButton kind="danger" onClick={() => act('refuse', { n: lv.n, assets: ra, comment: why })}>Enviar recusa</AppButton>
-              </div>
-            </>
-          ) : ui.flag.edit && org ? (
+          {ui.flag.edit && org ? (
             <>
               <PanelHead title="Editar proposta" />
               <p className="jr-muted type-app-small">{editNote(p, lv, me)}</p>
@@ -156,6 +127,39 @@ export function Confirmacao() {
           )}
         </Panel>
       )}
+      {can && ui.flag.refusing && (
+        <div className="jr-overlay" onClick={() => { setUi({ flag: {} }); setRa([]); setWhy(''); setErr({}); }}>
+          <div className="jr-modal" role="dialog" aria-modal="true" aria-labelledby="rf-t" onClick={e => e.stopPropagation()}>
+            <div className="jr-modal-text">
+              <h2 id="rf-t" className="type-app-title-2">Recusar a proposta {lv.n}</h2>
+              <p className="type-v2-body">Escolha as criações que você não aceita e conte o motivo. A equipe é avisada e {nm(p, p.org)} revisa.</p>
+            </div>
+            <div className="jr-qblock">
+              <p className="type-app-title-3" id="rfa">Quais criações você recusa?</p>
+              <div className="jr-opts" role="group" aria-labelledby="rfa">
+                {Object.entries(lv.snap).map(([aid, sn]) => { const on = ra.includes(aid); return (
+                  <label key={aid} className={'jr-optrow' + (on ? ' is-on' : '')}>
+                    <input type="checkbox" className="sr" checked={on} onChange={() => setRa(on ? ra.filter(x => x !== aid) : [...ra, aid])} />
+                    <span className="jr-box20" aria-hidden="true">{on && <img src={checkBox} alt="" width="12" height="12" />}</span>
+                    <span className="type-app-body jr-grow">{sn.name}</span>
+                  </label>
+                ); })}
+              </div>
+              {err.refa && <p className="jr-err type-app-small" role="alert">{err.refa}</p>}
+            </div>
+            <div className="jr-qblock">
+              <label htmlFor="rf" className="type-app-title-3">Motivo (obrigatório)</label>
+              <p className="jr-muted type-app-small">Conte em uma ou duas frases por que você recusa.</p>
+              <textarea id="rf" className="jr-area type-app-small" value={why} onChange={e => setWhy(e.target.value)} placeholder="Ex.: não combinamos esse percentual." autoFocus />
+              {err.refuse && <p className="jr-err type-app-small" role="alert">{err.refuse}</p>}
+            </div>
+            <div className="jr-modal-actions">
+              <AppButton kind="secondary" onClick={() => { setUi({ flag: {} }); setRa([]); setWhy(''); setErr({}); }}>Cancelar</AppButton>
+              <AppButton kind="danger" onClick={() => act('refuse', { n: lv.n, assets: ra, comment: why })}>Recusar selecionadas</AppButton>
+            </div>
+          </div>
+        </div>
+      )}
       {org && p.phase === 'confirmacao' && !can && (ui.flag.edit ? (
         <Panel strong><PanelHead title="Editar proposta" /><p className="jr-muted type-app-small">{editNote(p, lv, me)}</p><div className="jr-modal-actions"><AppButton kind="secondary" onClick={() => setUi({ flag: {} })}>Cancelar</AppButton><AppButton onClick={() => act('editok')}>Editar proposta</AppButton></div></Panel>
       ) : <div><AppButton kind="secondary" onClick={startEdit}>Editar proposta</AppButton></div>)}
@@ -170,12 +174,16 @@ export function Confirmacao() {
   );
 }
 
-/* D7 e D8: a pessoa convidada lê a proposta, confirma ou pede ajuste (a API confirma ou recusa a proposta inteira). */
+/* D7 e D8: a pessoa convidada lê a proposta, marca o que concorda e confirma ou recusa uma criação.
+   A API confirma ou recusa a proposta inteira; as marcas por ponto ficam só neste navegador. */
 export function ConfirmarProposta() {
   const { p, me, act, err, setErr } = useProject(), lv = lastV(p), as = approved(p);
+  const arm = `mip.conf.${p.id}.${me}.${lv.n}`;
+  const [oks, setOks] = useState(() => { try { return JSON.parse(localStorage.getItem(arm) || '[]'); } catch { return []; } });
+  const marcar = n => { setOks(n); try { localStorage.setItem(arm, JSON.stringify(n)); } catch { /* sem armazenamento */ } };
   const [aj, setAj] = useState(null), [why, setWhy] = useState('');
-  const pts = as.flatMap(a => ptsOf(p, a).map(q => ({ a, q })));
-  const N = pts.length, txt = N === 1 ? 'o ponto' : 'os ' + N + ' pontos';
+  const pts = as.flatMap(a => ptsOf(p, a).map(q => ({ a, q, k: a.id + q })));
+  const N = pts.length, primeira = pts.find(x => !oks.includes(x.k));
   const fechar = () => { setAj(null); setWhy(''); setErr({}); };
   return (
     <div className="jr-confirm">
@@ -185,33 +193,44 @@ export function ConfirmarProposta() {
           <h1 className="jr-title jr-title--q type-app-title">Confira o que a equipe propôs</h1>
           <p className="jr-sub type-v2-body">{N ? `Estes são ${N === 1 ? 'o ponto' : 'os ' + N + ' pontos'} em que as respostas divergiam. Confirme se concorda ou peça um ajuste. Nada vira acordo até todos confirmarem.` : 'Confirme se a proposta representa o que a equipe combinou. Se algo precisar mudar, recuse e diga o quê.'}</p>
         </header>
-        {pts.map(({ a, q }) => {
-          const s = lv.snap[a.id], v = votesOf(p, a, q), mine = ansOf(p, me, a.id)?.sent?.[q], g = v.list.find(x => x.key === keyOf(q, s?.v?.[q]));
+        {N > 0 && <p className="type-app-small jr-sec">{oks.filter(k => pts.some(x => x.k === k)).length} de {N} pontos confirmados por você</p>}
+        {pts.map(({ a, q, k }) => {
+          const s = lv.snap[a.id], v = votesOf(p, a, q), mine = ansOf(p, me, a.id)?.sent?.[q], g = v.list.find(x => x.key === keyOf(q, s?.v?.[q])), feito = oks.includes(k);
+          const diff = mine !== undefined && keyOf(q, mine) !== keyOf(q, s?.v?.[q]);
           return (
-            <Panel key={a.id + q}>
-              <div className="jr-row"><span className="jr-muted type-app-small">{QS[q].short} · {a.name}</span></div>
+            <Panel key={k} strong={primeira?.k === k}>
+              <div className="jr-row"><span className="jr-muted type-app-small">{QS[q].short} · {a.name}</span>{feito ? <Chip tone="ok">Você confirmou</Chip> : <Chip tone="warn">Aguardando você</Chip>}</div>
               <p className="type-app-title-2">{s?.semAcordo ? 'Sem acordo' : fmtAns(p, q, s?.v?.[q])}</p>
-              <p className="jr-sec type-app-small">{mine !== undefined && 'Você votou: ' + fmtAns(p, q, mine) + ' · '}{g ? g.who.length : 0} de {v.n} escolheram esta</p>
-              <div><AppButton kind="secondary" onClick={() => { setAj({ a, q }); setErr({}); }}>Pedir ajuste</AppButton></div>
+              <p className="jr-sec type-app-small">{diff ? (isP(q) ? 'Você votou: ' + fmtAns(p, q, mine) : 'Você votou diferente') + ' · ' : ''}{g ? g.who.length : 0} de {v.n} escolheram esta</p>
+              {feito
+                ? <div><TextButton onClick={() => marcar(oks.filter(x => x !== k))}>Mudar minha resposta (até todos confirmarem)</TextButton></div>
+                : <div className="jr-row jr-row--start"><AppButton onClick={() => marcar([...oks, k])}>Concordo</AppButton><AppButton kind="secondary" onClick={() => { setAj(a.id); setErr({}); }}>Pedir ajuste</AppButton></div>}
             </Panel>
           );
         })}
-        <div className="jr-bar"><span className="jr-muted type-app-small">Pode voltar depois: o que você confirmou fica salvo.</span><AppButton onClick={() => act('conf', { n: lv.n })}>{N ? 'Confirmar ' + txt : 'Confirmar proposta'}</AppButton></div>
+        <div className="jr-bar">
+          <span className="jr-muted type-app-small">Pode voltar depois: o que você confirmou fica salvo.</span>
+          <div className="jr-bar-right">
+            <AppButton kind="secondary" onClick={() => { setAj(as[0]?.id || null); setErr({}); }}>Recusar uma criação</AppButton>
+            <AppButton onClick={() => act('conf', { n: lv.n })}>Confirmar a proposta</AppButton>
+          </div>
+        </div>
         {err._ && <p className="jr-err type-app-small" role="alert">{err._}</p>}
       </div>
       {aj && (
         <div className="jr-overlay" onClick={fechar}>
           <div className="jr-modal" role="dialog" aria-modal="true" aria-labelledby="aj-t" onClick={e => e.stopPropagation()}>
             <div className="jr-modal-text">
-              <p className="jr-eyebrow type-v2-eyebrow">Pedir ajuste · {QS[aj.q].short} ({aj.a.name})</p>
-              <h2 id="aj-t" className="type-app-title-2">O que você mudaria?</h2>
-              <p className="type-v2-body">A proposta atual é “{fmtAns(p, aj.q, lv.snap[aj.a.id]?.v?.[aj.q])}”. Explique em uma frase. A equipe será avisada.</p>
+              <p className="jr-eyebrow type-v2-eyebrow">Recusar criação</p>
+              <h2 id="aj-t" className="type-app-title-2">Qual criação você recusa?</h2>
+              <p className="type-v2-body">Escolha a criação e conte o motivo. A equipe é avisada e pode editar a proposta.</p>
             </div>
-            <AuthField label="Sua explicação (opcional)" placeholder="Ex.: prefiro que fique sem venda até lançarmos" value={why} onChange={e => setWhy(e.target.value)} autoFocus />
+            <div className="jr-opts" role="radiogroup" aria-labelledby="aj-t">{as.map(a => <RadioRow key={a.id} name="rc" label={a.name} checked={aj === a.id} onChange={() => setAj(a.id)} />)}</div>
+            <AuthField label="Motivo (obrigatório)" placeholder="Conte em uma frase por que você recusa" value={why} onChange={e => setWhy(e.target.value)} />
             {(err.refuse || err.refa) && <p className="jr-err type-app-small" role="alert">{err.refuse || err.refa}</p>}
             <div className="jr-modal-actions">
               <AppButton kind="secondary" onClick={fechar}>Cancelar</AppButton>
-              <AppButton onClick={() => act('refuse', { n: lv.n, assets: [aj.a.id], comment: why })}>Enviar pedido de ajuste</AppButton>
+              <AppButton kind="danger" onClick={() => act('refuse', { n: lv.n, assets: [aj], comment: why })}>Recusar criação</AppButton>
             </div>
           </div>
         </div>

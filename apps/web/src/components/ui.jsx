@@ -1,8 +1,15 @@
 /* Peças de interface usadas em todas as telas. */
 import { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { TriangleAlert } from 'lucide-react';
 
 export const Chip = ({ children, k }) => <span className={'chip ' + (k || '')}>{children}</span>;
-export const Banner = ({ children, k, action }) => <div className={'banner ' + (k || '')} role={k === 'bad' ? 'alert' : undefined}><span>{children}</span>{action}</div>;
+export const Banner = ({ children, k, action, title }) => (
+  <div className={'banner ' + (k || '')} role={k === 'bad' ? 'alert' : undefined}>
+    {(k === 'warn' || k === 'bad') && <TriangleAlert className="banner-icon" size={16} strokeWidth={1.5} aria-hidden="true" />}
+    <span className="banner-text">{title && <b>{title}</b>}<span>{children}</span></span>
+    {action}
+  </div>
+);
 export const Err = ({ msg }) => (msg ? <div className="err" role="alert">{msg}</div> : null);
 export const initials = n => (n || '?').trim().split(/\s+/).slice(0, 2).map(x => x[0]).join('').toUpperCase();
 /* Quem escolheu uma opção: até 3 iniciais, a contagem e, ao passar o mouse ou focar, a lista de nomes.

@@ -378,3 +378,20 @@ p.jr-code { cursor: text; }
 .jr-event .jr-person-text, .jr-prop-item .jr-person-text { overflow-wrap: anywhere; }
 .jr-pjframe > *, .jr-pjhead, .jr-pj { min-width: 0; }
 @media (max-width: 1023px) { .jr-activity { width: 100%; max-width: 100%; box-sizing: border-box; } }
+
+/* ===== Avisos (Figma: estados aviso e erro) e estado vazio ===== */
+div.banner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-md); padding: var(--spacing-md) var(--spacing-lg); border: 1px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-surface); color: var(--color-text-primary); }
+div.banner.warn { border-color: var(--color-status-warn); background: var(--color-status-warn-bg); }
+div.banner.bad { border-color: var(--color-status-bad); background: var(--color-status-bad-bg); }
+div.banner .banner-icon { flex: none; }
+div.banner.warn .banner-icon { color: var(--color-status-warn); }
+div.banner.bad .banner-icon { color: var(--color-status-bad); }
+div.banner .banner-text { display: flex; flex: 1 1 0; flex-direction: column; gap: 2px; min-width: 0; font-size: var(--type-app-small-size); line-height: var(--type-app-small-line); }
+div.banner .banner-text b { font-weight: 600; }
+div.banner .banner-text > span { color: var(--color-text-secondary); }
+.jr-empty { align-items: center; gap: var(--spacing-md); padding: var(--spacing-3xl) var(--spacing-lg); text-align: center; }
+.jr-empty h2, .jr-empty p { margin: 0; }
+.jr-faltas { display: flex; flex-direction: column; gap: var(--spacing-sm); padding: 12px var(--spacing-md); border: 1px solid var(--color-border-default); border-radius: var(--radius-md); /* figma */ }
+.jr-ver-item { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); padding: 12px 0; } .jr-ver-item .jr-person-text { gap: var(--spacing-sm); }
+.jr-pct { display: flex; align-items: center; gap: var(--spacing-sm); color: var(--color-text-secondary); } .jr-pct input { width: 80px; text-align: right; }
+.jr-danger { color: var(--color-status-bad); text-transform: uppercase; }

@@ -1,6 +1,8 @@
 /* Painel do projeto (Figma C6): cabeçalho, abas, trilha de fases, próximo passo, equipe e atividade.
    As regras (próxima tarefa, quem respondeu, histórico) vêm de @mip/domain, como antes. */
 import { approved, ansOf, elig, fmt, nm, perfilDone, phaseName, propOf, qsFor, taskFor, secInfo } from '@mip/domain';
+import { Users } from 'lucide-react';
+import { Banner } from '../../components/ui.jsx';
 import { AppButton, Avatar, Chip } from '../../components/ds/index.js';
 import { Panel, PanelHead, TextButton } from '../../components/journey/Shell.jsx';
 import { Satisfaction } from '../../components/Feedback.jsx';
@@ -20,9 +22,10 @@ export const TABS = [['proj', 'Resumo'], ['equipe', 'Equipe'], ['ativos', 'Cria�
 const ABA_DE = { sobre: 'ativos', coleta: 'resp', conf: 'decidir' };
 
 /* Etiqueta de situação ao lado do nome do projeto. */
-function situacao(p, me, org) {
+function situacao(p, me, org, tab) {
   const as = approved(p), E = elig(p), minhaVez = !org && E.includes(me) && as.length && !as.every(a => ansOf(p, me, a.id)?.sent);
   if (p.phase === 'coleta' && p.setupStep === 'resp' && minhaVez) return ['warn', 'Sua vez'];
+  if (p.phase === 'coleta' && p.setupStep === 'resp' && tab === 'coleta' && org && E.some(x => as.some(a => !ansOf(p, x, a.id)?.sent))) return ['warn', 'Faltam respostas'];
   if (p.phase === 'coleta' && p.setupStep === 'resp') return as.length && E.length && E.every(x => as.every(a => ansOf(p, x, a.id)?.sent)) ? ['ok', 'Todos responderam'] : ['warn', phaseName(p)];
   if (p.phase === 'decisao' || p.phase === 'encerrada') return as.length && as.every(a => propOf(p, a.id).saved) ? ['accent', 'Proposta pronta'] : ['warn', 'Para conversar'];
   if (p.phase === 'confirmacao') return ['warn', 'Aguardando confirmações'];
@@ -31,7 +34,7 @@ function situacao(p, me, org) {
 }
 
 export function ProjectHeader() {
-  const { p, me, org, tab, go } = useProject(), [tone, fase] = situacao(p, me, org);
+  const { p, me, org, tab, go } = useProject(), [tone, fase] = situacao(p, me, org, tab);
   const ativa = ABA_DE[tab] || tab;
   const people = p.members.filter(m => m.status !== 'pendente');
   const on = k => (k === 'proj' ? true : secInfo(p, me, k === 'ativos' ? 'ativos' : k).on);
@@ -89,6 +92,7 @@ function ProximoPasso() {
   const feitas = as.filter(a => ansOf(p, me, a.id)?.sent).length;
   const start = () => { if (t.tab === 'resp') { const nx = as.find(a => !ansOf(p, me, a.id)?.sent); if (nx) setUi({ qasset: nx.id, qstep: ansOf(p, me, nx.id)?.step || 0 }); } go(t.tab); };
   const tip = TIPS[t.tab];
+  if (org && t.tab === 'resp') { t.label = 'Responda as perguntas sobre ' + (as.length === 1 ? 'a criação' : 'as ' + as.length + ' criações'); t.note = 'Leva cerca de 10 minutos e você pode parar e continuar depois. Suas respostas só aparecem para a equipe quando você encerrar a coleta.'; }
   const vez = !org && p.phase === 'coleta' && p.setupStep === 'resp' && elig(p).includes(me) && as.length > 0 && feitas < as.length && t.tab === 'resp';
   if (vez) {
     return (
@@ -185,12 +189,28 @@ function Responder() {
   );
 }
 
+/* Convite que ainda não foi aberto: quem organiza pode lembrar a pessoa. */
+function AvisoConvite() {
+  const { p, org, act } = useProject(), pend = p.members.find(m => m.status === 'pendente');
+  if (!org || !pend || p.phase !== 'coleta') return null;
+  const nome = p.people[pend.pid]?.name || 'A pessoa convidada', primeiro = nome.split(' ')[0];
+  return <Banner k="warn" title={nome + ' ainda não abriu o convite'} action={<AppButton kind="small" onClick={() => act('remind', { pid: pend.pid }, `/api/projects/${p.id}/remind`)}>Lembrar {primeiro}</AppButton>}>Lembre-o para a coleta não ficar parada.</Banner>;
+}
+
 export function Painel() {
-  const { p, me, org } = useProject(), convidada = !org && p.phase === 'coleta' && p.setupStep === 'resp' && elig(p).includes(me);
+  const { p, me, org, go } = useProject(), convidada = !org && p.phase === 'coleta' && p.setupStep === 'resp' && elig(p).includes(me);
   return (
     <div className="jr-pj">
       <Fases />
-      <ProximoPasso />
+      <AvisoConvite />
+      {!approved(p).length && org && p.members.filter(m => m.status !== 'pendente').length <= 1 ? (
+        <Panel className="jr-empty">
+          <Users size={24} strokeWidth={1.5} aria-hidden="true" />
+          <h2 className="type-v2-heading-h3">Seu projeto ainda não tem equipe nem criações</h2>
+          <p className="jr-sec type-app-small">Comece convidando as pessoas e cadastrando o que vocês criaram.</p>
+          <AppButton onClick={() => go('equipe')}>Convidar pessoas</AppButton>
+        </Panel>
+      ) : <ProximoPasso />}
       {p.phase === 'coleta' && p.setupStep === 'resp' && <Dicas id="painel" passos={DICAS_PAINEL} />}
       {p.phase === 'consolidado' && <Satisfaction projectId={p.id} where="hub" />}
       {convidada ? (
