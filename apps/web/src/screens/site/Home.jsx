@@ -102,6 +102,17 @@ export default function Home() {
         </div>
       </Section>
 
+      <Section className="site-only-mobile">
+        <div className="site-moment">
+          <SectionHead eyebrow="Nosso momento atual" title="Uma solução em desenvolvimento, baseada em necessidades reais." lead="Em uma pesquisa exploratória com 34 participantes, 25 relataram não ter acordos, contar apenas com acordos verbais ou não ter chegado a uma definição. Agora, estamos testando a usabilidade do protótipo e avaliando aspectos jurídicos da proposta." />
+          <div className="site-moment-nums">
+            {[['34', 'participantes na pesquisa'], ['25', 'sem acordo definido'], ['4', 'entrevistas exploratórias']].map(([n, l]) => (
+              <div key={l} className="site-moment-num"><p className="type-site-stat-28">{n}</p><p className="site-muted type-v2-site-small-14">{l}</p></div>
+            ))}
+          </div>
+        </div>
+      </Section>
+
       <Section className="site-section--last">
         <div className="site-cta">
           <img className="site-cta-bg" src={chamada} alt="" width="1264" height="848" loading="lazy" decoding="async" />

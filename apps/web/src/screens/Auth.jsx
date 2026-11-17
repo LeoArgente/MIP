@@ -81,7 +81,7 @@ export default function Auth({ mode }) {
       </section>
 
       <section className="auth-panel">
-        <div className="auth-top"><Link to="/" className="auth-back type-v2-body-small">← Voltar ao site</Link></div>
+        <div className="auth-top"><Link to="/" aria-label="MIP, página inicial" className="auth-top-logo"><Logo /></Link><Link to="/" className="auth-back type-v2-body-small">← Voltar ao site</Link></div>
 
         <div className="auth-form-wrap">
           {!config.loaded ? null : config.failed ? (

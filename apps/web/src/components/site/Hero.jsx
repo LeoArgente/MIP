@@ -24,7 +24,7 @@ export default function Hero() {
       <div className="hero-shade" aria-hidden="true" />
       <div className="hero-fade" aria-hidden="true" />
       <div className="hero-content">
-        <h1 className="hero-title type-v2-display-hero">Grandes ideias são<br />construídas em equipe.<br />A clareza também.</h1>
+        <h1 className="hero-title type-v2-display-hero">Grandes ideias são<br className="hero-br" /> construídas em equipe.<br className="hero-br" /> A clareza também.</h1>
         <p className="hero-lead type-site-lead-20">Organize hoje o que sua equipe está criando para avançar com mais segurança nas decisões de amanhã.</p>
         <p className="hero-body type-site-hero-body-16">Em um projeto colaborativo, contribuições, expectativas e decisões nem sempre estão tão claras quanto parecem. A MIP ajuda sua equipe a reunir essas informações, reconhecer diferentes entendimentos e identificar o que ainda precisa ser combinado.</p>
       </div>

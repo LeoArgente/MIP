@@ -1,7 +1,7 @@
 /* Base global: reset, fundo preto, texto, foco visível e movimento reduzido.
    Todos os valores vêm dos design tokens (@mip/tokens). */
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: var(--space-16); }
+html { scrollbar-color: var(--color-border-default) var(--color-bg-page); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: var(--space-16); }
 body {
   margin: 0; background: var(--color-bg-page); color: var(--color-text-primary);
   font-family: var(--font-base); font-size: var(--type-v2-site-body-16-size); line-height: var(--type-v2-site-body-16-line); font-weight: var(--type-v2-site-body-16-weight);
