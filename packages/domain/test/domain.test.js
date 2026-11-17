@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { itemStatus, partOf, taskFor, propDefault, propError, sendErrors, memorialBody, snapshot, approved, PCT_SIM, dsteps, decPts } from '../src/index.js';
+import { itemStatus, partOf, taskFor, propDefault, propError, sendErrors, memorialBody, snapshot, approved, PCT_SIM, dsteps, decPts } from '@mip/domain';
 
 /* Cenário do protótipo: Ana organiza, Bruno e Carla participam. */
 function demo() {
