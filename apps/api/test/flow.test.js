@@ -2,6 +2,7 @@
    Precisa do servidor rodando com DEV_LOGIN=1 e do cenário de demonstração (npm run db:seed). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { QS } from '@mip/domain';
 
 const BASE = process.env.API || 'http://localhost:3001';
 function client() {
@@ -83,7 +84,7 @@ test('jornada completa com privacidade, decisão, recusa e confirmação', async
   /* Ana decide as duas criações e envia. */
   for (const a of [logo, back]) {
     const pa = (await ana.c.get('/api/projects/' + pid)).data, pr = pa.proposal[a.id];
-    const v = {}; for (const q of Object.keys(pr.v)) if (!pr.v[q] || (Array.isArray(pr.v[q]) && !pr.v[q].length)) v[q] = q === 'titular' ? [ana.u.id] : (q === 'divisao' ? 'Não se aplica a esta criação' : 'Não sei');
+    const v = {}; for (const q of Object.keys(pr.v)) if (!pr.v[q] || (Array.isArray(pr.v[q]) && !pr.v[q].length)) v[q] = q === 'titular' ? [ana.u.id] : (q === 'divisao' ? 'Não se aplica a esta criação' : (QS[q].opts.includes('Não sei') ? 'Não sei' : QS[q].opts[0]));
     await act(ana.c, pid, 'propdraft', { aid: a.id, prop: { v } });
     r = await act(ana.c, pid, 'saveprop', { aid: a.id });
     assert.equal(r.status, 200, JSON.stringify(r.data));
@@ -166,4 +167,152 @@ test('sobre o projeto, sobre você e privacidade do perfil', async () => {
   assert.equal(par.perfil.funcao, undefined, 'função escondida durante as respostas');
   assert.equal(par.perfil.feito, true);
   assert.equal(vOrg.sobre.editalQual, 'Regulamento');
+});
+
+/* Fronteira de entrada: draft e propdraft conferem o formato de cada valor e recusam (400, erro por campo)
+   em vez de gravar o que veio. */
+async function projetoSozinho(nome) {
+  const at = String.fromCharCode(64), org = client(), tag = Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+  await org.post('/api/auth/test-login', { name: 'Org Formato', email: 'org.formato.' + tag + at + 'teste.local' });
+  const { data: { id } } = await org.post('/api/projects', { person: 'Org Formato', name: nome });
+  await act(org, id, 'setupnext');
+  await act(org, id, 'addasset', { type: 'codigo', name: 'App' });
+  await act(org, id, 'setupnext');
+  await act(org, id, 'sobre', { sobre: { contas: 'Domínio com a Org', acordo: 'Nenhum', edital: 'Não' } });
+  assert.equal((await act(org, id, 'setupassets')).status, 200);
+  const v = (await org.get('/api/projects/' + id)).data;
+  return { org, id, aid: v.assets[0].id, me: v.org };
+}
+const respostaCompleta = me => ({ notas: { [me]: 10 }, origem: 'Criada neste projeto', titularAtual: 'Não sei', titular: [me], divisao: 'Ainda não, precisamos negociar', uso: 'Só quem for dono', materiais: 'Só o que a própria pessoa fez', comercial: 'Sim', portfolio: 'Todos que criaram', licenca: 'Não publicar por enquanto', desc: 'Fiz o app', link: '' });
+
+test('draft recusa valor em formato errado e não grava nada', async () => {
+  const { org, id, aid, me } = await projetoSozinho('Formato Draft');
+  const meu = async () => (await org.get('/api/projects/' + id)).data.answers[me]?.[aid];
+
+  /* Criação ainda sem resposta: o rascunho errado não cria nem a entrada. */
+  let r = await act(org, id, 'draft', { aid, draft: { titular: me, desc: 'não pode entrar' } });
+  assert.equal(r.status, 400, JSON.stringify(r.data));
+  assert.ok(r.data.err[aid + ':titular'], 'erro no campo titular');
+  assert.equal(await meu(), undefined, 'nada gravado');
+
+  /* Com rascunho salvo: o errado não altera nenhum campo, nem os que vieram certos no mesmo corpo. */
+  assert.equal((await act(org, id, 'draft', { aid, draft: { titular: [me], desc: 'antes' } })).status, 200);
+  r = await act(org, id, 'draft', { aid, draft: { titular: 'Org Formato', desc: 'depois' } });
+  assert.equal(r.status, 400);
+  assert.ok(r.data.err[aid + ':titular']);
+  const d = (await meu()).draft;
+  assert.deepEqual(d.titular, [me]);
+  assert.equal(d.desc, 'antes');
+
+  /* Outros formatos errados: notas, opção fora da lista, texto que não é texto, rascunho que não é objeto. */
+  for (const [draft, campo] of [[{ notas: { [me]: 'muito' } }, 'notas'], [{ notas: [10] }, 'notas'], [{ origem: 'Inventei agora' }, 'origem'], [{ uso: ['Só quem for dono'] }, 'uso'], [{ desc: 42 }, 'desc'], [{ titular: [me, 7] }, 'titular']]) {
+    r = await act(org, id, 'draft', { aid, draft });
+    assert.equal(r.status, 400, JSON.stringify(draft));
+    assert.ok(r.data.err[aid + ':' + campo], JSON.stringify(draft));
+  }
+  assert.equal((await act(org, id, 'draft', { aid, draft: 'texto' })).status, 400);
+
+  /* O qsend seguinte responde como envio incompleto (400), não estoura (500). */
+  r = await act(org, id, 'qsend', { aid });
+  assert.equal(r.status, 400, JSON.stringify(r.data));
+});
+
+test('draft recusa texto acima do limite', async () => {
+  const { org, id, aid, me } = await projetoSozinho('Formato Limite');
+  assert.equal((await act(org, id, 'draft', { aid, draft: { desc: 'x'.repeat(2000) } })).status, 200, 'no limite passa');
+  for (const [campo, max] of [['desc', 2000], ['link', 2000], ['titularAtualNome', 200], ['titularAtualBase', 500], ['titularExterno', 200]]) {
+    const r = await act(org, id, 'draft', { aid, draft: { [campo]: 'x'.repeat(max + 1) } });
+    assert.equal(r.status, 400, campo);
+    assert.ok(r.data.err[aid + ':' + campo], campo);
+  }
+  assert.equal((await org.get('/api/projects/' + id)).data.answers[me][aid].draft.desc.length, 2000);
+});
+
+test('propdraft recusa formato errado e chave inesperada em v; draft e propdraft legítimos passam', async () => {
+  const { org, id, aid, me } = await projetoSozinho('Formato Proposta');
+
+  /* Draft legítimo, como a tela manda (o rascunho inteiro), e envio. */
+  let r = await act(org, id, 'draft', { aid, draft: respostaCompleta(me), step: 3 });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  assert.equal((await act(org, id, 'qsend', { aid })).status, 200);
+  assert.equal((await act(org, id, 'closeok')).status, 200);
+  const antes = (await org.get('/api/projects/' + id)).data.proposal[aid];
+
+  /* v em formato errado. */
+  for (const [prop, campo] of [[{ v: { titular: me } }, 'titular'], [{ v: { uso: 'Talvez' } }, 'uso'], [{ v: 'tudo' }, 'v'], [{ v: [] }, 'v'], [{ externo: 3 }, 'externo'], [{ texto: 'x'.repeat(2001) }, 'texto'], [{ percentual: { [me]: 'metade' } }, 'percentual'], [{ semAcordo: 'sim' }, 'semAcordo']]) {
+    r = await act(org, id, 'propdraft', { aid, prop });
+    assert.equal(r.status, 400, JSON.stringify(prop));
+    assert.ok(r.data.err['p' + aid + ':' + campo], JSON.stringify(prop) + ' ' + JSON.stringify(r.data));
+  }
+
+  /* Chave inesperada dentro de v: fora de decQs do tipo (notas, pergunta de outro tipo de criação, chave interna). */
+  for (const extra of [{ hack: 'x' }, { notas: { [me]: 10 } }, { marcaRegistro: 'Sim, com evidência' }, { saved: true }]) {
+    r = await act(org, id, 'propdraft', { aid, prop: { v: { uso: 'Qualquer pessoa que participou', ...extra } } });
+    assert.equal(r.status, 400, JSON.stringify(extra));
+    assert.ok(r.data.err['p' + aid + ':' + Object.keys(extra)[0]], JSON.stringify(extra));
+  }
+  assert.deepEqual((await org.get('/api/projects/' + id)).data.proposal[aid], antes, 'nada gravado na proposta');
+
+  /* Propdraft legítimo, no formato que a tela manda: v inteiro (com '' no que ainda não foi decidido),
+     percentual como texto do input numérico e semAcordo booleano. */
+  r = await act(org, id, 'propdraft', { aid, prop: { v: { ...antes.v, divisao: '' }, externo: '', percentual: { [me]: '100' }, texto: 'Falta conferir a licença.', semAcordo: false } });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  r = await act(org, id, 'propdraft', { aid, prop: { v: { divisao: 'Sim, a equipe combinou percentuais' } } });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  r = await act(org, id, 'saveprop', { aid });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  const pr = r.data.project.proposal[aid];
+  assert.equal(pr.v.divisao, 'Sim, a equipe combinou percentuais');
+  assert.equal(pr.texto, 'Falta conferir a licença.');
+  assert.equal(pr.v.hack, undefined);
+});
+
+async function projetoNovo(nome) {
+  const at = String.fromCharCode(64), org = client(), tag = Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+  await org.post('/api/auth/test-login', { name: 'Org Formato', email: 'org.formato.' + tag + at + 'teste.local' });
+  const { data: { id } } = await org.post('/api/projects', { person: 'Org Formato', name: nome });
+  return { org, id, ver: async () => (await org.get('/api/projects/' + id)).data };
+}
+
+test('sobre recusa opção fora da lista, valor que não é texto e texto acima do limite, sem converter', async () => {
+  const { org, id, ver } = await projetoNovo('Formato Sobre');
+  let r = await act(org, id, 'sobre', { sobre: { contas: 'Domínio com a Org', acordo: 'Verbal', edital: 'Sim', editalQual: 'Regulamento' } });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  const antes = (await ver()).sobre;
+  assert.deepEqual(antes, { contas: 'Domínio com a Org', acordo: 'Verbal', edital: 'Sim', editalQual: 'Regulamento' });
+
+  for (const [sobre, campo] of [[{ edital: 'Talvez' }, 'edital'], [{ acordo: ['Escrito'] }, 'acordo'], [{ acordo: null }, 'acordo'], [{ contas: 42 }, 'contas'], [{ contas: 'x'.repeat(501) }, 'contas'], [{ editalQual: 'x'.repeat(501) }, 'editalQual']]) {
+    r = await act(org, id, 'sobre', { sobre: { contas: 'não pode entrar', ...sobre } });
+    assert.equal(r.status, 400, JSON.stringify(sobre));
+    assert.ok(r.data.err['sobre:' + campo], JSON.stringify(sobre) + ' ' + JSON.stringify(r.data));
+  }
+  r = await act(org, id, 'sobre', { sobre: 'Sim' });
+  assert.equal(r.status, 400, 'sobre que não é objeto');
+  assert.deepEqual((await ver()).sobre, antes, 'nada gravado, nem os campos certos do mesmo corpo');
+
+  /* No limite passa e é gravado inteiro (sem corte). */
+  r = await act(org, id, 'sobre', { sobre: { contas: 'x'.repeat(500) } });
+  assert.equal(r.status, 200);
+  assert.equal((await ver()).sobre.contas.length, 500);
+});
+
+test('perfil recusa opção fora da lista, valor que não é texto e texto acima do limite, sem converter', async () => {
+  const { org, id, ver } = await projetoNovo('Formato Perfil');
+  const meu = async () => { const v = await ver(); return v.members.find(m => m.pid === v.org).perfil; };
+  let r = await act(org, id, 'perfil', { perfil: { funcao: 'Design', investiu: 'Não' } });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  assert.deepEqual(await meu(), { funcao: 'Design', investiu: 'Não' });
+
+  for (const [perfil, campo] of [[{ investiu: 'Talvez' }, 'investiu'], [{ investiu: ['Sim'] }, 'investiu'], [{ investiu: true }, 'investiu'], [{ funcao: ['Design'] }, 'funcao'], [{ funcao: 'x'.repeat(201) }, 'funcao']]) {
+    r = await act(org, id, 'perfil', { perfil: { funcao: 'não pode entrar', ...perfil } });
+    assert.equal(r.status, 400, JSON.stringify(perfil));
+    assert.ok(r.data.err['perfil:' + campo], JSON.stringify(perfil) + ' ' + JSON.stringify(r.data));
+  }
+  assert.equal((await act(org, id, 'perfil', { perfil: ['Design', 'Sim'] })).status, 400, 'perfil que não é objeto');
+  assert.deepEqual(await meu(), { funcao: 'Design', investiu: 'Não' }, 'nada gravado');
+
+  /* Como a tela manda: o próprio perfil reenviado, com chave extra ignorada; no limite passa sem corte. */
+  r = await act(org, id, 'perfil', { perfil: { funcao: 'x'.repeat(200), investiu: 'Sim', feito: true }, check: true });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  assert.deepEqual(await meu(), { funcao: 'x'.repeat(200), investiu: 'Sim' });
 });
