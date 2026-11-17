@@ -88,7 +88,7 @@
 .ds-menu-item { padding-bottom: var(--spacing-md); border-bottom: 1px solid var(--color-border-default); color: var(--color-text-primary); text-transform: uppercase; text-decoration: none; }
 
 @media (min-width: 1024px) {
-  .ds-header { padding: 37px var(--spacing-3xl) 0; /* figma */ }
+  .ds-header { padding: 37px var(--site-gutter, var(--spacing-3xl)) 0; /* figma */ }
   .ds-header-bar { padding: var(--spacing-md) 42px var(--spacing-md) 41px; /* figma */ }
   .ds-header .ds-logo { --logo-h: 50px; --logo-w: 180px; /* figma */ }
   .ds-header-nav { display: flex; flex: 0 1 743px; align-items: center; justify-content: space-between; gap: var(--spacing-md); /* figma */ }

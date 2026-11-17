@@ -3,10 +3,9 @@
 /* Base global em base.css. A fonte (Montserrat) é carregada em main.jsx. */
 
 /* ===== Legado: margem lateral do app antigo (sai quando as telas forem refeitas) ===== */
-body { padding-inline: max(var(--size-gutter), env(safe-area-inset-left, 0px)) max(var(--size-gutter), env(safe-area-inset-right, 0px)); }
 .muted { color: var(--color-muted); }
 
-.wrap { max-width: var(--size-page); margin: 0 auto; padding-block: var(--space-4) var(--space-12); }
+.wrap { width: min(var(--size-page), 100% - 2 * max(var(--size-gutter), env(safe-area-inset-left, 0px))); margin: 0 auto; padding-block: var(--space-4) var(--space-12); }
 
 /* ===== Texto ===== */
 .head { display: flex; flex-direction: column; gap: var(--space-2); }

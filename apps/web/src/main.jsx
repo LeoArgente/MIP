@@ -1,6 +1,6 @@
 import { StrictMode, Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import '@fontsource/montserrat/300.css';
 import '@fontsource/montserrat/400.css';
 import '@fontsource/montserrat/500.css';
@@ -9,11 +9,14 @@ import '@fontsource/montserrat/700.css';
 import '@mip/tokens/tokens.css';
 import './styles/base.css';
 import './styles/ds.css';
+import './styles/site.css';
 import './styles/app.css';
 import { SessionProvider, useSession } from './session.jsx';
 import { ToastProvider } from './components/ui.jsx';
 import { FeedbackProvider } from './components/Feedback.jsx';
-import Home from './screens/Home.jsx';
+import AppHome from './screens/Home.jsx';
+import SiteLayout from './components/site/SiteLayout.jsx';
+import SiteHome from './screens/site/Home.jsx';
 import Login from './screens/Login.jsx';
 import NewProject from './screens/NewProject.jsx';
 import Invite from './screens/Invite.jsx';
@@ -31,20 +34,26 @@ function Private({ children }) {
   return children;
 }
 
+/* Telas do app (ainda no visual antigo) dentro da coluna central. */
+const AppShell = () => <div className="wrap"><Outlet /></div>;
+
 function App() {
   return (
-    <div className="wrap">
-      <Routes>
-        <Route path="/" element={<Home />} />
+    <Routes>
+      <Route element={<SiteLayout />}>
+        <Route path="/" element={<SiteHome />} />
+      </Route>
+      {DesignSystem && <Route path="/_ds" element={<Suspense fallback={null}><DesignSystem /></Suspense>} />}
+      <Route element={<AppShell />}>
+        <Route path="/inicio" element={<AppHome />} />
         <Route path="/entrar" element={<Login />} />
         <Route path="/novo" element={<Private><NewProject /></Private>} />
         <Route path="/convite/:code" element={<Invite />} />
         <Route path="/p/:id/:tab?" element={<Private><Project /></Private>} />
-        {DesignSystem && <Route path="/_ds" element={<Suspense fallback={null}><DesignSystem /></Suspense>} />}
         <Route path="/admin" element={<Private><Admin /></Private>} />
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </div>
+      </Route>
+    </Routes>
   );
 }
 

@@ -16,7 +16,8 @@ const entries = obj => Object.entries(obj).filter(([k]) => !k.startsWith('$'));
 const styles = entries(t.font.style);
 const style = styles.map(([k, v]) => [
   `  --type-${k}-size: ${rem(v.size)};`,
-  `  --type-${k}-line: ${v.line};`,
+  /* O Figma arredonda a entrelinha para px inteiros (28 px × 1,3 = 36 px), então o CSS faz igual. */
+  `  --type-${k}-line: ${rem(Math.round(v.size * v.line))};`,
   `  --type-${k}-weight: ${v.weight};`,
   `  --type-${k}-tracking: ${+(v.tracking / 100).toFixed(4)}em;`
 ].join('\n')).join('\n');
