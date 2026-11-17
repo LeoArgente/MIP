@@ -1,0 +1,24 @@
+/* Base global: reset, fundo preto, texto, foco visível e movimento reduzido.
+   Todos os valores vêm dos design tokens (@mip/tokens). */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: var(--space-16); }
+body {
+  margin: 0; background: var(--color-bg-page); color: var(--color-text-primary);
+  font-family: var(--font-base); font-size: var(--type-v2-site-body-16-size); line-height: var(--type-v2-site-body-16-line); font-weight: var(--type-v2-site-body-16-weight);
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+}
+h1, h2, h3, h4, p, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+img, svg { display: block; max-width: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: inherit; }
+::selection { background: var(--color-text-primary); color: var(--color-bg-page); }
+
+/* Foco visível (o Figma não define um estado de foco): anel branco de 2 px, com respiro. */
+:focus-visible { outline: 2px solid var(--color-text-primary); outline-offset: 2px; }
+
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

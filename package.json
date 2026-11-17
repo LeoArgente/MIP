@@ -13,10 +13,16 @@
     "start": "npm run start -w @mip/api",
     "db:migrate": "npm run db:migrate -w @mip/api",
     "db:seed": "npm run db:seed -w @mip/api",
-    "test": "npm test -w @mip/domain"
+    "test": "npm test -w @mip/domain",
+    "lint": "eslint ."
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@eslint/js": "^9.39.5",
+    "concurrently": "^9.1.2",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0"
   },
   "engines": {
     "node": ">=20"

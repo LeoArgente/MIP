@@ -133,7 +133,7 @@ export function Hub() {
 
 /* ===== Equipe ===== */
 export function Equipe() {
-  const { p, me, org, act, err, say } = useProject();
+  const { p, org, act, err, say } = useProject();
   const [rm, setRm] = useState(null);
   const askRemove = async pid => { const r = await act('remove', { pid }, `/api/projects/${p.id}/remove`); if (r?.confirmRemove) setRm(r.confirmRemove); };
   const doRemove = async () => { const r = await act('remove', { pid: rm.pid, confirm: true }, `/api/projects/${p.id}/remove`); if (r) setRm(null); };
@@ -190,7 +190,7 @@ export function Equipe() {
 
 /* ===== Criações ===== */
 export function Criacoes() {
-  const { p, me, org, act, err, setErr, go } = useProject();
+  const { p, org, act, err, setErr, go } = useProject();
   const [f, setF] = useState({ type: '', name: '', desc: '', link: '' }), [open, setOpen] = useState(false), [confirmDel, setConfirmDel] = useState(null), [rec, setRec] = useState({ aid: null, reason: '' });
   const ty = TYPES.find(x => x.k === f.type), coleta = p.phase === 'coleta';
   const set = k => e => { setF({ ...f, [k]: e.target.value }); setErr({}); };

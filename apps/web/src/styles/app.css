@@ -1,23 +1,10 @@
 /* Estilos da MIP. Todos os valores vêm dos design tokens (@mip/tokens).
    Um bloco por componente; nada de sobrescrever regras de cima. */
-/* A fonte (Montserrat) é carregada no index.html, em paralelo com este arquivo. */
+/* Base global em base.css. A fonte (Montserrat) é carregada em main.jsx. */
 
-/* ===== Base ===== */
-*, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-padding-top: 64px; }
-body {
-  margin: 0; background: var(--color-bg); color: var(--color-ink);
-  font-family: var(--font-base); font-size: var(--text-body-size); line-height: 1.3; font-weight: var(--text-body-weight);
-  padding-inline: max(var(--size-gutter), env(safe-area-inset-left, 0px)) max(var(--size-gutter), env(safe-area-inset-right, 0px));
-}
-h1, h2, h3, p { margin: 0; }
-h1, h2, h3 { text-wrap: balance; }
-button, input, select, textarea { font: inherit; color: inherit; }
-a { color: inherit; }
-:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }
-.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* ===== Legado: margem lateral do app antigo (sai quando as telas forem refeitas) ===== */
+body { padding-inline: max(var(--size-gutter), env(safe-area-inset-left, 0px)) max(var(--size-gutter), env(safe-area-inset-right, 0px)); }
 .muted { color: var(--color-muted); }
-@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 
 .wrap { max-width: var(--size-page); margin: 0 auto; padding-block: var(--space-4) var(--space-12); }
 
