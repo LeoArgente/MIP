@@ -2,8 +2,9 @@
 import { approved, elig, nm, lastV, propOf, snapshot } from '@mip/domain';
 import { ActionError, deny, fail, now, needOrg, needPhase, ensureProp } from '../shared.js';
 import { log } from '../historico/index.js';
+import type { Acoes } from '../shared.js';
 
-export const ACTIONS = {
+export const ACTIONS: Acoes = {
   sendv(p, me) {
     needOrg(p, me); needPhase(p, 'decisao');
     const as = approved(p);
@@ -25,7 +26,8 @@ export const ACTIONS = {
 
   conf(p, me, d) {
     const lv = lastV(p);
-    if (!lv || +d.n !== lv.n || p.phase !== 'confirmacao') deny('Só é possível se posicionar sobre a versão atual.');
+    /* Garantido: sem n, +undefined é NaN e deny lança. */
+    if (!lv || +d.n! !== lv.n || p.phase !== 'confirmacao') deny('Só é possível se posicionar sobre a versão atual.');
     if (lv.conf[me]) deny('Você já se posicionou sobre esta versão.');
     if (!elig(p).includes(me)) deny('Você não respondeu desta vez e não confirma a proposta.');
     lv.conf[me] = { v: 'ok', comment: '', at: now() };
@@ -38,11 +40,12 @@ export const ACTIONS = {
 
   refuse(p, me, d) {
     const lv = lastV(p);
-    if (!lv || +d.n !== lv.n || p.phase !== 'confirmacao') deny('Só é possível se posicionar sobre a versão atual.');
+    /* Garantido: sem n, +undefined é NaN e deny lança. */
+    if (!lv || +d.n! !== lv.n || p.phase !== 'confirmacao') deny('Só é possível se posicionar sobre a versão atual.');
     if (lv.conf[me]) deny('Você já se posicionou sobre esta versão.');
     if (!elig(p).includes(me)) deny('Você não respondeu desta vez e não confirma a proposta.');
     if (p.org === me) deny('Quem organiza edita a proposta em vez de recusá-la.');
-    const ra = (d.assets || []).filter(x => lv.snap[x]), comment = (d.comment || '').trim(), err = {};
+    const ra = (d.assets || []).filter(x => lv.snap[x]), comment = (d.comment || '').trim(), err: Record<string, string> = {};
     if (!ra.length) err.refa = 'Marque pelo menos uma criação';
     if (!comment) err.refuse = 'Explique o que precisa mudar';
     if (Object.keys(err).length) throw new ActionError(err);

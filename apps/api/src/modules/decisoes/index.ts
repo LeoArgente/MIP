@@ -2,16 +2,21 @@
 import { approved, elig, propOf, propError } from '@mip/domain';
 import { deny, fail, now, needOrg, needPhase, assetOf, ensureProp } from '../shared.js';
 import { log } from '../historico/index.js';
+import type { Proposta } from '@mip/domain';
+import type { Acoes } from '../shared.js';
 
-const PROP_KEYS = ['v', 'externo', 'percentual', 'texto', 'semAcordo'];
+const PROP_KEYS: (keyof Proposta)[] = ['v', 'externo', 'percentual', 'texto', 'semAcordo'];
 
-export const ACTIONS = {
+export const ACTIONS: Acoes = {
   /* Quem organiza edita a proposta de uma criação (salvo sozinho). */
   propdraft(p, me, d) {
     needOrg(p, me); needPhase(p, 'decisao');
     assetOf(p, d.aid);
-    const pr = ensureProp(p, d.aid), patch = d.prop || {};
-    PROP_KEYS.forEach(k => { if (k in patch) pr[k] = k === 'v' ? { ...pr.v, ...patch.v } : patch[k]; });
+    /* Garantido: assetOf acima lança sem um aid de criação do projeto. */
+    const pr = ensureProp(p, d.aid!), patch = d.prop || {};
+    /* Sem garantia: o corpo não é conferido. As chaves de cima são filtradas (PROP_KEYS), mas os valores entram
+       como vieram e `v` aceita qualquer chave. Um titular que não seja lista quebra o .filter abaixo (500). */
+    PROP_KEYS.forEach(k => { if (k in patch) (pr as Record<keyof Proposta, unknown>)[k] = k === 'v' ? { ...pr.v, ...patch.v } : patch[k]; });
     if (pr.v.titular) pr.v.titular = pr.v.titular.filter(x => elig(p).includes(x));
     pr.saved = false;
     return { quiet: true };
@@ -32,7 +37,8 @@ export const ACTIONS = {
     assetOf(p, d.aid);
     const t = (d.text || '').trim();
     if (!t) fail('cmt', 'Escreva o comentário antes de enviar.');
-    p.comments.push({ aid: d.aid, pid: me, text: t.slice(0, 2000), at: now() });
+    /* Garantido: assetOf acima. */
+    p.comments.push({ aid: d.aid!, pid: me, text: t.slice(0, 2000), at: now() });
     return { toast: 'Comentário registrado. A proposta não foi alterada.' };
   }
 };

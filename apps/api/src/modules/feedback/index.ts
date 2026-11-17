@@ -1,16 +1,20 @@
 /* Feedback: botão "Feedback", nota de satisfação e a leitura em /admin (fase de testes). */
 import { rateLimited } from '../../auth.js';
+import type { Express } from 'express';
+import type { Prisma } from '@prisma/client';
+import type { Contexto, AuthedRequest } from '../../server.js';
+import type { Acoes } from '../shared.js';
 
-export const ACTIONS = {};
+export const ACTIONS: Acoes = {};
 
-export function routes(app, { prisma, wrap, auth, feedbackOn, isAdmin }) {
+export function routes(app: Express, { prisma, wrap, auth, feedbackOn, isAdmin }: Contexto) {
   /* ===== Feedback ===== */
-  const cut = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
+  const cut = (v: unknown, n: number) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
   app.post('/api/feedback', wrap(async (req, res) => {
     if (!feedbackOn) return res.status(404).json({ err: { _: 'Rota não encontrada.' } });
     if (rateLimited('fb:' + (req.user?.id || req.ip), 20)) return res.status(429).json({ err: { _: 'Muitos envios seguidos. Tente de novo daqui a alguns minutos.' } });
-    const b = req.body || {}, kind = b.kind === 'satisfacao' ? 'satisfacao' : 'texto';
-    const data = { kind, screen: cut(b.screen, 120) || 'Tela desconhecida', path: cut(b.path, 200) || '/', device: b.device === 'celular' ? 'celular' : 'computador', userId: req.user?.id || null, text: cut(b.text, 2000) || null, rating: null, projectId: null };
+    const b: Record<string, unknown> = req.body || {}, kind = b.kind === 'satisfacao' ? 'satisfacao' : 'texto';
+    const data: Prisma.FeedbackUncheckedCreateInput = { kind, screen: cut(b.screen, 120) || 'Tela desconhecida', path: cut(b.path, 200) || '/', device: b.device === 'celular' ? 'celular' : 'computador', userId: req.user?.id || null, text: cut(b.text, 2000) || null, rating: null, projectId: null };
     if (kind === 'satisfacao') {
       if (!req.user) return res.status(401).json({ err: { _: 'Entre na sua conta para continuar.' } });
       const r = Number(b.rating);
@@ -31,22 +35,24 @@ export function routes(app, { prisma, wrap, auth, feedbackOn, isAdmin }) {
     if (kind === 'texto' && !data.text && !images.length) return res.status(400).json({ err: { text: 'Escreva o que aconteceu ou anexe um print.' } });
     if (images.length) data.images = { create: images };
     /* Uma nota por pessoa e projeto: enviar de novo troca a anterior. */
-    if (kind === 'satisfacao') await prisma.feedback.deleteMany({ where: { kind, userId: req.user.id, projectId: data.projectId } });
+    /* Garantido: no ramo satisfacao, sem sessão já respondeu 401 acima (rota pública: req.user é opcional). */
+    if (kind === 'satisfacao') await prisma.feedback.deleteMany({ where: { kind, userId: req.user!.id, projectId: data.projectId } });
     await prisma.feedback.create({ data });
     res.json({ ok: true });
   }));
-  app.get('/api/feedback/satisfaction/:projectId', auth, wrap(async (req, res) => {
+  app.get('/api/feedback/satisfaction/:projectId', auth, wrap(async (req: AuthedRequest, res) => {
     const f = await prisma.feedback.findFirst({ where: { kind: 'satisfacao', userId: req.user.id, projectId: req.params.projectId }, select: { rating: true } });
     res.json({ rating: f?.rating || null });
   }));
-  app.get('/api/admin/feedback', auth, wrap(async (req, res) => {
+  app.get('/api/admin/feedback', auth, wrap(async (req: AuthedRequest, res) => {
     if (!isAdmin(req.user)) return res.status(403).json({ err: { _: 'Só a equipe da MIP vê esta página.' } });
     const rows = await prisma.feedback.findMany({ orderBy: { createdAt: 'desc' }, take: 500, include: { user: { select: { name: true, email: true } }, images: { select: { id: true } } } });
-    const ids = [...new Set(rows.map(r => r.projectId).filter(Boolean))];
+    /* Garantido: filter(Boolean) tira os null; o TS não estreita o tipo por Boolean. */
+    const ids = [...new Set(rows.map(r => r.projectId).filter(Boolean) as string[])];
     const names = Object.fromEntries((await prisma.project.findMany({ where: { id: { in: ids } }, select: { id: true, name: true } })).map(p => [p.id, p.name]));
     res.json(rows.map(r => ({ id: r.id, kind: r.kind, rating: r.rating, text: r.text, screen: r.screen, path: r.path, device: r.device, createdAt: r.createdAt, user: r.user, images: r.images.map(i => i.id), project: r.projectId ? { id: r.projectId, name: names[r.projectId] || null } : null })));
   }));
-  app.get('/api/admin/feedback/image/:id', auth, wrap(async (req, res) => {
+  app.get('/api/admin/feedback/image/:id', auth, wrap(async (req: AuthedRequest, res) => {
     if (!isAdmin(req.user)) return res.status(403).json({ err: { _: 'Só a equipe da MIP vê esta página.' } });
     const im = await prisma.feedbackImage.findUnique({ where: { id: req.params.id } });
     if (!im) return res.status(404).json({ err: { _: 'Imagem não encontrada.' } });
