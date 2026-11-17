@@ -395,3 +395,8 @@ div.banner .banner-text > span { color: var(--color-text-secondary); }
 .jr-ver-item { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); padding: 12px 0; } .jr-ver-item .jr-person-text { gap: var(--spacing-sm); }
 .jr-pct { display: flex; align-items: center; gap: var(--spacing-sm); color: var(--color-text-secondary); } .jr-pct input { width: 80px; text-align: right; }
 .jr-danger { color: var(--color-status-bad); text-transform: uppercase; }
+.jr-pend { display: flex; flex-direction: column; gap: var(--spacing-md); padding: var(--spacing-lg); border: 1px solid var(--color-status-warn); border-radius: var(--radius-lg); background: var(--color-status-warn-bg); }
+.jr-pend h2, .jr-pend p { margin: 0; }
+.jr-pend svg { color: var(--color-status-warn); flex: none; }
+.jr-upper { text-transform: uppercase; }
+@media (max-width: 1023px) { .jr-bar-right { flex-wrap: wrap; } .jr-confirm .jr-bar-right { flex-direction: column; align-items: stretch; width: 100%; } .jr-confirm .jr-bar-right .ds-app-btn { width: 100%; } }

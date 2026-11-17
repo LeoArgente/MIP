@@ -79,7 +79,7 @@ export default function Invite() {
 /* D1: criar conta pelo convite */
 export function ConviteConta() {
   const { code, info, err, setErr, join } = useConvite(), { config, setMe } = useSession();
-  const [name, setName] = useState(''), [email, setEmail] = useState(''), [show, setShow] = useState(false), [termos, setTermos] = useState(false);
+  const [name, setName] = useState(''), [email, setEmail] = useState(''), [termos, setTermos] = useState(false);
   const [busy, setBusy] = useState(false), [sent, setSent] = useState(null);
   const submit = async e => {
     e.preventDefault(); setErr({});
@@ -107,20 +107,18 @@ export function ConviteConta() {
             <header className="jr-head">
               <p className="jr-eyebrow type-v2-eyebrow">Seu acesso</p>
               <h1 className="jr-title jr-title--q type-app-title">Crie sua conta para entrar no {info?.name || 'projeto'}</h1>
-              <p className="jr-sub type-v2-body">Usamos o e-mail do convite para vincular você ao projeto.</p>
+              <p className="jr-sub type-v2-body">Informe seu nome e e-mail. Enviamos um link para você entrar, sem senha.</p>
             </header>
             <div className="jr-fields">
               <AuthField label="Seu nome" type="text" autoComplete="name" value={name} onChange={e => { setName(e.target.value); setErr({}); }} />
               {err.name && <p className="jr-err type-app-small" role="alert">{err.name}</p>}
-              <AuthField label="E-mail do convite" type="email" autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} placeholder="voce@exemplo.com" value={email} onChange={e => { setEmail(e.target.value); setErr({}); }} />
+              <AuthField label="Seu e-mail" type="email" autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} placeholder="voce@exemplo.com" value={email} onChange={e => { setEmail(e.target.value); setErr({}); }} />
               {err.email && <p className="jr-err type-app-small" role="alert">{err.email}</p>}
-              <AuthField label="Crie uma senha" type={show ? 'text' : 'password'} autoComplete="new-password" placeholder="Mínimo de 8 caracteres" action={show ? 'Ocultar' : 'Mostrar'} onAction={() => setShow(v => !v)} actionPressed={show} />
-              <p className="jr-muted type-app-caption">Use letras e números. Você pode mudar depois.</p>
               <Checkbox label="Li e aceito os termos de uso e a política de privacidade" checked={termos} onChange={e => { setTermos(e.target.checked); setErr({}); }} />
             </div>
             {err._ && <p className="jr-err type-app-small" role="alert">{err._}</p>}
-            <AppButton type="submit" className="jr-block" disabled={busy}>{busy ? 'Enviando…' : 'Criar conta e ver o convite'}</AppButton>
-            <p className="jr-center type-app-small">Ao criar a conta você entra direto no projeto. Sem etapas extras.</p>
+            <AppButton type="submit" className="jr-block" disabled={busy}>{busy ? 'Enviando…' : 'Enviar link de acesso'}</AppButton>
+            <p className="jr-center type-app-small">Sem senha: você entra pelo link enviado ao seu e-mail.</p>
           </form>
         )}
       </main>

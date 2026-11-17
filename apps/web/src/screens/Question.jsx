@@ -2,6 +2,7 @@
    As perguntas, as regras e a validação vêm de @mip/domain e ficam como antes. */
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { TriangleAlert } from 'lucide-react';
 import { PERFIL, perfilDone, mem, QS, GROUPS, GNAME, LV, approved, elig, nm, ansOf, isP, qsFor, hasNota, lvOf, notasOf, fmtAns, steps, stepOf, stepErrors } from '@mip/domain';
 import { AppButton, Avatar, AuthField, Logo, RadioRow } from '../components/ds/index.js';
 import { Panel, TextButton } from '../components/journey/Shell.jsx';
@@ -224,12 +225,30 @@ function Questions() {
         <Panel key={gk}>
           <div className="jr-row"><h2 className="type-app-title-3">{GNAME[gk]}</h2><TextButton onClick={() => goStep(S.indexOf(stepOf(ks[0])))}>{open ? 'Editar' : 'Ver'}</TextButton></div>
           {ks.map(k => row(k, k === 'desc' ? 'Sua contribuição' : QS[k].short, k === 'desc' ? (d.desc || 'Não descrita') : fmtAns(p, k, d[k])))}
-          {gk === 'contrib' && <>{row('tan', 'Titular indicado hoje', d.titularAtualNome || 'Não informado')}{row('tab', 'Base ou documento', d.titularAtualBase || 'Não informado')}</>}
           {gk === 'donos' && d.titularExterno && row('te', 'Titular pretendido fora da equipe', d.titularExterno)}
         </Panel>
       );
     };
-    body = <div className="jr-fields jr-fields--xl">{sec('contrib')}{sec('donos')}{sec('uso')}</div>;
+    const pend = [];
+    if (d.divisao && /negociar|Ainda não/.test(String(d.divisao))) pend.push('Percentuais ainda não combinados');
+    if (!d.titularAtualBase) pend.push('Documento ou acordo não informado');
+    if (d.marcaRegistro && /precisa|conflito/i.test(String(d.marcaRegistro))) pend.push('Conferência da marca não feita');
+    body = (
+      <div className="jr-fields jr-fields--xl">
+        {sec('contrib')}{sec('donos')}{sec('uso')}
+        <Panel>
+          <h2 className="type-app-title-3">Titular indicado hoje</h2>
+          <div className="jr-row"><div className="jr-person-text"><span className="jr-muted type-app-small">Quem aparece como dono</span><span className="type-app-body">{d.titularAtualNome || 'Não informado'}</span></div><TextButton className="jr-upper" onClick={() => goStep(S.indexOf('contrib'))}>{open ? 'Editar' : 'Ver'}</TextButton></div>
+          <div className="jr-row"><div className="jr-person-text"><span className="jr-muted type-app-small">Documento ou acordo</span><span className="type-app-body">{d.titularAtualBase || 'Não informado'}</span></div><TextButton className="jr-upper" onClick={() => goStep(S.indexOf('contrib'))}>{open ? 'Editar' : 'Ver'}</TextButton></div>
+        </Panel>
+        {pend.length > 0 && (
+          <section className="jr-pend" aria-labelledby="pend-t">
+            <h2 id="pend-t" className="type-app-title-3">Pendências</h2>
+            {pend.map(t => <p key={t} className="jr-row jr-row--start type-app-small"><TriangleAlert size={16} strokeWidth={1.5} aria-hidden="true" />{t}</p>)}
+          </section>
+        )}
+      </div>
+    );
   } else if (g === 'contrib') {
     const n = notasOf(d);
     eyebrow = `${a.name} · parte 1 de 3 · contribuição`; titleTxt = `Quanto cada pessoa fez em ${a.name}?`; sub = 'Inclua você. Não precisa ser exato: escolha o que mais se aproxima. É uma percepção, não um cálculo de propriedade.';
@@ -261,7 +280,7 @@ function Questions() {
             {err[a.id + ':link'] && <p className="jr-err type-app-small" role="alert">{err[a.id + ':link']}</p>}
           </div>
         )}
-        {block('origem')}{block('titularAtual')}
+        {block('origem')}
         <div className="jr-qblock" role="radiogroup" aria-labelledby={'dh-' + a.id}>
           <p id={'dh-' + a.id} className="type-app-title-3">Quem aparece como dono hoje?</p>
           <div className="jr-opts">
@@ -270,7 +289,8 @@ function Questions() {
           </div>
           {outra && <AuthField label="Quem?" placeholder="Nome da pessoa ou instituição" value={d.titularAtualNome || ''} onChange={setText('titularAtualNome')} disabled={dis} />}
         </div>
-        <AuthField label="Qual é o documento ou o acordo? (opcional)" placeholder="Ex.: contrato, edital, e-mail combinado" value={d.titularAtualBase || ''} onChange={setText('titularAtualBase')} disabled={dis} />
+        {block('titularAtual')}
+        {String(d.titularAtual || '').startsWith('Sim') && <AuthField label="Qual é o documento ou o acordo? (opcional)" placeholder="Ex.: contrato, edital, e-mail combinado" value={d.titularAtualBase || ''} onChange={setText('titularAtualBase')} disabled={dis} />}
       </div>
     );
   } else {

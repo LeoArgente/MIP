@@ -51,15 +51,17 @@ export function Equipe() {
       {org && <p className="jr-note type-app-small">Tirar das respostas remove as respostas da pessoa da comparação, sem tirá-la do projeto. Remover tira a pessoa do projeto.</p>}
       {org && (
         <Panel>
-          <PanelHead title="Link de convite" chip={<Chip tone={p.link.active ? 'ok' : 'neutral'}>{p.link.active ? 'Link ativo' : 'Link desativado'}</Chip>} />
+          <PanelHead title="Link de convite" />
+          {!p.link.active && <div><Chip tone="warn">Link desativado</Chip></div>}
           <p className="jr-muted type-app-small">Quem abrir o link entra no projeto como integrante.</p>
-          <p className="jr-code type-app-small" onClick={e => window.getSelection()?.selectAllChildren(e.currentTarget)}>{inviteMsg}</p>
           <div className="jr-row jr-row--start jr-wraprow">
-            <AppButton onClick={() => copyInvite(inviteUrl, 'Link')} disabled={!p.link.active}>Copiar link</AppButton>
+            <input className="jr-input type-app-small jr-grow" readOnly aria-label="Link de convite" value={inviteUrl} onClick={e => e.currentTarget.select()} />
+            <AppButton kind="secondary" onClick={() => copyInvite(inviteUrl, 'Link')} disabled={!p.link.active}>Copiar link</AppButton>
             <AppButton kind="secondary" onClick={() => copyInvite(inviteMsg, 'Convite')} disabled={!p.link.active}>Copiar convite</AppButton>
             {canShare && <AppButton kind="secondary" onClick={() => navigator.share({ text: inviteMsg }).catch(() => {})} disabled={!p.link.active}>Compartilhar</AppButton>}
-            <AppButton kind="secondary" onClick={() => act('toglink')}>{p.link.active ? 'Desativar link' : 'Ativar link'}</AppButton>
+            <AppButton kind={p.link.active ? 'secondary' : 'primary'} onClick={() => act('toglink')}>{p.link.active ? 'Desativar link' : 'Ativar link'}</AppButton>
           </div>
+          {!p.link.active && <p className="jr-muted type-app-small">Ninguém novo consegue entrar enquanto o link estiver desativado. Quem já entrou continua no projeto.</p>}
         </Panel>
       )}
     </div>
@@ -137,25 +139,40 @@ export function Criacoes() {
 
 /* ===== Sobre o projeto (quem organiza responde) ===== */
 export function Sobre() {
-  const { p, org, err, setErr, editSobre } = useProject(), s = p.sobre || {}, edit = org && p.phase === 'coleta';
+  const { p, org, go, err, setErr, editSobre, flush } = useProject(), s = p.sobre || {}, pode = org && p.phase === 'coleta';
+  const [edit, setEdit] = useState(false), [antes, setAntes] = useState(null);
+  const pend = sobreKeys(s).filter(k => s[k] === 'Não sei');
+  const abrir = () => { setAntes({ ...s }); setEdit(true); };
+  const cancelar = () => { if (antes) editSobre(antes); setEdit(false); setErr({}); };
+  const salvar = async () => { await flush(); setEdit(false); };
+  const Ler = ({ k, v }) => <div className="jr-person-text"><span className="jr-muted type-app-small">{k}</span><span className="type-app-body">{v || 'Não informado'}</span></div>;
   return (
     <div className="jr-pj">
-      <Titulo title="Sobre o projeto" sub={edit ? 'Três perguntas sobre o projeto como um todo. Elas ajudam a equipe a saber de onde está partindo.' : 'O que quem organiza informou sobre o projeto.'} />
-      {sobreKeys(s).map(k => {
-        const q = SOBRE[k], v = s[k] || '';
-        return (
-          <Panel key={k}>
-            <h3 className="type-app-title-3" id={'sb-' + k}>{q.label}</h3>
-            {q.hint && <p className="jr-muted type-app-small">{q.hint}</p>}
-            {!edit ? <p className="type-app-small">{v || <span className="jr-muted">Não informado</span>}</p>
-              : q.kind === 'text'
+      <div><TextButton onClick={() => go('proj')}>← Resumo</TextButton></div>
+      <Titulo title="Sobre o projeto" sub={edit ? 'Altere o que mudou. As respostas já enviadas continuam salvas.' : 'O que a equipe informou sobre o projeto.'} />
+      {!edit && pend.length > 0 && <Banner k="warn" title={'Falta ' + plural(pend.length, 'resposta', 'respostas') + ' em Sobre o projeto'} action={pode && <AppButton kind="small" onClick={abrir}>Editar informações</AppButton>}>{pend.length === 1 ? 'A pergunta sobre ' + SOBRE[pend[0]].short.toLowerCase() + ' ainda está como “Ainda não verifiquei”.' : 'Há perguntas ainda como “Ainda não verifiquei”.'}</Banner>}
+      {edit && err._ && <Banner k="bad" title="Não foi possível salvar as alterações" action={<AppButton kind="small" onClick={salvar}>Tentar de novo</AppButton>}>Suas alterações continuam na tela. Tente de novo.</Banner>}
+      <Panel>
+        <PanelHead title="Informações do projeto" />
+        <Ler k="Nome do projeto" v={p.name} />
+        {p.context && <Ler k="O que a equipe está criando" v={p.context} />}
+        {sobreKeys(s).map(k => {
+          const q = SOBRE[k], v = s[k] || '';
+          if (!edit) return <Ler key={k} k={q.label} v={v === 'Não sei' ? 'Ainda não verifiquei' : v} />;
+          return (
+            <div key={k} className="jr-qblock">
+              <p className="type-app-title-3" id={'sb-' + k}>{q.label}</p>
+              {q.hint && <p className="jr-muted type-app-small">{q.hint}</p>}
+              {q.kind === 'text'
                 ? <input className="jr-input type-app-small" aria-label={q.label} value={v} onChange={e => { setErr({}); editSobre({ [k]: e.target.value }); }} placeholder={q.ph} />
                 : <div className="jr-opts" role="radiogroup" aria-labelledby={'sb-' + k}>{q.opts.map(o => <RadioRow key={o} name={'sobre-' + k} label={o} checked={v === o} onChange={() => { setErr({}); editSobre({ [k]: o }); }} />)}</div>}
-            <Erro msg={err['sobre:' + k]} />
-          </Panel>
-        );
-      })}
-      {edit && <p className="jr-muted type-app-small">As respostas são salvas sozinhas.</p>}
+              <Erro msg={err['sobre:' + k]} />
+            </div>
+          );
+        })}
+        {pode && !edit && <div><AppButton kind="secondary" onClick={abrir}>Editar informações</AppButton></div>}
+        {edit && <div className="jr-modal-actions"><AppButton kind="secondary" onClick={cancelar}>Cancelar</AppButton><AppButton onClick={salvar}>Salvar alterações</AppButton></div>}
+      </Panel>
     </div>
   );
 }

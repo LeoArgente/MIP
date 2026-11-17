@@ -69,6 +69,27 @@ export function Confirmacao() {
   const lembrar = pid => act('remind', { pid }, `/api/projects/${p.id}/remind`);
   const fim = p.phase === 'consolidado';
 
+  if (org && p.phase === 'confirmacao' && ui.flag.edit) {
+    const nomes = ok.map(x => (x === me ? 'Você' : nm(p, x).split(' ')[0])), lista = nomes.length > 1 ? nomes.slice(0, -1).join(', ') + ' e ' + nomes.at(-1) : nomes[0];
+    const editar = async (a, q) => { const r = await act('editok'); if (r) setUi({ dq: a.id, dstep: Math.max(0, ptsOf(p, a).indexOf(q)), dedit: null, flag: {} }); };
+    return (
+      <div className="jr-pj">
+        <Fases />
+        {ok.length > 0 && <Banner k="warn" title={lista + ' já ' + (ok.length > 1 ? 'confirmaram' : 'confirmou') + ' a Proposta ' + lv.n}>Se você salvar uma nova versão, {ok.length > 1 ? 'as ' + ok.length + ' precisam' : 'essa pessoa precisa'} confirmar de novo.</Banner>}
+        <header className="jr-head"><h2 className="type-app-title">Editar proposta</h2><p className="jr-sub type-v2-body">Altere só o que a equipe precisa rever. A nova versão vira Proposta {lv.n + 1}.</p></header>
+        <Panel>
+          <PanelHead title="Pontos da proposta" />
+          {approved(p).flatMap(a => ptsOf(p, a).map(q => (
+            <div key={a.id + q} className="jr-ver-item">
+              <div className="jr-person-text jr-grow"><span className="jr-muted type-app-small">{QS[q].short} · {a.name}</span><span className="type-app-body">{lv.snap[a.id]?.semAcordo ? 'Sem acordo' : fmtAns(p, q, lv.snap[a.id]?.v?.[q])}</span></div>
+              <AppButton kind="small" onClick={() => editar(a, q)}>Editar</AppButton>
+            </div>
+          )))}
+        </Panel>
+        <div className="jr-modal-actions"><AppButton kind="secondary" onClick={() => setUi({ flag: {} })}>Cancelar</AppButton><AppButton onClick={() => act('editok')}>Salvar como Proposta {lv.n + 1}</AppButton></div>
+      </div>
+    );
+  }
   return (
     <div className="jr-pj">
       <Fases />
@@ -175,12 +196,10 @@ export function Confirmacao() {
 }
 
 /* D7 e D8: a pessoa convidada lê a proposta, marca o que concorda e confirma ou recusa uma criação.
-   A API confirma ou recusa a proposta inteira; as marcas por ponto ficam só neste navegador. */
+   A API confirma ou recusa a proposta inteira; as marcas por ponto ficam só nesta tela. */
 export function ConfirmarProposta() {
   const { p, me, act, err, setErr } = useProject(), lv = lastV(p), as = approved(p);
-  const arm = `mip.conf.${p.id}.${me}.${lv.n}`;
-  const [oks, setOks] = useState(() => { try { return JSON.parse(localStorage.getItem(arm) || '[]'); } catch { return []; } });
-  const marcar = n => { setOks(n); try { localStorage.setItem(arm, JSON.stringify(n)); } catch { /* sem armazenamento */ } };
+  const [oks, marcar] = useState([]);
   const [aj, setAj] = useState(null), [why, setWhy] = useState('');
   const pts = as.flatMap(a => ptsOf(p, a).map(q => ({ a, q, k: a.id + q })));
   const N = pts.length, primeira = pts.find(x => !oks.includes(x.k));
@@ -193,7 +212,8 @@ export function ConfirmarProposta() {
           <h1 className="jr-title jr-title--q type-app-title">Confira o que a equipe propôs</h1>
           <p className="jr-sub type-v2-body">{N ? `Estes são ${N === 1 ? 'o ponto' : 'os ' + N + ' pontos'} em que as respostas divergiam. Confirme se concorda ou peça um ajuste. Nada vira acordo até todos confirmarem.` : 'Confirme se a proposta representa o que a equipe combinou. Se algo precisar mudar, recuse e diga o quê.'}</p>
         </header>
-        {N > 0 && <p className="type-app-small jr-sec">{oks.filter(k => pts.some(x => x.k === k)).length} de {N} pontos confirmados por você</p>}
+        {N > 0 && <p className="type-app-small jr-sec">{oks.filter(k => pts.some(x => x.k === k)).length} de {N} pontos marcados por você (só neste aparelho)</p>}
+        {N > 0 && <p className="jr-note type-app-small">As marcas “Você confirmou” por ponto são locais: servem só para você acompanhar a leitura. O que vale é o botão “Confirmar a proposta”, que confirma tudo.</p>}
         {pts.map(({ a, q, k }) => {
           const s = lv.snap[a.id], v = votesOf(p, a, q), mine = ansOf(p, me, a.id)?.sent?.[q], g = v.list.find(x => x.key === keyOf(q, s?.v?.[q])), feito = oks.includes(k);
           const diff = mine !== undefined && keyOf(q, mine) !== keyOf(q, s?.v?.[q]);
@@ -209,7 +229,7 @@ export function ConfirmarProposta() {
           );
         })}
         <div className="jr-bar">
-          <span className="jr-muted type-app-small">Pode voltar depois: o que você confirmou fica salvo.</span>
+          <span className="jr-muted type-app-small">“Confirmar a proposta” confirma todos os pontos de uma vez. As marcas “Você confirmou” por ponto não ficam salvas.</span>
           <div className="jr-bar-right">
             <AppButton kind="secondary" onClick={() => { setAj(as[0]?.id || null); setErr({}); }}>Recusar uma criação</AppButton>
             <AppButton onClick={() => act('conf', { n: lv.n })}>Confirmar a proposta</AppButton>
