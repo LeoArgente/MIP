@@ -11,11 +11,13 @@ import './styles/base.css';
 import './styles/ds.css';
 import './styles/site.css';
 import './styles/auth.css';
+import './styles/journey.css';
+import './styles/tutorial.css';
 import './styles/app.css';
 import { SessionProvider, useSession } from './session.jsx';
 import { ToastProvider } from './components/ui.jsx';
 import { FeedbackProvider } from './components/Feedback.jsx';
-import AppHome from './screens/Home.jsx';
+import Start from './screens/Start.jsx';
 import SiteLayout from './components/site/SiteLayout.jsx';
 import SiteHome from './screens/site/Home.jsx';
 import Sobre from './screens/site/Sobre.jsx';
@@ -52,14 +54,14 @@ function App() {
         <Route path="/equipe" element={<Equipe />} />
         <Route path="/contato" element={<Contato />} />
       </Route>
+      <Route path="/inicio" element={<Private><Start /></Private>} />
+      <Route path="/novo" element={<Private><NewProject /></Private>} />
+      <Route path="/p/:id/:tab?" element={<Private><Project /></Private>} />
       <Route path="/entrar" element={<Auth mode="entrar" />} />
       <Route path="/criar-conta" element={<Auth mode="criar" />} />
       {DesignSystem && <Route path="/_ds" element={<Suspense fallback={null}><DesignSystem /></Suspense>} />}
       <Route element={<AppShell />}>
-        <Route path="/inicio" element={<AppHome />} />
-        <Route path="/novo" element={<Private><NewProject /></Private>} />
         <Route path="/convite/:code" element={<Invite />} />
-        <Route path="/p/:id/:tab?" element={<Private><Project /></Private>} />
         <Route path="/admin" element={<Private><Admin /></Private>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

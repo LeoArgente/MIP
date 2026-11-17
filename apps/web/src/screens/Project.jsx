@@ -5,7 +5,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { approved, mem, phaseName, clone, propOf } from '@mip/domain';
 import { get, post, patch } from '../api.js';
 import { useSession } from '../session.jsx';
-import Header from '../components/Header.jsx';
+import { AppFrame } from '../components/journey/Shell.jsx';
+import { Painel, ProjectHeader } from './project/Painel.jsx';
+import { SetupCriacoes, SetupEquipe, SetupRevisar, SetupSobre } from './project/Setup.jsx';
 import { Banner, Btn, BusyCtx, Chip, useToast } from '../components/ui.jsx';
 import { Hub, Equipe, Criacoes, Sobre, Respostas, Andamento, Decidir, Confirmacao, Memorial, Welcome, TIPS } from './ProjectScreens.jsx';
 import Question from './Question.jsx';
@@ -102,8 +104,8 @@ export default function Project() {
     });
   }, [queue]);
 
-  if (loadErr) return <div className="proj-wrap"><Header /><Banner k="bad" action={<Btn kind="sm" onClick={() => nav('/')}>Voltar ao início</Btn>}>{loadErr.message}</Banner></div>;
-  if (!p) return <div className="proj-wrap"><Header /></div>;
+  if (loadErr) return <AppFrame><div className="proj-wrap"><Banner k="bad" action={<Btn kind="sm" onClick={() => nav('/inicio')}>Voltar ao início</Btn>}>{loadErr.message}</Banner></div></AppFrame>;
+  if (!p) return <AppFrame><div className="proj-wrap" /></AppFrame>;
 
   const m = mem(p, me), org = p.org === me;
   /* Sobre o projeto e sobre você: salvos sozinhos, como os rascunhos. */
@@ -116,17 +118,20 @@ export default function Project() {
   const inDecide = tab === 'decidir' && p.phase === 'decisao' && org && approved(p).some(a => a.id === ui.dq);
   if (user.seenWelcome && (inQuestion || inDecide)) return <Ctx.Provider value={value}><BusyCtx.Provider value={busy}>{inQuestion ? <Question /> : <DecideFocus />}</BusyCtx.Provider></Ctx.Provider>;
 
-  if (!user.seenWelcome) return <div className="proj-wrap"><Header /><div className="hub"><header className="proj"><h1>{p.name}</h1><span>{org ? 'Você organiza' : 'Você participa'}</span></header><Welcome name={user.name} askName={!config.testLogin} onStart={async name => { await update({ name, seenWelcome: true }); load(); }} /></div></div>;
+  if (!user.seenWelcome) return <AppFrame><div className="proj-wrap"><div className="hub"><header className="proj"><h1>{p.name}</h1><span>{org ? 'Você organiza' : 'Você participa'}</span></header><Welcome name={user.name} askName={!config.testLogin} onStart={async name => { await update({ name, seenWelcome: true }); load(); }} /></div></div></AppFrame>;
 
-  const screens = { proj: Hub, equipe: Equipe, ativos: Criacoes, sobre: Sobre, resp: Respostas, coleta: Andamento, decidir: Decidir, conf: Confirmacao, memorial: Memorial };
+  /* Preparar o projeto: quem organiza vê o passo a passo do Figma (C2 a C5). */
+  const preparing = org && p.phase === 'coleta' && ['equipe', 'ativos', 'sobre'].includes(p.setupStep);
+  const SETUP = { equipe: SetupEquipe, ativos: SetupCriacoes, sobre: SetupSobre, revisar: SetupRevisar };
+  if (preparing && SETUP[tab]) {
+    const Step = SETUP[tab];
+    return <Ctx.Provider value={value}><BusyCtx.Provider value={busy}><AppFrame><Step /></AppFrame></BusyCtx.Provider></Ctx.Provider>;
+  }
+  const screens = { proj: Painel, equipe: Equipe, ativos: Criacoes, sobre: Sobre, resp: Respostas, coleta: Andamento, decidir: Decidir, conf: Confirmacao, memorial: Memorial };
   const Screen = screens[tab] || Hub;
   return (
     <Ctx.Provider value={value}><BusyCtx.Provider value={busy}>
-      <div className="proj-wrap">
-        {/* Uma barra só no alto: dentro de uma etapa, "< Nome do projeto" ocupa o lugar da marca. */}
-        <Header back={tab === 'proj' ? null : { label: p.name, onClick: () => go('proj') }} />
-        <Screen />
-      </div>
+      <AppFrame><div className="jr-pjframe"><ProjectHeader /><Screen /></div></AppFrame>
     </BusyCtx.Provider></Ctx.Provider>
   );
 }

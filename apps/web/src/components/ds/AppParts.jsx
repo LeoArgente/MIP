@@ -11,8 +11,9 @@ export function Chip({ tone = 'neutral', children }) {
 }
 
 /* Botão do app: primary (padrão), secondary, small ou danger. */
-export function AppButton({ kind = 'primary', to, className = '', children, ...rest }) {
+export function AppButton({ kind = 'primary', to, href, className = '', children, ...rest }) {
   const cls = `ds-app-btn type-app-button${kind === 'primary' ? '' : ` ds-app-btn--${kind}`} ${className}`;
+  if (href) return <a href={href} className={cls} {...rest}>{children}</a>;
   return to ? <Link to={to} className={cls} {...rest}>{children}</Link> : <button type="button" className={cls} {...rest}>{children}</button>;
 }
 

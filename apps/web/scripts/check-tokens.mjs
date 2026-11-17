@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const tokensCss = readFileSync(join(root, '../../packages/tokens/dist/tokens.css'), 'utf8');
-const appCss = ['base', 'ds', 'site', 'auth', 'app'].map(n => readFileSync(join(root, `src/styles/${n}.css`), 'utf8')).join('\n');
+const appCss = ['base', 'ds', 'site', 'auth', 'journey', 'tutorial', 'app'].map(n => readFileSync(join(root, `src/styles/${n}.css`), 'utf8')).join('\n');
 const rawLines = appCss.split('\n');
 /* Ilustrações desenhadas com texto (logotipo e ícones), que não são texto de leitura. */
 const FONT_OK = ['.intro-art', '.art-core', '.auth-icon'];
