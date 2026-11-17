@@ -1,20 +1,27 @@
 /* Verificação de mutação das regras de negócio.
-   Aplica um mutante por vez em src/index.js (inverte uma condição), roda a suíte inteira, anota se ela
-   falhou ("morto") ou passou ("SOBREVIVEU") e restaura o original. Um sobrevivente indica uma condição
-   que nenhum teste protege.
+   Aplica um mutante por vez em src/index.ts (inverte uma condição), recompila dist/ com tsc, roda a suíte
+   inteira contra o compilado, anota se ela falhou ("morto") ou passou ("SOBREVIVEU") e restaura o original
+   (recompilando no fim). Um sobrevivente indica uma condição que nenhum teste protege.
+   Um mutante pode não passar na checagem de tipos; isso não conta, porque o tsc emite mesmo assim e o que
+   se testa é o compilado.
 
    Rodar (a partir da raiz do repo):  node packages/domain/scripts/mutantes.mjs
    Sai com código 1 se algum mutante sobreviver ou se algum trecho não for encontrado exatamente uma vez. */
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, rmSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 const dir = dirname(dirname(fileURLToPath(import.meta.url)));
 const testDir = join(dir, 'test');
-const src = join(dir, 'src', 'index.js');
+const src = join(dir, 'src', 'index.ts');
+const compilado = join(dir, 'dist', 'index.js');
 const ORIG = readFileSync(src, 'utf8');
 const files = readdirSync(testDir).filter(f => f.endsWith('.test.js')).map(f => join('test', f));
+const tsc = join(dirname(createRequire(import.meta.url).resolve('typescript/package.json')), 'bin', 'tsc');
+/* Apaga o compilado antes, para nunca testar a saída do mutante anterior. */
+const compilar = () => { rmSync(compilado, { force: true }); spawnSync(process.execPath, [tsc, '-p', dir], { encoding: 'utf8' }); return existsSync(compilado); };
 
 const M = [
   // [função, trecho original, trecho mutado]
@@ -66,7 +73,7 @@ const M = [
   ['memorialBody (situação)', "(allOk ? 'confirmada por todos'", "(!allOk ? 'confirmada por todos'"],
   ['memorialBody (pendência percentuais)', "if (x.v.divisao === PCT_NEG)", "if (x.v.divisao !== PCT_NEG)"],
   ['memorialBody (respondido)', "if (r.respondido) {", "if (!r.respondido) {"],
-  ['memorialText', "m => m.body", "m => m.text"],
+  ['memorialText', "=> m.body", "=> m.text"],
   ['elig', "m.status === 'ativo' && m.elig", "m.status === 'ativo' && !m.elig"],
   ['approved', "a.st === 'ok'", "a.st !== 'ok'"],
   ['mem', "p.members.find(m => m.pid === pid)", "p.members.find(m => m.pid !== pid)"],
@@ -75,7 +82,7 @@ const M = [
   ['roleTxt', "(p.org === pid ? 'Quem organiza'", "(p.org !== pid ? 'Quem organiza'"],
   ['fmt', "timeZone: 'America/Sao_Paulo'", "timeZone: 'UTC'"],
   ['nm', "p.people && p.people[pid] ? p.people[pid].name : pid", "p.people && !p.people[pid] ? p.people[pid].name : pid"],
-  ['fmtAns', ": isP(q) ? ((v || [])", ": !isP(q) ? ((v || [])"],
+  ['fmtAns', ": isP(q) ? (", ": !isP(q) ? ("],
   ['lvOf (mais próximo)', "Math.abs(x[0] - n) < Math.abs(b[0] - n)", "Math.abs(x[0] - n) > Math.abs(b[0] - n)"],
   ['lvOf (empate)', "Math.abs(x[0] - n) < Math.abs(b[0] - n)", "Math.abs(x[0] - n) <= Math.abs(b[0] - n)"],
   ['lvName', "LV.find(x => x[0] === lvOf(+n))", "LV.find(x => x[0] !== lvOf(+n))"],
@@ -85,7 +92,7 @@ const M = [
   ['isP', "QS[q].kind === 'people'", "QS[q].kind !== 'people'"],
   ['clone', "(o === undefined ? undefined", "(o !== undefined ? undefined"],
   ['sobreKeys', "filter(k => !SOBRE[k].when || SOBRE[k].when(s || {}))", "filter(k => !(!SOBRE[k].when || SOBRE[k].when(s || {})))"],
-  ['GRP', "GRP = q => [", "GRP = q => !["]
+  ['GRP', "GRP = (q: CampoTela): string => [", "GRP = (q: CampoTela): string => !["]
 ];
 
 const out = [];
@@ -94,12 +101,14 @@ try {
     const n = ORIG.split(de).length - 1;
     if (n !== 1) { out.push(['ERRO', nome, `trecho aparece ${n} vezes`]); continue; }
     writeFileSync(src, ORIG.replace(de, para));
+    if (!compilar()) { out.push(['ERRO', nome, 'tsc não gerou dist/index.js']); continue; }
     const r = spawnSync(process.execPath, ['--test', ...files], { cwd: dir, encoding: 'utf8' });
     const falhas = (r.stdout.match(/^ℹ fail (\d+)/m) || [])[1];
     out.push([r.status === 0 ? 'SOBREVIVEU' : 'morto', nome, falhas ? falhas + ' teste(s) falharam' : 'erro ao carregar']);
   }
 } finally {
   writeFileSync(src, ORIG);
+  if (!compilar()) out.push(['ERRO', 'original', 'tsc não regerou dist/index.js']);
 }
 for (const [s, n, d] of out) console.log(s.padEnd(11), n.padEnd(48), d);
 const vivos = out.filter(x => x[0] !== 'morto').length;

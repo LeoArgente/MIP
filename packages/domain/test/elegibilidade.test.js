@@ -1,7 +1,7 @@
 /* Grupo 7 — Elegibilidade e acesso: elig, approved, mem, ansOf, validLink, roleTxt. */
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { elig, approved, mem, ansOf, validLink, roleTxt } from '../src/index.js';
+import { elig, approved, mem, ansOf, validLink, roleTxt } from '@mip/domain';
 import { projeto } from './fixtures.js';
 
 describe('elig', () => {

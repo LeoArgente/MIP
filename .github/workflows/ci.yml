@@ -59,6 +59,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # @mip/domain é TypeScript: a API importa o compilado em packages/domain/dist.
+      - run: npm run build -w @mip/domain
       # O Prisma Client precisa ser gerado a partir de apps/api/prisma/schema.prisma antes do seed e do servidor.
       - run: npm run db:generate -w @mip/api
       - run: npm run db:deploy -w @mip/api

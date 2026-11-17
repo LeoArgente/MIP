@@ -1,7 +1,7 @@
 /* Grupo 5 — Próxima tarefa e navegação: taskFor, secInfo, phaseName, stepOf, steps. */
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { taskFor, secInfo, phaseName, stepOf, steps } from '../src/index.js';
+import { taskFor, secInfo, phaseName, stepOf, steps } from '@mip/domain';
 import { projeto, responder, semResposta, addMembro, enviarVersao } from './fixtures.js';
 
 const coleta = (setupStep = 'resp') => { const p = projeto(); p.phase = 'coleta'; p.setupStep = setupStep; return p; };

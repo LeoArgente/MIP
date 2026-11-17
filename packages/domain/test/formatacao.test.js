@@ -2,7 +2,7 @@
    fmt, nm, fmtAns, lvOf, lvName, typeOf, qsFor, decQs, isP, clone, sobreKeys (e GRP). */
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fmt, nm, fmtAns, lvOf, lvName, typeOf, qsFor, decQs, isP, clone, sobreKeys, GRP, QS, QBASE } from '../src/index.js';
+import { fmt, nm, fmtAns, lvOf, lvName, typeOf, qsFor, decQs, isP, clone, sobreKeys, GRP, QS, QBASE } from '@mip/domain';
 import { projeto, T, T_TXT } from './fixtures.js';
 
 describe('fmt', () => {

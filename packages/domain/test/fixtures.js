@@ -1,7 +1,7 @@
 /* Cenário base dos testes por grupo (não é um arquivo de teste: não casa com *.test.js).
    Ana organiza, Bruno e Carla participam; todos responderam a criação a1 (uma marca) e TODOS
    concordam em tudo. Cada teste altera só o que precisa para o caso que descreve. */
-import { PCT_NEG, snapshot } from '../src/index.js';
+import { PCT_NEG, snapshot } from '@mip/domain';
 
 export const BASE = Object.freeze({
   origem: 'Criada neste projeto',

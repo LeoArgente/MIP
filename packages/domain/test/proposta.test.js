@@ -1,7 +1,7 @@
 /* Grupo 4 — Proposta e decisão: propDefault, propOf, dsteps, decPick, lastV. */
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { propDefault, propOf, dsteps, decPick, lastV, PCT_NEG } from '../src/index.js';
+import { propDefault, propOf, dsteps, decPick, lastV, PCT_NEG } from '@mip/domain';
 import { projeto, responder, semResposta, BASE } from './fixtures.js';
 
 const VAZIA = { origem: '', titularAtual: '', titular: [], divisao: '', uso: '', materiais: '', comercial: '', portfolio: '', marcaRegistro: '' };
