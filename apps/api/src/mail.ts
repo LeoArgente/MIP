@@ -1,10 +1,11 @@
 /* Envio de e-mail pela API da Resend (https://resend.com).
    Sem RESEND_API_KEY, o e-mail é só impresso no terminal (útil para desenvolver). */
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+/* Garantido: a regex só casa os cinco caracteres da tabela, então a busca nunca dá undefined. */
+const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
 
-export const mailMode = () => (process.env.RESEND_API_KEY ? 'resend' : 'console');
+export const mailMode = (): 'resend' | 'console' => (process.env.RESEND_API_KEY ? 'resend' : 'console');
 
-function html(text, link, linkLabel) {
+function html(text: string, link?: string, linkLabel?: string) {
   return `<div style="font-family:Montserrat,Arial,sans-serif;font-size:16px;line-height:1.5;color:#1d1d1f;max-width:520px">
 <p style="font-size:20px;font-weight:700;margin:0 0 16px">MIP</p>
 ${text.split('\n').map(l => `<p style="margin:0 0 12px">${esc(l)}</p>`).join('')}
@@ -13,7 +14,7 @@ ${link ? `<p style="margin:24px 0"><a href="${esc(link)}" style="background:#1d1
 </div>`;
 }
 
-export async function sendMail({ to, subject, text, link, linkLabel }) {
+export async function sendMail({ to, subject, text, link, linkLabel }: { to: string; subject: string; text: string; link?: string; linkLabel?: string }): Promise<{ sent: boolean; error?: string }> {
   const plain = text + (link ? '\n\n' + link : '');
   if (mailMode() === 'console') {
     console.log(`\n[e-mail não enviado: falta RESEND_API_KEY no .env]\nPara: ${to}\nAssunto: ${subject}\n${plain}\n`);
@@ -28,7 +29,8 @@ export async function sendMail({ to, subject, text, link, linkLabel }) {
     if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text()}`);
     return { sent: true };
   } catch (e) {
-    console.error('Falha ao enviar e-mail para', to, '-', e.message);
-    return { sent: false, error: e.message };
+    /* Garantido: fetch, r.text() e o throw acima lançam Error. */
+    console.error('Falha ao enviar e-mail para', to, '-', (e as Error).message);
+    return { sent: false, error: (e as Error).message };
   }
 }

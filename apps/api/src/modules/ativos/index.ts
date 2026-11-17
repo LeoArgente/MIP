@@ -3,20 +3,24 @@ import { randomUUID } from 'node:crypto';
 import { TYPES, sobreErrors, approved, nm, ansOf, validLink } from '@mip/domain';
 import { ActionError, fail, needOrg, needPhase, assetOf } from '../shared.js';
 import { log } from '../historico/index.js';
+import type { Pid, Ativo, StatusAtivo } from '@mip/domain';
+import type { ProjetoCompleto } from '../../store.js';
+import type { Acoes, DadosAcao } from '../shared.js';
 
-function newAsset(p, me, f, st) {
-  const ty = TYPES.find(x => x.k === f.type), err = {};
+function newAsset(p: ProjetoCompleto, me: Pid, f: DadosAcao, st: StatusAtivo) {
+  const ty = TYPES.find(x => x.k === f.type), err: Record<string, string> = {};
   if (!ty) err.ft = 'Escolha o tipo da criação';
   if (!(f.name || '').trim()) err.fn = 'Informe o nome da criação';
   if ((f.link || '').trim() && !validLink(f.link)) err.fl = 'Informe um link válido, começando com http';
   if (Object.keys(err).length) throw new ActionError(err);
-  const a = { id: randomUUID(), name: f.name.trim(), type: ty.k, cat: ty.n, desc: (f.desc || '').trim(), link: (f.link || '').trim(), st };
+  /* Garantido: sem tipo válido ou sem nome, o throw acima já saiu (o TS não liga `err` a `ty` e a `f.name`). */
+  const a: Ativo = { id: randomUUID(), name: f.name!.trim(), type: ty!.k, cat: ty!.n, desc: (f.desc || '').trim(), link: (f.link || '').trim(), st };
   if (st === 'sug') a.by = me;
   p.assets.push(a);
   return { a, ty };
 }
 
-export const ACTIONS = {
+export const ACTIONS: Acoes = {
   setupassets(p, me) {
     needOrg(p, me); needPhase(p, 'coleta');
     if (!approved(p).length) fail('_', 'Cadastre pelo menos 1 criação para liberar as perguntas.');
@@ -29,7 +33,8 @@ export const ACTIONS = {
     needOrg(p, me); needPhase(p, 'coleta');
     const { a, ty } = newAsset(p, me, d, 'ok');
     log(p, me, 'cadastrou a criação ' + a.name);
-    return { toast: ty.n + ' “' + a.name + '” cadastrado. Ele já entra nas perguntas de todos.' };
+    /* Garantido: newAsset só devolve com `ty` definido (senão lança). */
+    return { toast: ty!.n + ' “' + a.name + '” cadastrado. Ele já entra nas perguntas de todos.' };
   },
 
   sugasset(p, me, d) {

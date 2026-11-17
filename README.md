@@ -20,7 +20,7 @@ apps/web          Site em React (Vite)
 ```
 
 ### Privacidade
-Ninguém vê as respostas das outras pessoas enquanto elas estão abertas: durante as respostas, cada pessoa recebe só as suas e um marcador de "já enviou" das demais. Depois que quem organiza encerra as respostas, a equipe recebe as respostas de cada pergunta com o autor de cada uma (e a participação percebida média), para a tela de Decisões mostrar quem escolheu o quê (`apps/api/src/view.js`).
+Ninguém vê as respostas das outras pessoas enquanto elas estão abertas: durante as respostas, cada pessoa recebe só as suas e um marcador de "já enviou" das demais. Depois que quem organiza encerra as respostas, a equipe recebe as respostas de cada pergunta com o autor de cada uma (e a participação percebida média), para a tela de Decisões mostrar quem escolheu o quê (`apps/api/src/view.ts`).
 
 ### Entrar
 Sem senha: a pessoa digita o e-mail e recebe um link de acesso (vale 30 minutos, uma vez só). Os e-mails saem pela [Resend](https://resend.com). Sem a chave da Resend, o link aparece no terminal e, fora de produção, na própria tela de entrada.

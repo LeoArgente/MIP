@@ -2,20 +2,27 @@
 import { QS, approved, elig, sendErrors, clone } from '@mip/domain';
 import { ActionError, deny, fail, now, needOrg, needPhase, assetOf, ensureProp } from '../shared.js';
 import { log } from '../historico/index.js';
+import type { Pid, Aid } from '@mip/domain';
+import type { ProjetoCompleto, RespostaGravada } from '../../store.js';
+import type { Acoes } from '../shared.js';
 
-const ensureAns = (p, pid, aid) => { p.answers[pid] = p.answers[pid] || {}; return (p.answers[pid][aid] = p.answers[pid][aid] || { draft: { desc: '', link: '' }, sent: null, step: 0 }); };
+const ensureAns = (p: ProjetoCompleto, pid: Pid, aid: Aid): RespostaGravada => { p.answers[pid] = p.answers[pid] || {}; return (p.answers[pid][aid] = p.answers[pid][aid] || { draft: { desc: '', link: '' }, sent: null, step: 0 }); };
 
 /* Campos de rascunho que cada pessoa pode gravar. */
 const DRAFT_KEYS = new Set(['notas', 'desc', 'link', 'titularAtualNome', 'titularAtualBase', 'titularExterno', ...Object.keys(QS)]);
 
-export const ACTIONS = {
+export const ACTIONS: Acoes = {
   /* Rascunho salvo sozinho enquanto a pessoa responde. */
   draft(p, me, d) {
     if (p.phase !== 'coleta' || !elig(p).includes(me)) deny('As respostas foram encerradas. Você pode ver o que respondeu, mas não pode mudar.');
     assetOf(p, d.aid);
-    const an = ensureAns(p, me, d.aid), patch = d.draft || {};
-    Object.keys(patch).forEach(k => { if (DRAFT_KEYS.has(k)) an.draft[k] = patch[k]; });
-    if (Number.isInteger(d.step)) an.step = d.step;
+    /* Garantido: assetOf acima lança sem um aid de criação do projeto. */
+    const an = ensureAns(p, me, d.aid!), patch = d.draft || {};
+    /* Sem garantia: filtra as chaves (DRAFT_KEYS), mas grava cada valor como veio. Um titular em texto, por exemplo,
+       é aceito e gravado no banco, e o qsend dessa resposta depois estoura no domínio (500 em vez de 400). */
+    Object.keys(patch).forEach(k => { if (DRAFT_KEYS.has(k)) (an.draft as Record<string, unknown>)[k] = (patch as Record<string, unknown>)[k]; });
+    /* Garantido: Number.isInteger acima. */
+    if (Number.isInteger(d.step)) an.step = d.step!;
     return { quiet: true };
   },
 

@@ -1,13 +1,18 @@
 /* Projetos: criar e listar projetos, montar o projeto, equipe e convites. */
 import { randomBytes } from 'node:crypto';
+import type { ChaveSobre, ChavePerfil } from '@mip/domain';
 import { SOBRE, PERFIL, sobreErrors, perfilErrors, approved, mem, nm, taskFor, phaseName } from '@mip/domain';
 import { load, withProject } from '../../store.js';
 import { viewFor } from '../../view.js';
 import { sendLoginLink, validEmail, nameFromEmail } from '../../auth.js';
 import { ActionError, deny, fail, now, needOrg, needPhase } from '../shared.js';
 import { log } from '../historico/index.js';
+import type { Express, Response } from 'express';
+import type { Contexto, AuthedRequest } from '../../server.js';
+import type { ProjetoCompleto } from '../../store.js';
+import type { Acoes } from '../shared.js';
 
-export const ACTIONS = {
+export const ACTIONS: Acoes = {
   setupnext(p, me) {
     needOrg(p, me);
     if (p.setupStep === 'equipe') { p.setupStep = 'ativos'; return { tab: 'ativos' }; }
@@ -19,7 +24,8 @@ export const ACTIONS = {
   sobre(p, me, d) {
     needOrg(p, me); needPhase(p, 'coleta');
     const cur = { ...(p.sobre || {}) };
-    Object.keys(SOBRE).forEach(k => { if (k in (d.sobre || {})) cur[k] = String(d.sobre[k] ?? '').slice(0, 500); });
+    /* Garantido: as chaves vêm de SOBRE e d.sobre só é lido quando tem a chave. O valor vira texto com limite. */
+    (Object.keys(SOBRE) as ChaveSobre[]).forEach(k => { if (k in (d.sobre || {})) cur[k] = String(d.sobre![k] ?? '').slice(0, 500); });
     if (cur.edital !== 'Sim') delete cur.editalQual;
     p.sobre = cur;
     if (d.check) { const e = sobreErrors(cur); if (Object.keys(e).length) throw new ActionError(e); }
@@ -29,8 +35,10 @@ export const ACTIONS = {
   /* Sobre você: cada pessoa responde por si, enquanto as respostas estão abertas. */
   perfil(p, me, d) {
     if (p.phase !== 'coleta') deny('As respostas foram encerradas.');
-    const m = mem(p, me), cur = { ...(m.perfil || {}) };
-    Object.keys(PERFIL).forEach(k => { if (k in (d.perfil || {})) cur[k] = String(d.perfil[k] ?? '').slice(0, 200); });
+    /* Garantido: apply só chama a ação para quem é integrante e não está pendente. */
+    const m = mem(p, me)!, cur = { ...(m.perfil || {}) };
+    /* Garantido: as chaves vêm de PERFIL e d.perfil só é lido quando tem a chave. O valor vira texto com limite. */
+    (Object.keys(PERFIL) as ChavePerfil[]).forEach(k => { if (k in (d.perfil || {})) cur[k] = String(d.perfil![k] ?? '').slice(0, 200); });
     m.perfil = cur;
     if (d.check) { const e = perfilErrors(cur); if (Object.keys(e).length) throw new ActionError(e); }
     return { quiet: !d.check };
@@ -41,19 +49,20 @@ export const ACTIONS = {
   naopart(p, me, d) {
     needOrg(p, me);
     if (d.pid === p.org) fail('np', 'Quem organiza não pode sair das respostas');
-    const m = mem(p, d.pid) || fail('np', 'Pessoa não encontrada no projeto');
+    /* Garantido: sem pid, mem não acha ninguém e fail lança; daqui em diante d.pid existe. */
+    const m = mem(p, d.pid!) || fail('np', 'Pessoa não encontrada no projeto');
     m.status = 'naopart'; m.by = me; m.at = now();
     Object.values(p.proposal).forEach(pr => { if (pr.v.titular) pr.v.titular = pr.v.titular.filter(x => x !== d.pid); });
-    log(p, me, 'tirou ' + nm(p, d.pid) + ' das respostas');
+    log(p, me, 'tirou ' + nm(p, d.pid!) + ' das respostas');
     return {};
   }
 };
 
-export function routes(app, { prisma, wrap, auth }) {
+export function routes(app: Express, { prisma, wrap, auth }: Contexto) {
   const newCode = () => randomBytes(6).toString('base64url');
 
   /* ===== Projetos ===== */
-  app.get('/api/projects', auth, wrap(async (req, res) => {
+  app.get('/api/projects', auth, wrap(async (req: AuthedRequest, res) => {
     const ms = await prisma.member.findMany({ where: { userId: req.user.id }, select: { projectId: true }, orderBy: { createdAt: 'desc' } });
     const out = [];
     /* Carrega os projetos em paralelo, não um depois do outro. */
@@ -68,9 +77,9 @@ export function routes(app, { prisma, wrap, auth }) {
     res.json(out);
   }));
 
-  app.post('/api/projects', auth, wrap(async (req, res) => {
+  app.post('/api/projects', auth, wrap(async (req: AuthedRequest, res) => {
     const name = String(req.body.name || '').trim().slice(0, 120), context = String(req.body.context || '').trim().slice(0, 300), person = String(req.body.person || '').trim().slice(0, 80);
-    const err = {};
+    const err: Record<string, string> = {};
     if (!name) err.pn = 'Informe o nome do projeto';
     if (Object.keys(err).length) return res.status(400).json({ err });
     const pr = await prisma.$transaction(async tx => {
@@ -82,19 +91,19 @@ export function routes(app, { prisma, wrap, auth }) {
     res.json({ id: pr.id });
   }));
 
-  const projectFor = async (req, res) => {
+  const projectFor = async (req: AuthedRequest, res: Response): Promise<ProjetoCompleto | null> => {
     const p = await load(prisma, req.params.id);
     if (!p || !mem(p, req.user.id)) { res.status(404).json({ err: { _: 'Projeto não encontrado ou sem acesso.' } }); return null; }
     return p;
   };
 
-  app.get('/api/projects/:id', auth, wrap(async (req, res) => {
+  app.get('/api/projects/:id', auth, wrap(async (req: AuthedRequest, res) => {
     const p = await projectFor(req, res); if (!p) return;
     res.json(viewFor(p, req.user.id));
   }));
 
   /* Adicionar pessoa por e-mail: cria a conta se preciso e manda o link de acesso ao projeto. */
-  app.post('/api/projects/:id/invite', auth, wrap(async (req, res) => {
+  app.post('/api/projects/:id/invite', auth, wrap(async (req: AuthedRequest, res) => {
     const email = String(req.body.email || '').trim().toLowerCase();
     if (!validEmail(email)) return res.status(400).json({ err: { inv: 'Informe um e-mail válido' } });
     const added = await withProject(prisma, req.params.id, async (p, tx) => {
@@ -113,12 +122,14 @@ export function routes(app, { prisma, wrap, auth }) {
       linkLabel: 'Abrir o projeto'
     });
     const fresh = await load(prisma, req.params.id);
-    res.json({ result: { toast: added.user.name + ' entrou no projeto.' + (sent ? ' Enviamos um e-mail com o link de acesso.' : ' O e-mail não foi enviado; compartilhe o link de convite.') }, project: viewFor(fresh, req.user.id) });
+    /* Garantido hoje: o projeto existia na transação acima e nenhuma rota apaga projeto.
+       Se um dia houver exclusão de projeto, aqui vira 500 (o wrap responde). */
+    res.json({ result: { toast: added.user.name + ' entrou no projeto.' + (sent ? ' Enviamos um e-mail com o link de acesso.' : ' O e-mail não foi enviado; compartilhe o link de convite.') }, project: viewFor(fresh!, req.user.id) });
   }));
 
   /* Remover alguém do projeto (só quem organiza, enquanto as respostas estão abertas).
      Sem `confirm`, devolve o que será apagado para a tela pedir confirmação. */
-  app.post('/api/projects/:id/remove', auth, wrap(async (req, res) => {
+  app.post('/api/projects/:id/remove', auth, wrap(async (req: AuthedRequest, res) => {
     const pid = String(req.body.pid || '');
     const out = await withProject(prisma, req.params.id, async (p, tx) => {
       if (!p) throw new ActionError('Projeto não encontrado.', 404);
@@ -139,10 +150,12 @@ export function routes(app, { prisma, wrap, auth }) {
     });
     if (out.confirmRemove) return res.json({ result: out });
     const fresh = await load(prisma, req.params.id);
-    res.json({ result: out, project: viewFor(fresh, req.user.id) });
+    /* Garantido hoje: o projeto existia na transação acima e nenhuma rota apaga projeto.
+       Se um dia houver exclusão de projeto, aqui vira 500 (o wrap responde). */
+    res.json({ result: out, project: viewFor(fresh!, req.user.id) });
   }));
 
-  app.post('/api/projects/:id/remind', auth, wrap(async (req, res) => {
+  app.post('/api/projects/:id/remind', auth, wrap(async (req: AuthedRequest, res) => {
     const p = await projectFor(req, res); if (!p) return;
     if (p.org !== req.user.id) return res.status(403).json({ err: { _: 'Só quem organiza pode lembrar a equipe.' } });
     const target = mem(p, req.body.pid);
@@ -163,15 +176,17 @@ export function routes(app, { prisma, wrap, auth }) {
     res.json({ name: pr.name, org: pr.org.name, active: pr.inviteActive });
   }));
 
-  app.post('/api/invite/:code/join', auth, wrap(async (req, res) => {
+  app.post('/api/invite/:code/join', auth, wrap(async (req: AuthedRequest, res) => {
     const pr = await prisma.project.findUnique({ where: { inviteCode: req.params.code } });
     if (!pr) return res.status(404).json({ err: { _: 'Convite não encontrado.' } });
     if (!pr.inviteActive) return res.status(400).json({ err: { link: 'Este convite não está mais ativo' } });
+    /* Garantido hoje: pr foi achado logo acima e nenhuma rota apaga projeto (withProject só passa null para projeto
+       que não existe). Se um dia houver exclusão de projeto, aqui vira 500 (o wrap responde). */
     const out = await withProject(prisma, pr.id, async (p, tx) => {
-      if (mem(p, req.user.id)) return { already: true };
-      await tx.member.create({ data: { projectId: p.id, userId: req.user.id, elig: p.phase === 'coleta' } });
-      p.history.unshift({ at: Date.now(), who: req.user.id, text: 'entrou pelo link de convite' });
-      return { already: false, elig: p.phase === 'coleta' };
+      if (mem(p!, req.user.id)) return { already: true };
+      await tx.member.create({ data: { projectId: p!.id, userId: req.user.id, elig: p!.phase === 'coleta' } });
+      p!.history.unshift({ at: Date.now(), who: req.user.id, text: 'entrou pelo link de convite' });
+      return { already: false, elig: p!.phase === 'coleta' };
     });
     res.json({ id: pr.id, result: { notice: out.already ? 'Você já participa deste projeto.' : out.elig ? 'Você entrou no projeto. Veja sua tarefa atual.' : 'Você entrou no projeto, mas as respostas já foram encerradas e você não responde desta vez.' } });
   }));

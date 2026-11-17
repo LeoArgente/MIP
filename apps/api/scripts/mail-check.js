@@ -1,7 +1,7 @@
 /* Testa o envio de e-mail com a configuração do .env.
-   Uso: npm run mail:test -w @mip/api -- seu@email.com */
+   Uso: npm run mail:test -w @mip/api -- seu@email.com (depois de npm run build -w @mip/api) */
 import 'dotenv/config';
-import { sendMail, mailMode } from '../src/mail.js';
+import { sendMail, mailMode } from '../dist/mail.js';
 
 const to = process.argv[2];
 if (!to) { console.error('Informe o destinatário: npm run mail:test -w @mip/api -- seu@email.com'); process.exit(1); }
