@@ -1,6 +1,6 @@
 import { StrictMode, Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import '@fontsource/montserrat/300.css';
 import '@fontsource/montserrat/400.css';
 import '@fontsource/montserrat/500.css';
@@ -41,9 +41,6 @@ function Private({ children }) {
   return children;
 }
 
-/* Telas do app (ainda no visual antigo) dentro da coluna central. */
-const AppShell = () => <div className="wrap"><Outlet /></div>;
-
 function App() {
   return (
     <Routes>
@@ -63,9 +60,7 @@ function App() {
       <Route path="/convite/:code" element={<Invite />} />
       <Route path="/convite/:code/conta" element={<ConviteConta />} />
       <Route path="/admin" element={<Private><Admin /></Private>} />
-      <Route element={<AppShell />}>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

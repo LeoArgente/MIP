@@ -2,16 +2,15 @@
    Rascunhos (respostas e proposta) são salvos sozinhos alguns instantes depois da última mudança. */
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { approved, mem, phaseName, clone, propOf, elig, lastV } from '@mip/domain';
-import { get, post, patch } from '../api.js';
+import { approved, mem, clone, propOf, elig, lastV } from '@mip/domain';
+import { get, post } from '../api.js';
 import { useSession } from '../session.jsx';
 import { AppFrame } from '../components/journey/Shell.jsx';
 import { Painel, ProjectHeader } from './project/Painel.jsx';
 import { Andamento } from './project/Andamento.jsx';
 import { SetupCriacoes, SetupEquipe, SetupRevisar, SetupSobre } from './project/Setup.jsx';
-import { Banner, Btn, BusyCtx, Chip, useToast } from '../components/ui.jsx';
+import { Banner, BusyCtx, useToast } from '../components/ui.jsx';
 import { AppButton } from '../components/ds/index.js';
-import { TIPS } from './project/tips.js';
 import { Equipe, Criacoes, Sobre, Respostas } from './project/Abas.jsx';
 import { Decidir, Ponto } from './project/Decisoes.jsx';
 import { Confirmacao, ConfirmarProposta } from './project/Confirmacao.jsx';
@@ -150,23 +149,3 @@ export default function Project() {
     </BusyCtx.Provider></Ctx.Provider>
   );
 }
-
-/* Layout das telas do projeto: fase e ajuda no alto, o conteúdo direto no fundo (sem cartão em volta),
-   a barra de ações no fim e, quando houver, o complemento logo abaixo, na mesma coluna. */
-export function Page({ children, bar, side }) {
-  const { p, ui, setUi, tab } = useProject();
-  return (
-    <div className="page">
-      <div className="page-main">
-        <div className="page-meta">
-          <Chip>{phaseName(p)}</Chip>
-          {TIPS[tab] && ui.tipOpen !== tab && <button className="link" onClick={() => setUi({ tipOpen: tab })}>Como funciona?</button>}
-        </div>
-        {ui.tipOpen === tab && TIPS[tab] && <div className="tip-card"><ol>{TIPS[tab].map(t => <li key={t}>{t}</li>)}</ol><Btn kind="sm" onClick={() => setUi({ tipOpen: null })}>Fechar</Btn></div>}
-        <div className="step-card">{children}{bar}</div>
-      </div>
-      {side && <aside className="page-side">{side}</aside>}
-    </div>
-  );
-}
-export { patch };
