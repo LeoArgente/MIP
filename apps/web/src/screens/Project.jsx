@@ -7,9 +7,10 @@ import { get, post, patch } from '../api.js';
 import { useSession } from '../session.jsx';
 import { AppFrame } from '../components/journey/Shell.jsx';
 import { Painel, ProjectHeader } from './project/Painel.jsx';
+import { Andamento } from './project/Andamento.jsx';
 import { SetupCriacoes, SetupEquipe, SetupRevisar, SetupSobre } from './project/Setup.jsx';
 import { Banner, Btn, BusyCtx, Chip, useToast } from '../components/ui.jsx';
-import { Hub, Equipe, Criacoes, Sobre, Respostas, Andamento, Decidir, Confirmacao, Memorial, Welcome, TIPS } from './ProjectScreens.jsx';
+import { Hub, Equipe, Criacoes, Sobre, Respostas, Decidir, Confirmacao, Memorial, Welcome, TIPS } from './ProjectScreens.jsx';
 import Question from './Question.jsx';
 import DecideFocus from './DecideFocus.jsx';
 

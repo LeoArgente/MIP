@@ -49,7 +49,7 @@ export function ProjectHeader() {
   );
 }
 
-function Fases() {
+export function Fases() {
   const { p } = useProject(), idx = faseIdx(p), fim = p.phase === 'consolidado';
   return (
     <ol className="jr-fases" aria-label="Fases do projeto">
