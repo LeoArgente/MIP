@@ -100,9 +100,10 @@ describe('pctTxt', () => {
     assert.equal(pctTxt(projeto(), { ...s, v: { divisao: PCT_SIM } , percentual: { __externo__: 100 } }), 'Empresa X: 100%');
   });
 
-  test('comportamento atual: percentual ausente vira "undefined%"', () => {
+  test('percentual ausente ou em branco aparece como "não informado"', () => {
     const s = { v: { divisao: PCT_SIM, titular: ['ana'] } };
-    assert.equal(pctTxt(projeto(), s), 'Ana: undefined%');
+    assert.equal(pctTxt(projeto(), s), 'Ana: não informado');
+    assert.equal(pctTxt(projeto(), { v: { divisao: PCT_SIM, titular: ['ana', 'carla'] }, externo: 'Empresa X', percentual: { ana: 40, carla: '' } }), 'Ana: 40% · Carla: não informado · Empresa X: não informado');
   });
 });
 

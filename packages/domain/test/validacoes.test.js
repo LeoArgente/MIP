@@ -62,6 +62,34 @@ describe('propError', () => {
   });
 });
 
+describe('propError: "sem acordo" com percentuais combinados', () => {
+  const v = { divisao: PCT_SIM, titular: ['ana', 'carla'] };
+  const MSG = 'Os percentuais informados precisam ser números de 0 a 100. Deixe em branco o que ainda não foi combinado.';
+
+  test('em branco, só em parte ou sem somar 100: passa', () => {
+    for (const percentual of [{}, { ana: '' }, { ana: 30 }, { ana: '30', carla: '' }, { ana: 0, carla: 100 }, { ana: 10, carla: 10 }]) {
+      assert.equal(propError(comProposta({ semAcordo: true, percentual }, v), 'a1'), null, JSON.stringify(percentual));
+    }
+  });
+
+  test('valor informado fora de 0..100 ou não numérico: erro', () => {
+    for (const percentual of [{ ana: 150 }, { ana: -1 }, { carla: 'x' }, { ana: '50', carla: '100.01' }]) {
+      assert.equal(propError(comProposta({ semAcordo: true, percentual }, v), 'a1'), MSG, JSON.stringify(percentual));
+    }
+  });
+
+  test('o titular externo também é conferido; percentual de quem não é titular, não', () => {
+    const vx = { divisao: PCT_SIM, titular: ['ana'] };
+    assert.equal(propError(comProposta({ semAcordo: true, externo: 'Empresa X', percentual: { __externo__: 150 } }, vx), 'a1'), MSG);
+    assert.equal(propError(comProposta({ semAcordo: true, externo: '  ', percentual: { __externo__: 150 } }, vx), 'a1'), null);
+    assert.equal(propError(comProposta({ semAcordo: true, percentual: { bruno: 150 } }, vx), 'a1'), null);
+  });
+
+  test('sem acordo e percentuais não combinados: os percentuais não são conferidos', () => {
+    assert.equal(propError(comProposta({ semAcordo: true, percentual: { ana: 150 } }, { divisao: PCT_NEG }), 'a1'), null);
+  });
+});
+
 const CONTRIB_OK = () => ({ notas: { ana: 10, bruno: 0, carla: 6 }, desc: 'fiz', origem: BASE.origem, titularAtual: BASE.titularAtual, link: '' });
 
 describe('stepErrors', () => {

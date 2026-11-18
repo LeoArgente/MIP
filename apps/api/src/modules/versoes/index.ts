@@ -1,5 +1,5 @@
 /* Versões: envio da proposta para confirmação, reabertura, confirmação e recusa de cada pessoa. */
-import { approved, elig, nm, lastV, propOf, snapshot } from '@mip/domain';
+import { approved, elig, nm, lastV, propOf, snapshot, membrosCongelados } from '@mip/domain';
 import { ActionError, deny, fail, now, needOrg, needPhase, ensureProp } from '../shared.js';
 import { log } from '../historico/index.js';
 import type { Acoes } from '../shared.js';
@@ -11,7 +11,7 @@ export const ACTIONS: Acoes = {
     if (!as.length) fail('send', 'Cadastre ao menos uma criação antes de enviar.');
     if (as.some(a => !propOf(p, a.id).saved)) fail('send', 'Conclua a proposta de todas as criações antes de enviar.');
     const n = p.versions.length + 1;
-    p.versions.push({ n, at: now(), snap: snapshot(p), conf: {} });
+    p.versions.push({ n, at: now(), snap: snapshot(p), membros: membrosCongelados(p), conf: {} });
     p.phase = 'confirmacao';
     log(p, me, 'enviou a proposta ' + n + ' para confirmação');
     return { tab: 'conf', notice: 'Proposta enviada. Cada pessoa confirma ou recusa individualmente.' };

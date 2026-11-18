@@ -164,6 +164,8 @@ model Version {
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   n         Int
   snap      Json
+  /// A equipe no envio (pid, nome, status, elig, perfil). Nulo nas versões enviadas antes desta coluna.
+  members   Json?
   createdAt DateTime @default(now())
 
   confirmations Confirmation[]

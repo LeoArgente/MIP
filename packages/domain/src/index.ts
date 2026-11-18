@@ -70,7 +70,10 @@ export interface Relato { pid: Pid; respondido: boolean; desc: string; evidencia
 /** Uma criação como foi enviada numa versão da proposta (saída de snapshot). */
 export interface CriacaoCongelada { name: string; cat: string; desc: string; link: string; part?: Participacao; qs?: ChaveDecisao[]; v: ValoresProposta; externo: string; percentual: Percentuais; texto: string; semAcordo: boolean; relatos?: Relato[] }
 export interface Confirmacao { v: ValorConfirmacao; comment: string; assets?: Aid[]; at: number }
-export interface Versao { id?: string; n: number; at?: number; snap: Record<Aid, CriacaoCongelada>; conf: Record<Pid, Confirmacao> }
+/** Uma pessoa do projeto como estava quando a versão foi enviada (saída de membrosCongelados). */
+export interface MembroCongelado { pid: Pid; name: string; status: StatusMembro; elig: boolean; perfil?: Perfil }
+/** `membros` falta nas versões enviadas antes de a equipe passar a ser congelada no envio. */
+export interface Versao { id?: string; n: number; at?: number; snap: Record<Aid, CriacaoCongelada>; membros?: MembroCongelado[]; conf: Record<Pid, Confirmacao> }
 export interface Memorial { id?: string; at: number; body: string; hash: string }
 export interface Comentario { id?: string; aid: Aid; pid: Pid; text: string; at: number }
 export interface EntradaHistorico { id?: string; at: number; who: Pid | 'sistema'; text: string }
@@ -206,7 +209,9 @@ export function partOf(p: Projeto, aid: Aid): Participacao {
   return { avg, share: shares(avg) };
 }
 export const partTxt = (p: Projeto, pt: Participacao): string => Object.keys(pt.avg).filter(k => pt.avg[k] > 0).map(k => nm(p, k) + ': ' + lvName(pt.avg[k]).toLowerCase()).join(' · ') || 'Sem participação informada';
-export const pctTxt = (p: Projeto, s: Pick<Proposta, 'v' | 'externo' | 'percentual'>): string => s.v?.divisao === PCT_SIM ? (s.v.titular || []).concat(s.externo ? ['__externo__'] : []).map(pid => (pid === '__externo__' ? s.externo : nm(p, pid)) + ': ' + (s.percentual || {})[pid] + '%').join(' · ') : 'Não acordados';
+/* Percentual ainda não informado: a tela manda '' para o campo vazio (a API não aceita outro valor vazio). */
+const pctVazio = (x: number | string | undefined): boolean => x === undefined || x === '';
+export const pctTxt = (p: Projeto, s: Pick<Proposta, 'v' | 'externo' | 'percentual'>): string => s.v?.divisao === PCT_SIM ? (s.v.titular || []).concat(s.externo ? ['__externo__'] : []).map(pid => (pid === '__externo__' ? s.externo : nm(p, pid)) + ': ' + (pctVazio((s.percentual || {})[pid]) ? 'não informado' : (s.percentual || {})[pid] + '%')).join(' · ') : 'Não acordados';
 /* O formato de v depende de q: Notas para 'notas', lista de pessoas para 'titular', texto para as demais. */
 export const fmtAns = (p: Projeto, q: ChavePergunta, v: Notas | ValorResposta | null | undefined): string => q === 'notas'
   ? (Object.keys(v || {}).filter(k => hasNota(v as Notas, k)).map(k => nm(p, k) + ': ' + lvName((v as Notas)[k]).toLowerCase()).join(' · ') || 'Sem respostas')
@@ -262,6 +267,12 @@ export function propError(p: Projeto, aid: Aid): string | null {
   if (!pr.semAcordo && pr.v.divisao === PCT_SIM) {
     const ps = (pr.v.titular || []).concat(pr.externo?.trim() ? ['__externo__'] : []), vals = ps.map(pid => Number((pr.percentual || {})[pid]));
     if (!ps.length || ps.some(pid => (pr.percentual || {})[pid] === '' || (pr.percentual || {})[pid] === undefined) || vals.some(n => !Number.isFinite(n) || n < 0 || n > 100) || Math.abs(vals.reduce((x, y) => x + y, 0) - 100) > 0.001) return 'Informe percentuais válidos para todos os titulares pretendidos, somando 100%.';
+  }
+  /* Sem acordo, os percentuais combinados podem ficar em branco (nem precisam somar 100), mas o que foi informado
+     precisa ser um percentual, porque vai para o registro do acordo como está. */
+  if (pr.semAcordo && pr.v.divisao === PCT_SIM) {
+    const pc = pr.percentual || {}, ps = (pr.v.titular || []).concat(pr.externo?.trim() ? ['__externo__'] : []);
+    if (ps.some(pid => !pctVazio(pc[pid]) && !(Number(pc[pid]) >= 0 && Number(pc[pid]) <= 100))) return 'Os percentuais informados precisam ser números de 0 a 100. Deixe em branco o que ainda não foi combinado.';
   }
   return null;
 }
@@ -365,12 +376,18 @@ export function snapshot(p: Projeto): Record<Aid, CriacaoCongelada> {
   });
   return snap;
 }
+/* A equipe no envio, com o nome de cada pessoa naquele momento: o registro do acordo usa esta lista, não a equipe de hoje. */
+export const membrosCongelados = (p: Projeto): MembroCongelado[] => p.members.map(m => ({ pid: m.pid, name: nm(p, m.pid), status: m.status, elig: m.elig, perfil: clone(m.perfil) }));
 
 /* ===== Registro do acordo (HU-24) ===== */
-/* Só é chamado quando já existe uma versão enviada. */
+/* Só é chamado quando já existe uma versão enviada. As criações e a equipe vêm da versão, como foram enviadas e
+   confirmadas, e não do projeto de hoje. Versão sem `membros` (enviada antes do congelamento da equipe): vale a
+   equipe de hoje, porque a de então não foi guardada. */
 export function memorialBody(p: Projeto, at: number | string | Date): string {
   const v = lastV(p)!, L: string[] = [], E = elig(p), allOk = E.every(pid => v.conf[pid]?.v === 'ok');
-  const n = (pid: Pid) => nm(p, pid), fa = (q: ChavePergunta, x: Notas | ValorResposta | undefined) => fmtAns(p, q, x);
+  /* pv: o projeto com os nomes da época, para todas as funções que escrevem nomes de pessoas. */
+  const pv: Projeto = v.membros ? { ...p, people: { ...p.people, ...Object.fromEntries(v.membros.map(m => [m.pid, { name: m.name }])) } } : p;
+  const n = (pid: Pid) => nm(pv, pid), fa = (q: ChavePergunta, x: Notas | ValorResposta | undefined) => fmtAns(pv, q, x);
   L.push('REGISTRO DO ACORDO');
   L.push('Projeto: ' + p.name + ' (' + (p.context || 'sem contexto') + ')');
   L.push('Situação da proposta ' + v.n + ': ' + (allOk ? 'confirmada por todos' : 'em confirmação'));
@@ -379,18 +396,21 @@ export function memorialBody(p: Projeto, at: number | string | Date): string {
   sobreKeys(p.sobre).forEach(k => L.push('- ' + SOBRE[k].short + ': ' + ((p.sobre || {})[k] || 'não informado')));
   L.push('');
   L.push('PARTICIPANTES');
-  p.members.forEach(m => {
+  (v.membros || p.members).forEach(m => {
     L.push('- ' + n(m.pid) + ', ' + roleTxt(p, m.pid).toLowerCase() + (m.status === 'naopart' ? ' (não respondeu)' : m.status === 'pendente' ? ' (convite pendente)' : !m.elig ? ' (entrou depois das respostas)' : ''));
     if (m.perfil && (m.perfil.funcao || m.perfil.investiu)) L.push('  Função declarada: ' + (m.perfil.funcao || 'não informada') + ' · Investiu dinheiro: ' + (m.perfil.investiu || 'não informado'));
   });
   L.push(''); L.push('SITUAÇÃO POR CRIAÇÃO');
-  approved(p).forEach(a => {
-    const x = v.snap[a.id]; if (!x) return;
-    L.push(''); L.push(a.name + ' (' + (a.cat || 'criação') + ')');
+  /* Ordem do cadastro das criações; as que já não existem no projeto vêm no fim. A ordem das chaves de snap não
+     serve: o banco (jsonb) não a guarda. */
+  const ids = Object.keys(v.snap);
+  p.assets.map(a => a.id).filter(id => v.snap[id]).concat(ids.filter(id => !p.assets.some(a => a.id === id))).forEach(aid => {
+    const x = v.snap[aid];
+    L.push(''); L.push(x.name + ' (' + (x.cat || 'criação') + ')');
     if (x.desc) L.push('  Descrição: ' + x.desc);
     if (x.link) L.push('  Link da criação: ' + x.link);
     L.push('  Estado da decisão: ' + (x.semAcordo ? 'SEM ACORDO' : 'proposta registrada'));
-    L.push('  Participação percebida: ' + (x.part ? partTxt(p, x.part) : 'não informada') + '. Não define titularidade ou quotas.');
+    L.push('  Participação percebida: ' + (x.part ? partTxt(pv, x.part) : 'não informada') + '. Não define titularidade ou quotas.');
     L.push('  Relatos individuais sobre origem e titularidade atual:');
     (x.relatos || []).forEach(r => {
       L.push('  - ' + n(r.pid) + ': ' + (r.respondido ? 'respondeu' : 'não respondeu'));
@@ -407,11 +427,12 @@ export function memorialBody(p: Projeto, at: number | string | Date): string {
     L.push('  Decisões e condições propostas:');
     (x.qs || []).forEach(q => L.push('  - ' + QS[q].short + ': ' + fa(q, x.v[q])));
     if (x.externo) L.push('  - Titular pretendido fora da equipe: ' + x.externo);
-    L.push('  Percentuais de titularidade combinados: ' + pctTxt(p, x));
+    L.push('  Percentuais de titularidade combinados: ' + pctTxt(pv, x));
     if (x.texto) L.push('  Explicações e pendências anotadas: ' + x.texto);
     const pend: string[] = [];
     if (x.semAcordo) pend.push('decisão da criação ainda sem acordo');
     if (x.v.divisao === PCT_NEG) pend.push('percentuais ainda não negociados');
+    if (x.v.divisao === PCT_SIM) { const ps = (x.v.titular || []).concat(x.externo ? ['__externo__'] : []); if (!ps.length || ps.some(pid => pctVazio((x.percentual || {})[pid]))) pend.push('percentuais combinados não registrados'); }
     if (x.v.titularAtual === 'Não sei' || x.v.titularAtual === 'Ainda não sabemos') pend.push('titularidade atual a verificar');
     if (x.v.origem === 'Não sei') pend.push('origem a verificar');
     if (x.v.terceiros === 'Sim, autorização pendente' || x.v.terceiros === 'Ainda não sabemos') pend.push('direitos de terceiros a verificar');
