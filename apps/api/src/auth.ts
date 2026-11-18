@@ -2,7 +2,8 @@
 import { randomBytes, createHash } from 'node:crypto';
 import { sendMail, mailMode } from './mail.js';
 import { wrapMw } from './http.js';
-import type { PrismaClient, Prisma, User } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { PrismaClient, User } from '@prisma/client';
 import type { Express, Request, Response, RequestHandler } from 'express';
 import type { Contexto, AuthedRequest } from './server.js';
 
@@ -57,22 +58,52 @@ export async function startSession(prisma: Prisma.TransactionClient, res: Respon
   res.cookie(COOKIE, t, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: SESSION_DAYS * 864e5, path: '/' });
 }
 
+/** O que o cookie-parser põe em req.cookies: o texto do cookie ou, se ele começa com "j:" e o JSON lido dele não é
+ *  falso, esse JSON (mip_session=j:1 chega como o número 1; j:null, j:false e j:0 continuam texto). O tipo do pacote
+ *  é `any`; este é o que de fato pode chegar. */
+type ValorCookie = string | number | true | object | undefined;
+
+const cookieDaSessao = (req: Request): ValorCookie => req.cookies?.[COOKIE];
+
+/* O token da sessão, se houver. O servidor só grava texto base64url (sem ":"), então um valor que não é texto foi
+   montado à mão e não identifica sessão nenhuma: fica sem token. Quem avisa e limpa o cookie é sessionUser. */
+function tokenDaSessao(req: Request): string | undefined {
+  const t = cookieDaSessao(req);
+  return typeof t === 'string' && t ? t : undefined;
+}
+
+/* Erro do banco de verdade: o Prisma não conectou (InitializationError) ou a consulta foi ao banco e voltou com
+   erro (KnownRequestError, como P1001, P1017 e P2024; UnknownRequestError). Fica de fora o erro de validação do
+   Prisma (consulta mal montada: defeito nosso) e qualquer coisa que não veio do Prisma. */
+const erroDeBanco = (e: unknown) => e instanceof Prisma.PrismaClientInitializationError || e instanceof Prisma.PrismaClientKnownRequestError || e instanceof Prisma.PrismaClientUnknownRequestError;
+
 export async function endSession(prisma: Prisma.TransactionClient, req: Request, res: Response) {
-  const t: string | undefined = req.cookies?.[COOKIE];
+  const t = tokenDaSessao(req);
   if (t) await prisma.session.deleteMany({ where: { tokenHash: hash(t) } });
   res.clearCookie(COOKIE, { path: '/' });
 }
 
 /* Middleware: põe req.user quando a sessão é válida.
-   Se o banco não responde, devolve 503 em vez de derrubar o servidor; qualquer outra falha segue por wrapMw
-   para o handler de erro (500 em JSON). */
+   Cookie de sessão que não é texto: segue sem sessão, com um aviso no log (o tipo, nunca o valor, que vem do
+   cliente) e o cookie limpo na resposta, para o navegador parar de mandá-lo já no pedido seguinte.
+   Banco indisponível responde 503. Qualquer outra falha (rejeição que não veio do banco) segue por wrapMw para o
+   handler de erro: 500 em JSON, para o monitoramento não acusar o banco à toa.
+   Dívida conhecida: cookie de texto que não acha sessão (inexistente ou vencida) segue sem sessão e sem log. Se o
+   formato do token mudar um dia, todo mundo sai da conta sem sinal nenhum aqui. Não há log para isso de propósito:
+   toda sessão vencida apareceria nele. */
 export const sessionUser = (prisma: PrismaClient): RequestHandler => wrapMw(async (req, res, next) => {
-  const t: string | undefined = req.cookies?.[COOKIE];
+  const bruto = cookieDaSessao(req);
+  if (bruto !== undefined && typeof bruto !== 'string') {
+    console.warn('Sessão: cookie não é texto (' + (Array.isArray(bruto) ? 'array' : typeof bruto) + '); seguiu sem sessão e foi limpo.');
+    res.clearCookie(COOKIE, { path: '/' });
+  }
+  const t = tokenDaSessao(req);
   if (t) {
     try {
       const s = await prisma.session.findUnique({ where: { tokenHash: hash(t) }, include: { user: true } });
       if (s && s.expiresAt > new Date()) req.user = s.user;
     } catch (e) {
+      if (!erroDeBanco(e)) throw e;
       console.error('Sessão: banco indisponível.', (e as Error).message);
       return res.status(503).json({ err: { _: 'Não foi possível falar com o banco de dados. Tente de novo em instantes.' } });
     }
