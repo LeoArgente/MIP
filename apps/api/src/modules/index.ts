@@ -47,15 +47,17 @@ export function routes(app: Express, ctx: Contexto) {
   const { prisma, wrap, auth } = ctx;
 
   app.post('/api/projects/:id/actions/:type', auth, wrap(async (req: AuthedRequest, res) => {
-    const out = await withProject(prisma, req.params.id, async p => {
+    /* Quem não participa recebe o mesmo 404 de projeto inexistente (load não devolve o projeto). */
+    const out = await withProject(prisma, req.params.id, req.user.id, async p => {
       if (!p) throw new ActionError('Projeto não encontrado.', 404);
       const result = apply(p, req.user.id, req.params.type, req.body || {});
       return { result, p };
     });
     if (out.result.quiet) return res.json({ result: out.result });
-    const fresh = await load(prisma, req.params.id);
-    /* Garantido hoje: o projeto existia na transação acima e nenhuma rota apaga projeto.
-       Se um dia houver exclusão de projeto, aqui vira 500 (o wrap responde). */
+    const fresh = await load(prisma, req.params.id, req.user.id);
+    /* Garantido hoje: o projeto existia na transação acima com a pessoa como integrante, nenhuma rota apaga projeto
+       e nenhuma ação apaga integrante (só a rota /remove, que não passa por aqui).
+       Se um dia houver exclusão de projeto ou uma ação que tire a pessoa, aqui vira 500 (o wrap responde). */
     res.json({ result: out.result, project: viewFor(fresh!, req.user.id) });
   }));
 

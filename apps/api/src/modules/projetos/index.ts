@@ -77,7 +77,7 @@ export function routes(app: Express, { prisma, wrap, auth }: Contexto) {
     const ms = await prisma.member.findMany({ where: { userId: req.user.id }, select: { projectId: true }, orderBy: { createdAt: 'desc' } });
     const out = [];
     /* Carrega os projetos em paralelo, não um depois do outro. */
-    const all = await Promise.all(ms.map(({ projectId }) => load(prisma, projectId)));
+    const all = await Promise.all(ms.map(({ projectId }) => load(prisma, projectId, req.user.id)));
     for (const p of all) {
       if (!p) continue;
       const v = viewFor(p, req.user.id), qpos = Object.fromEntries(Object.entries(p.answers[req.user.id] || {}).map(([aid, an]) => [aid, an.step]));
@@ -103,8 +103,9 @@ export function routes(app: Express, { prisma, wrap, auth }: Contexto) {
   }));
 
   const projectFor = async (req: AuthedRequest, res: Response): Promise<ProjetoCompleto | null> => {
-    const p = await load(prisma, req.params.id);
-    if (!p || !mem(p, req.user.id)) { res.status(404).json({ err: { _: 'Projeto não encontrado ou sem acesso.' } }); return null; }
+    /* load já devolve null para quem não participa. */
+    const p = await load(prisma, req.params.id, req.user.id);
+    if (!p) { res.status(404).json({ err: { _: 'Projeto não encontrado ou sem acesso.' } }); return null; }
     return p;
   };
 
@@ -117,7 +118,7 @@ export function routes(app: Express, { prisma, wrap, auth }: Contexto) {
   app.post('/api/projects/:id/invite', auth, wrap(async (req: AuthedRequest, res) => {
     const email = String(req.body.email || '').trim().toLowerCase();
     if (!validEmail(email)) return res.status(400).json({ err: { inv: 'Informe um e-mail válido' } });
-    const added = await withProject(prisma, req.params.id, async (p, tx) => {
+    const added = await withProject(prisma, req.params.id, req.user.id, async (p, tx) => {
       if (!p) throw new ActionError('Projeto não encontrado.', 404);
       if (p.org !== req.user.id) throw new ActionError('Só quem organiza pode adicionar pessoas.', 403);
       const u = await tx.user.upsert({ where: { email }, create: { email, name: nameFromEmail(email) }, update: {} });
@@ -132,9 +133,9 @@ export function routes(app: Express, { prisma, wrap, auth }: Contexto) {
       text: `${req.user.name} adicionou você ao projeto "${added.project.name}" na MIP. Cada pessoa responde em particular sobre o que a equipe criou, e ninguém vê suas respostas até o fim.`,
       linkLabel: 'Abrir o projeto'
     });
-    const fresh = await load(prisma, req.params.id);
-    /* Garantido hoje: o projeto existia na transação acima e nenhuma rota apaga projeto.
-       Se um dia houver exclusão de projeto, aqui vira 500 (o wrap responde). */
+    const fresh = await load(prisma, req.params.id, req.user.id);
+    /* Garantido hoje: o projeto existia na transação acima com quem organiza como integrante, e nenhuma rota apaga
+       projeto. Se um dia houver exclusão de projeto, aqui vira 500 (o wrap responde). */
     res.json({ result: { toast: added.user.name + ' entrou no projeto.' + (sent ? ' Enviamos um e-mail com o link de acesso.' : ' O e-mail não foi enviado; compartilhe o link de convite.') }, project: viewFor(fresh!, req.user.id) });
   }));
 
@@ -142,7 +143,7 @@ export function routes(app: Express, { prisma, wrap, auth }: Contexto) {
      Sem `confirm`, devolve o que será apagado para a tela pedir confirmação. */
   app.post('/api/projects/:id/remove', auth, wrap(async (req: AuthedRequest, res) => {
     const pid = String(req.body.pid || '');
-    const out = await withProject(prisma, req.params.id, async (p, tx) => {
+    const out = await withProject(prisma, req.params.id, req.user.id, async (p, tx) => {
       if (!p) throw new ActionError('Projeto não encontrado.', 404);
       if (p.org !== req.user.id) throw new ActionError('Só quem organiza pode remover pessoas.', 403);
       if (pid === p.org) throw new ActionError({ np: 'Quem organiza não pode ser removido do projeto.' });
@@ -160,9 +161,9 @@ export function routes(app: Express, { prisma, wrap, auth }: Contexto) {
       return { toast: name + ' foi removido do projeto.' };
     });
     if (out.confirmRemove) return res.json({ result: out });
-    const fresh = await load(prisma, req.params.id);
-    /* Garantido hoje: o projeto existia na transação acima e nenhuma rota apaga projeto.
-       Se um dia houver exclusão de projeto, aqui vira 500 (o wrap responde). */
+    const fresh = await load(prisma, req.params.id, req.user.id);
+    /* Garantido hoje: o projeto existia na transação acima com quem organiza como integrante (quem organiza não pode
+       ser removido), e nenhuma rota apaga projeto. Se um dia houver exclusão de projeto, aqui vira 500 (o wrap responde). */
     res.json({ result: out, project: viewFor(fresh!, req.user.id) });
   }));
 
@@ -191,14 +192,18 @@ export function routes(app: Express, { prisma, wrap, auth }: Contexto) {
     const pr = await prisma.project.findUnique({ where: { inviteCode: req.params.code } });
     if (!pr) return res.status(404).json({ err: { _: 'Convite não encontrado.' } });
     if (!pr.inviteActive) return res.status(400).json({ err: { link: 'Este convite não está mais ativo' } });
-    /* Garantido hoje: pr foi achado logo acima e nenhuma rota apaga projeto (withProject só passa null para projeto
-       que não existe). Se um dia houver exclusão de projeto, aqui vira 500 (o wrap responde). */
-    const out = await withProject(prisma, pr.id, async (p, tx) => {
-      if (mem(p!, req.user.id)) return { already: true };
-      await tx.member.create({ data: { projectId: p!.id, userId: req.user.id, elig: p!.phase === 'coleta' } });
-      p!.history.unshift({ at: Date.now(), who: req.user.id, text: 'entrou pelo link de convite' });
-      return { already: false, elig: p!.phase === 'coleta' };
-    });
+    /* Quem entra ainda não participa, então não passa por withProject/load (que só montam o projeto para integrantes).
+       Mesma trava de withProject; lê só a fase e a própria linha em Member. */
+    const out = await prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT id FROM "Project" WHERE id = ${pr.id} FOR UPDATE`;
+      if (await tx.member.findUnique({ where: { projectId_userId: { projectId: pr.id, userId: req.user.id } }, select: { id: true } })) return { already: true };
+      /* Garantido hoje: pr foi achado logo acima e nenhuma rota apaga projeto. Se um dia houver exclusão de projeto,
+         aqui vira 500 (o wrap responde). */
+      const { phase } = (await tx.project.findUnique({ where: { id: pr.id }, select: { phase: true } }))!;
+      await tx.member.create({ data: { projectId: pr.id, userId: req.user.id, elig: phase === 'coleta' } });
+      await tx.historyEntry.create({ data: { projectId: pr.id, userId: req.user.id, text: 'entrou pelo link de convite' } });
+      return { already: false, elig: phase === 'coleta' };
+    }, { timeout: 15000 });
     res.json({ id: pr.id, result: { notice: out.already ? 'Você já participa deste projeto.' : out.elig ? 'Você entrou no projeto. Veja sua tarefa atual.' : 'Você entrou no projeto, mas as respostas já foram encerradas e você não responde desta vez.' } });
   }));
 }
