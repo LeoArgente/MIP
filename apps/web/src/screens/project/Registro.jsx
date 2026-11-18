@@ -1,7 +1,7 @@
 /* Registro do acordo (Figma C14): o documento com as decisões, o código de verificação e as ações para guardar.
    O texto e o código (hash) vêm das cópias geradas por @mip/domain e pela API, como antes. */
 import { useEffect } from 'react';
-import { QS, elig, fmtAns, lastV, memorialText, nm, pctTxt } from '@mip/domain';
+import { QS, eligNaVersao, fmtAns, lastV, memorialText, nm, pctTxt } from '@mip/domain';
 import { AppButton, Chip } from '../../components/ds/index.js';
 import { Panel } from '../../components/journey/Shell.jsx';
 import { Banner, copyText } from '../../components/ui.jsx';
@@ -21,7 +21,7 @@ export function Registro() {
   useEffect(() => { if (seen) markSeen(p.id); }, [seen, p.id]);
   if (!lv) return <Banner>O registro do acordo fica disponível depois do envio da primeira proposta.</Banner>;
 
-  const quem = elig(p).filter(x => lv.conf[x]?.v === 'ok').map(x => nm(p, x));
+  const quem = eligNaVersao(lv).filter(x => lv.conf[x]?.v === 'ok').map(x => nm(p, x));
   const data = new Date(m ? m.at : lv.at).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
   const copiar = async txt => say(await copyText(txt) ? 'Texto copiado.' : 'Não foi possível copiar. Selecione o texto e copie manualmente.');
   const Row = ({ k, v }) => <div className="jr-ans jr-ans--line"><span className="jr-ans-k jr-ans-k--doc type-app-small">{k}</span><span className="type-app-small jr-grow">{v}</span></div>;

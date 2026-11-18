@@ -1,5 +1,5 @@
 /* Versões: envio da proposta para confirmação, reabertura, confirmação e recusa de cada pessoa. */
-import { approved, elig, nm, lastV, propOf, snapshot, membrosCongelados } from '@mip/domain';
+import { approved, eligNaVersao, nm, lastV, propOf, snapshot, membrosCongelados } from '@mip/domain';
 import { ActionError, deny, fail, now, needOrg, needPhase, ensureProp } from '../shared.js';
 import { log } from '../historico/index.js';
 import type { Acoes } from '../shared.js';
@@ -29,10 +29,10 @@ export const ACTIONS: Acoes = {
     /* Garantido: sem n, +undefined é NaN e deny lança. */
     if (!lv || +d.n! !== lv.n || p.phase !== 'confirmacao') deny('Só é possível se posicionar sobre a versão atual.');
     if (lv.conf[me]) deny('Você já se posicionou sobre esta versão.');
-    if (!elig(p).includes(me)) deny('Você não respondeu desta vez e não confirma a proposta.');
+    if (!eligNaVersao(lv).includes(me)) deny('Você não respondeu desta vez e não confirma a proposta.');
     lv.conf[me] = { v: 'ok', comment: '', at: now() };
     log(p, me, 'confirmou a proposta ' + lv.n);
-    const allOk = elig(p).every(x => lv.conf[x]?.v === 'ok'), sem = Object.values(lv.snap).some(s => s.semAcordo);
+    const allOk = eligNaVersao(lv).every(x => lv.conf[x]?.v === 'ok'), sem = Object.values(lv.snap).some(s => s.semAcordo);
     if (allOk && !sem) { p.phase = 'consolidado'; return { tab: 'memorial', notice: 'Todos confirmaram a proposta. O registro pode ser gerado agora.' }; }
     if (allOk) return { notice: 'Todos confirmaram a proposta, mas há criação sem acordo. O registro mantém essa pendência.' };
     return { notice: 'Sua confirmação foi registrada. Aguarde as demais pessoas.' };
@@ -43,7 +43,7 @@ export const ACTIONS: Acoes = {
     /* Garantido: sem n, +undefined é NaN e deny lança. */
     if (!lv || +d.n! !== lv.n || p.phase !== 'confirmacao') deny('Só é possível se posicionar sobre a versão atual.');
     if (lv.conf[me]) deny('Você já se posicionou sobre esta versão.');
-    if (!elig(p).includes(me)) deny('Você não respondeu desta vez e não confirma a proposta.');
+    if (!eligNaVersao(lv).includes(me)) deny('Você não respondeu desta vez e não confirma a proposta.');
     if (p.org === me) deny('Quem organiza edita a proposta em vez de recusá-la.');
     const ra = (d.assets || []).filter(x => lv.snap[x]), comment = (d.comment || '').trim(), err: Record<string, string> = {};
     if (!ra.length) err.refa = 'Marque pelo menos uma criação';
