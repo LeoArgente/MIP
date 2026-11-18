@@ -28,6 +28,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      # Mesmo script que a Vercel roda (tokens, domain, web, prisma generate, api): pega build quebrado antes do deploy.
+      - run: npm run build
 
   api:
     name: api (jornada)
