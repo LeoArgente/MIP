@@ -364,15 +364,23 @@ describe('memorialBody', () => {
     ]);
   });
 
-  test('recusas de todas as versões, inclusive a atual', () => {
+  test('recusas anteriores: só as das versões antes da impressa; a da atual fica só em CONFIRMAÇÕES', () => {
     const p = projeto();
     enviarVersao(p, { bruno: { v: 'no', comment: 'Ajustar', at: T }, carla: { v: 'ok', at: T } });
     enviarVersao(p, { carla: { v: 'no', comment: 'Mudou', at: T } });
     assert.deepEqual(bloco(linhas(p), 'RECUSAS E AJUSTES ANTERIORES'), [
       'RECUSAS E AJUSTES ANTERIORES',
-      '- Bruno recusou a proposta 1: Ajustar',
-      '- Carla recusou a proposta 2: Mudou'
+      '- Bruno recusou a proposta 1: Ajustar'
     ]);
+  });
+
+  test('recusa só na versão impressa (prévia em decisão): aparece em CONFIRMAÇÕES e não há recusas anteriores', () => {
+    const p = projeto();
+    enviarVersao(p, { bruno: { v: 'no', comment: 'Ajustar o logo', assets: ['a1'], at: T } });
+    const L = linhas(p);
+    assert.ok(L.includes('- Bruno: recusou (Ajustar o logo) em ' + T_TXT));
+    assert.ok(!L.includes('RECUSAS E AJUSTES ANTERIORES'));
+    assert.equal(L.filter(l => l.includes('Ajustar o logo')).length, 1);
   });
 
   test('sem recusas não há a seção; o texto de limites fecha o registro', () => {

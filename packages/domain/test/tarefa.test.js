@@ -149,10 +149,30 @@ describe('taskFor', () => {
       assert.equal(taskFor(p, 'carla').label, 'Você está em dia');
     });
 
-    test('com várias recusas, a nota nomeia a primeira', () => {
+    test('várias recusas: a ordem é a de chegada, não a das chaves; cada uma com suas criações', () => {
+      const p = projeto();
+      enviarVersao(p, { bruno: { v: 'no', comment: 'B', assets: ['a1'], at: 5 }, carla: { v: 'no', comment: 'C', at: 3 } });
+      assert.equal(taskFor(p, 'ana').note, '2 pessoas recusaram a proposta 1. Carla: "C". Bruno pediu ajuste em Logo: "B"');
+    });
+
+    test('várias recusas no mesmo instante: desempate pelo menor id', () => {
+      const p = projeto();
+      enviarVersao(p, { carla: { v: 'no', comment: 'C', at: 1 }, bruno: { v: 'no', comment: 'B', at: 1 } });
+      assert.equal(taskFor(p, 'ana').note, '2 pessoas recusaram a proposta 1. Bruno: "B". Carla: "C"');
+    });
+
+    test('várias recusas: as demais pessoas também veem todas', () => {
+      const p = addMembro(projeto(), 'dani', { elig: true });
+      enviarVersao(p, { carla: { v: 'no', comment: 'C', assets: ['a1'], at: 1 }, bruno: { v: 'no', comment: 'B', at: 2 } });
+      const t = taskFor(p, 'dani');
+      assert.equal(t.label, 'A proposta voltou para ajuste');
+      assert.equal(t.note, '2 pessoas recusaram. Carla: "C". Bruno: "B". Quando a nova versão chegar, todos confirmam de novo.');
+    });
+
+    test('com várias recusas, a nota cita todas, na ordem em que chegaram', () => {
       const p = projeto();
       enviarVersao(p, { carla: { v: 'no', comment: 'C', at: 1 }, bruno: { v: 'no', comment: 'B', at: 2 } });
-      assert.equal(taskFor(p, 'ana').note, 'Carla recusou a proposta 1: "C"');
+      assert.equal(taskFor(p, 'ana').note, '2 pessoas recusaram a proposta 1. Carla: "C". Bruno: "B"');
       assert.equal(taskFor(p, 'bruno').label, 'Sua recusa foi enviada');
     });
   });

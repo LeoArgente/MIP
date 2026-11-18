@@ -51,12 +51,12 @@ describe('propDefault', () => {
       assert.deepEqual(pr.v.titular, []);
     });
 
-    test('comportamento atual: o externo é copiado como a primeira pessoa escreveu, sem normalizar', () => {
+    test('o externo vem sem espaços nas pontas, com a grafia da primeira resposta', () => {
       const p = projeto();
       responder(p, 'ana', { titularExterno: ' Empresa X ' });
       responder(p, 'bruno', { titularExterno: 'empresa x' });
       responder(p, 'carla', { titularExterno: 'EMPRESA X' });
-      assert.equal(propDefault(p, 'a1').externo, ' Empresa X ');
+      assert.equal(propDefault(p, 'a1').externo, 'Empresa X');
     });
   });
 

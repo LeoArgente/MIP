@@ -1,7 +1,7 @@
 /* Grupo 3 — Validações: propError, stepErrors, sendErrors, sobreErrors, perfilErrors, perfilDone. */
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { propError, propDefault, stepErrors, sendErrors, sobreErrors, perfilErrors, perfilDone, PCT_SIM, PCT_NEG } from '@mip/domain';
+import { propError, propDefault, stepErrors, sendErrors, sobreErrors, perfilErrors, perfilDone, normExterno, PCT_SIM, PCT_NEG } from '@mip/domain';
 import { projeto, addMembro, BASE } from './fixtures.js';
 
 const MSG_PCT = 'Informe percentuais válidos para todos os titulares pretendidos, somando 100%.';
@@ -59,6 +59,11 @@ describe('propError', () => {
     const v = { divisao: PCT_SIM, titular: ['ana'] };
     assert.equal(propError(comProposta({ externo: 'Empresa X', percentual: { ana: 80 } }, v), 'a1'), MSG_PCT);
     assert.equal(propError(comProposta({ externo: 'Empresa X', percentual: { ana: 80, __externo__: 20 } }, v), 'a1'), null);
+  });
+
+  test('titular externo só com espaços não entra nos percentuais combinados', () => {
+    const v = { divisao: PCT_SIM, titular: ['ana'] };
+    assert.equal(propError(comProposta({ externo: '   ', percentual: { ana: 100 } }, v), 'a1'), null);
   });
 });
 
@@ -132,7 +137,7 @@ describe('stepErrors', () => {
 
   test('donos: titular e divisão obrigatórios; titular externo supre a titularidade', () => {
     const msg = 'Escolha uma opção ou informe titular fora da equipe';
-    assert.deepEqual(stepErrors(projeto(), 'ana', a, { titular: [], divisao: '' }, 'donos'), { 'a1:titular': msg, 'a1:divisao': msg });
+    assert.deepEqual(stepErrors(projeto(), 'ana', a, { titular: [], divisao: '' }, 'donos'), { 'a1:titular': msg, 'a1:divisao': 'Escolha uma opção' });
     assert.deepEqual(stepErrors(projeto(), 'ana', a, { titular: [], titularExterno: 'Empresa X', divisao: PCT_NEG }, 'donos'), {});
     assert.deepEqual(stepErrors(projeto(), 'ana', a, { titular: [], titularExterno: '  ', divisao: PCT_NEG }, 'donos'), { 'a1:titular': msg });
     assert.deepEqual(stepErrors(projeto(), 'ana', a, { titular: ['bruno'], divisao: PCT_NEG }, 'donos'), {});
@@ -146,8 +151,8 @@ describe('stepErrors', () => {
     assert.deepEqual(stepErrors(projeto(), 'ana', { id: 'a1', type: 'outro' }, d, 'uso'), {});
   });
 
-  test('comportamento atual: a mensagem de uso também fala em "titular fora da equipe"', () => {
-    assert.equal(stepErrors(projeto(), 'ana', a, {}, 'uso')['a1:uso'], 'Escolha uma opção ou informe titular fora da equipe');
+  test('a mensagem de uso não fala em "titular fora da equipe"', () => {
+    assert.equal(stepErrors(projeto(), 'ana', a, {}, 'uso')['a1:uso'], 'Escolha uma opção');
   });
 
   test('review não valida nada', () => {
@@ -187,6 +192,11 @@ describe('sendErrors', () => {
     assert.deepEqual(sendErrors(projeto(), 'ana', a, d3), {});
   });
 
+  test('titular externo só com espaços não supre a titularidade no envio', () => {
+    const d = { ...ENVIO_OK(), titular: [], titularExterno: '   ' };
+    assert.deepEqual(sendErrors(projeto(), 'ana', a, d), { 'a1:titular': 'Responda esta pergunta para enviar' });
+  });
+
   test('toda pergunta do tipo da criação é obrigatória', () => {
     const d = { ...ENVIO_OK(), marcaRegistro: '', origem: undefined };
     assert.deepEqual(sendErrors(projeto(), 'ana', a, d), {
@@ -204,6 +214,16 @@ describe('sendErrors', () => {
   test('link opcional, mas válido se vier', () => {
     assert.deepEqual(sendErrors(projeto(), 'ana', a, { ...ENVIO_OK(), link: 'x.com' }), { 'a1:link': 'Informe um link válido, começando com http' });
     assert.deepEqual(sendErrors(projeto(), 'ana', a, { ...ENVIO_OK(), link: 'http://x.com' }), {});
+  });
+});
+
+describe('normExterno', () => {
+  test('tira os espaços das pontas, mantém a grafia; vazio, só espaços ou ausente viram texto vazio', () => {
+    assert.equal(normExterno('  Empresa X  '), 'Empresa X');
+    assert.equal(normExterno('EMPRESA x'), 'EMPRESA x');
+    assert.equal(normExterno('   '), '');
+    assert.equal(normExterno(undefined), '');
+    assert.equal(normExterno(null), '');
   });
 });
 
