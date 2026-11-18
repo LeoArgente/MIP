@@ -6,12 +6,12 @@ import { shares, partOf, partTxt, pctTxt, contribOf, notasOf, hasNota, PCT_SIM, 
 import { projeto, responder, semResposta, addMembro } from './fixtures.js';
 
 describe('shares', () => {
-  test('proporção de cada valor sobre o total, arredondada', () => {
-    assert.deepEqual(shares({ ana: 10, bruno: 0, carla: 6 }), { ana: 63, bruno: 0, carla: 38 });
+  test('proporção de cada valor sobre o total, em inteiros que somam 100: resto empatado vai para o valor maior', () => {
+    assert.deepEqual(shares({ ana: 10, bruno: 0, carla: 6 }), { ana: 63, bruno: 0, carla: 37 });
   });
 
-  test('o arredondamento não é normalizado: a soma pode não dar 100', () => {
-    assert.deepEqual(shares({ a: 1, b: 1, c: 1 }), { a: 33, b: 33, c: 33 });
+  test('três partes iguais somam 100: o menor id fica com o ponto a mais', () => {
+    assert.deepEqual(shares({ a: 1, b: 1, c: 1 }), { a: 34, b: 33, c: 33 });
   });
 
   test('total zero dá zero para todos, sem dividir por zero', () => {
@@ -21,6 +21,57 @@ describe('shares', () => {
 
   test('converte texto para número e trata inválidos como zero', () => {
     assert.deepEqual(shares({ a: '3', b: 'x', c: null }), { a: 100, b: 0, c: 0 });
+  });
+
+  describe('soma 100 quando a divisão não fecha (maior resto)', () => {
+    const iguais = n => Object.fromEntries(Array.from({ length: n }, (_, i) => ['p' + (i + 1), 1]));
+    const soma = o => Object.values(o).reduce((s, x) => s + x, 0);
+
+    test('3 pessoas iguais: 34 + 33 + 33', () => {
+      const o = shares(iguais(3));
+      assert.equal(soma(o), 100);
+      assert.deepEqual(o, { p1: 34, p2: 33, p3: 33 });
+    });
+
+    test('6 pessoas iguais: quatro com 17, duas com 16', () => {
+      const o = shares(iguais(6));
+      assert.equal(soma(o), 100);
+      assert.deepEqual(o, { p1: 17, p2: 17, p3: 17, p4: 17, p5: 16, p6: 16 });
+    });
+
+    test('7 pessoas iguais: duas com 15, cinco com 14', () => {
+      const o = shares(iguais(7));
+      assert.equal(soma(o), 100);
+      assert.deepEqual(o, { p1: 15, p2: 15, p3: 14, p4: 14, p5: 14, p6: 14, p7: 14 });
+    });
+
+    test('valores diferentes: os pontos que faltam vão para os maiores restos, não para os maiores valores', () => {
+      // 52,63 · 31,58 · 15,79: pisos somam 98; os restos ,79 e ,63 levam os 2 pontos.
+      const o = shares({ a: 10, b: 6, c: 3 });
+      assert.equal(soma(o), 100);
+      assert.deepEqual(o, { a: 53, b: 31, c: 16 });
+    });
+
+    test('resto igual na conta exata: o ponto vai para o valor maior, e o ruído do ponto flutuante não decide', () => {
+      // 16,67 · 16,67 · 66,67: os três restos são iguais; c (valor 4) leva o primeiro ponto, a (menor id) o segundo.
+      assert.deepEqual(shares({ a: 1, b: 1, c: 4 }), { a: 17, b: 16, c: 67 });
+    });
+
+    test('a ordem das chaves não muda o resultado', () => {
+      assert.deepEqual(shares({ c: 1, b: 1, a: 1 }), { a: 34, b: 33, c: 33 });
+      assert.deepEqual(shares({ carla: 6, bruno: 0, ana: 10 }), { ana: 63, bruno: 0, carla: 37 });
+    });
+
+    test('toda combinação de níveis para 4 pessoas soma 100, e ninguém se afasta 1 ponto ou mais da proporção', () => {
+      const N = [0, 3, 6, 10];
+      for (const a of N) for (const b of N) for (const c of N) for (const d of N) {
+        const n = { a, b, c, d }, tot = a + b + c + d;
+        if (!tot) continue;
+        const o = shares(n);
+        assert.equal(soma(o), 100, JSON.stringify(n));
+        for (const k of Object.keys(n)) assert.ok(Math.abs(o[k] - 100 * n[k] / tot) < 1, JSON.stringify(n) + ' ' + k);
+      }
+    });
   });
 });
 

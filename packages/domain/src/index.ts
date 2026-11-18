@@ -199,12 +199,32 @@ export const eligNaVersao = (v: Versao): Pid[] => v.membros
   : [...new Set(Object.values(v.snap).flatMap(x => (x.relatos || []).map(r => r.pid)))];
 export const roleTxt = (p: Projeto, pid: Pid): string => (p.org === pid ? 'Quem organiza' : 'Integrante');
 export const validLink = (s: string | null | undefined): boolean => /^https?:\/\/\S+$/i.test((s || '').trim());
+/* Titular fora da equipe (Resposta.titularExterno, Proposta.externo): o único lugar que diz como o texto é lido.
+   Sem espaços nas pontas; só espaços conta como vazio. A grafia (maiúsculas) é mantida. */
+export const normExterno = (s: string | null | undefined): string => (s || '').trim();
 
 /* ===== Participação percebida ===== */
 export const notasOf = (d: Resposta | null | undefined): Notas => (d && d.notas) || {};
 export const hasNota = (n: Notas, pid: Pid): boolean => n[pid] !== undefined && n[pid] !== '' && n[pid] !== null && !isNaN(+n[pid]);
 export const contribOf = (d: Resposta | null | undefined): Pid[] => Object.keys(notasOf(d)).filter(k => +notasOf(d)[k] > 0);
-export const shares = (n: Record<Pid, number | string>): Record<Pid, number> => { const ks = Object.keys(n), tot = ks.reduce((s, k) => s + (+n[k] || 0), 0), o: Record<Pid, number> = {}; ks.forEach(k => { o[k] = tot ? Math.round(100 * (+n[k] || 0) / tot) : 0; }); return o; };
+/* Percentuais inteiros que somam 100 (método do maior resto): cada pessoa recebe o piso da sua proporção, e os pontos
+   que faltam para 100 vão, um para cada, a quem tem o maior resto fracionário.
+   FATO DE PRODUTO: divisão igual nem sempre fecha em partes iguais. 100 entre 3 pessoas iguais dá 34 + 33 + 33:
+   alguém recebe o ponto a mais (entre 6 iguais, 4 recebem 17 e 2 recebem 16; entre 7, 2 recebem 15 e 5 recebem 14).
+   Empate de resto: primeiro quem tem o valor maior; persistindo o empate (valores iguais), o menor id em comparação
+   simples de texto, sem locale. A ordem das chaves de `n` não entra em nada: a mesma entrada dá sempre a mesma saída.
+   Total zero: todos 0, e a soma não fecha 100 (não há o que dividir). */
+export const shares = (n: Record<Pid, number | string>): Record<Pid, number> => {
+  const ks = Object.keys(n), val = (k: Pid) => +n[k] || 0, tot = ks.reduce((s, k) => s + val(k), 0), o: Record<Pid, number> = {};
+  if (!tot) { ks.forEach(k => { o[k] = 0; }); return o; }
+  /* Proporção em bilionésimos de ponto percentual, arredondada a inteiro: o ruído do ponto flutuante não decide
+     quem fica com o resto (dois restos iguais na conta exata ficam iguais aqui também). */
+  const u = (k: Pid) => Math.round(1e11 * val(k) / tot), resto = (k: Pid) => u(k) % 1e9;
+  ks.forEach(k => { o[k] = Math.floor(u(k) / 1e9); });
+  const falta = 100 - ks.reduce((s, k) => s + o[k], 0);
+  [...ks].sort((a, b) => resto(b) - resto(a) || val(b) - val(a) || (a < b ? -1 : a > b ? 1 : 0)).slice(0, falta).forEach(k => { o[k]++; });
+  return o;
+};
 export function partOf(p: Projeto, aid: Aid): Participacao {
   if (p.parts && p.parts[aid]) return p.parts[aid];
   const E = elig(p), avg: Record<Pid, number> = {};
@@ -238,7 +258,7 @@ export function itemStatus(p: Projeto, aid: Aid, q: ChavePergunta): ItemStatus {
   const vals: { pid: Pid; v: ValorResposta; ext: string }[] = [];
   /* Quem não respondeu esta pergunta (por exemplo, enviou antes de ela existir) conta como pendente, nunca como concordância. */
   E.forEach(pid => { const a = ansOf(p, pid, aid); if (a && a.sent && a.sent[q] !== undefined && a.sent[q] !== '') vals.push({ pid, v: a.sent[q], ext: q === 'titular' ? (a.sent.titularExterno || '') : '' }); });
-  const set = new Set(vals.map(x => norm(x.v, q) + (q === 'titular' ? '|' + x.ext.trim().toLowerCase() : '')));
+  const set = new Set(vals.map(x => norm(x.v, q) + (q === 'titular' ? '|' + normExterno(x.ext).toLowerCase() : '')));
   const status = set.size > 1 ? 'div' : (vals.length === 0 || vals.length < E.length ? 'pend' : 'conv');
   return { status, vals, missing: E.filter(pid => !vals.find(x => x.pid === pid)) };
 }
@@ -255,7 +275,8 @@ export function propDefault(p: Projeto, aid: Aid): Proposta {
   const a = p.assets.find(x => x.id === aid), v: Partial<Record<ChaveDecisao, Notas | ValorResposta>> = {};
   decQs(a).forEach(q => { const r = itemStatus(p, aid, q); v[q] = r.status === 'conv' && r.vals.length ? clone(r.vals[0].v) : (isP(q) ? [] : ''); });
   const own = itemStatus(p, aid, 'titular');
-  return { v: v as ValoresProposta, externo: own.status === 'conv' && own.vals.length ? own.vals[0].ext : '', percentual: {}, texto: '', semAcordo: false, saved: false };
+  /* A convergência compara sem as pontas e sem caixa; o texto que entra na proposta é o da primeira resposta, normalizado. */
+  return { v: v as ValoresProposta, externo: own.status === 'conv' && own.vals.length ? normExterno(own.vals[0].ext) : '', percentual: {}, texto: '', semAcordo: false, saved: false };
 }
 export const propOf = (p: Projeto, aid: Aid): Proposta => p.proposal[aid] || propDefault(p, aid);
 export const decPts = (p: Projeto, a: Ativo): ChavePergunta[] => (['notas'] as ChavePergunta[]).concat(decQs(a)).filter(q => itemStatus(p, a.id, q).status !== 'conv');
@@ -268,16 +289,16 @@ export const diffCount = (p: Projeto): number => approved(p).reduce((s, a) => s 
 /* Validação da proposta de uma criação (null quando está tudo certo). */
 export function propError(p: Projeto, aid: Aid): string | null {
   const pr = propOf(p, aid), a = p.assets.find(x => x.id === aid);
-  const miss = decQs(a).filter(q => isP(q) ? !(pr.v[q] || []).length && !(q === 'titular' && pr.externo?.trim()) : !pr.v[q]);
+  const miss = decQs(a).filter(q => isP(q) ? !(pr.v[q] || []).length && !(q === 'titular' && normExterno(pr.externo)) : !pr.v[q]);
   if (!pr.semAcordo && miss.length) return 'Falta preencher: ' + miss.map(q => QS[q].short).join(', ') + '. Ou marque que ainda não há acordo.';
   if (!pr.semAcordo && pr.v.divisao === PCT_SIM) {
-    const ps = (pr.v.titular || []).concat(pr.externo?.trim() ? ['__externo__'] : []), vals = ps.map(pid => Number((pr.percentual || {})[pid]));
+    const ps = (pr.v.titular || []).concat(normExterno(pr.externo) ? ['__externo__'] : []), vals = ps.map(pid => Number((pr.percentual || {})[pid]));
     if (!ps.length || ps.some(pid => (pr.percentual || {})[pid] === '' || (pr.percentual || {})[pid] === undefined) || vals.some(n => !Number.isFinite(n) || n < 0 || n > 100) || Math.abs(vals.reduce((x, y) => x + y, 0) - 100) > 0.001) return 'Informe percentuais válidos para todos os titulares pretendidos, somando 100%.';
   }
   /* Sem acordo, os percentuais combinados podem ficar em branco (nem precisam somar 100), mas o que foi informado
      precisa ser um percentual, porque vai para o registro do acordo como está. */
   if (pr.semAcordo && pr.v.divisao === PCT_SIM) {
-    const pc = pr.percentual || {}, ps = (pr.v.titular || []).concat(pr.externo?.trim() ? ['__externo__'] : []);
+    const pc = pr.percentual || {}, ps = (pr.v.titular || []).concat(normExterno(pr.externo) ? ['__externo__'] : []);
     if (ps.some(pid => !pctVazio(pc[pid]) && !(Number(pc[pid]) >= 0 && Number(pc[pid]) <= 100))) return 'Os percentuais informados precisam ser números de 0 a 100. Deixe em branco o que ainda não foi combinado.';
   }
   return null;
@@ -293,9 +314,10 @@ export function stepErrors(p: Projeto, me: Pid, a: Pick<Ativo, 'id' | 'type'>, d
     if (!d.titularAtual) err[k + 'titularAtual'] = 'Diga se já existe um documento';
     if ((d.link || '').trim() && !validLink(d.link)) err[k + 'link'] = 'Informe um link válido, começando com http';
   } else if (g !== 'review') {
-    /* O filtro deixa de fora 'desc', que não é pergunta. */
+    /* O filtro deixa de fora 'desc', que não é pergunta. Só 'titular' aceita titular fora da equipe, e só a mensagem
+       dele fala nisso. */
     GROUPS[g].filter((x): x is ChavePergunta => (qsFor(a) as CampoTela[]).includes(x)).forEach(x => {
-      if (isP(x) ? !(d[x] || []).length && !(x === 'titular' && (d.titularExterno || '').trim()) : !d[x]) err[k + x] = 'Escolha uma opção ou informe titular fora da equipe';
+      if (isP(x) ? !(d[x] || []).length && !(x === 'titular' && normExterno(d.titularExterno)) : !d[x]) err[k + x] = x === 'titular' ? 'Escolha uma opção ou informe titular fora da equipe' : 'Escolha uma opção';
     });
   }
   return err;
@@ -306,7 +328,7 @@ export function sendErrors(p: Projeto, me: Pid, a: Pick<Ativo, 'id' | 'type'>, d
   qsFor(a).forEach(q => {
     if (q === 'notas') { const n = notasOf(d), o: Record<Pid, number> = {}; E.forEach(pid => { if (hasNota(n, pid)) o[pid] = +n[pid]; }); d.notas = o; if (!E.every(pid => hasNota(o, pid))) err[a.id + ':notas'] = 'Escolha a participação percebida de cada pessoa'; return; }
     if (isP(q)) d[q] = (d[q] || []).filter(x => E.includes(x));
-    if (isP(q) ? !d[q]!.length && !(q === 'titular' && (d.titularExterno || '').trim()) : !d[q]) err[a.id + ':' + q] = 'Responda esta pergunta para enviar';
+    if (isP(q) ? !d[q]!.length && !(q === 'titular' && normExterno(d.titularExterno)) : !d[q]) err[a.id + ':' + q] = 'Responda esta pergunta para enviar';
   });
   if (contribOf(d).includes(me) && !(d.desc || '').trim()) err[a.id + ':desc'] = 'Conte em uma frase o que você fez';
   if ((d.link || '').trim() && !validLink(d.link)) err[a.id + ':link'] = 'Informe um link válido, começando com http';
@@ -332,13 +354,18 @@ export function taskFor(p: Projeto, pid: Pid, qpos: Record<Aid, number | undefin
     return { tab: 'proj', label: 'Você está em dia', note: 'Suas respostas foram enviadas. Avisaremos quando a proposta estiver pronta.' };
   }
   if (p.phase === 'decisao') {
-    /* rf só tem itens quando lv existe. */
-    const lv = lastV(p), rf = lv ? Object.keys(lv.conf).filter(k => lv.conf[k].v === 'no') : [];
+    /* rf só tem itens quando lv existe. Todas as recusas da versão, na ordem em que chegaram (empate: menor id). A
+       ordem das chaves de conf não serve: o banco (jsonb) não a guarda. */
+    const lv = lastV(p), rf = lv ? Object.keys(lv.conf).filter(k => lv.conf[k].v === 'no').sort((a, b) => lv.conf[a].at - lv.conf[b].at || (a < b ? -1 : a > b ? 1 : 0)) : [];
     if (rf.length) {
-      const r = lv!.conf[rf[0]], who = nm(p, rf[0]), ats = (r.assets || []).map(x => lv!.snap[x]?.name).filter(Boolean).join(', ');
-      if (org) return { tab: 'decidir', label: 'Ajustar a proposta', note: who + ' recusou a proposta ' + lv!.n + (ats ? ' e pediu ajuste em ' + ats : '') + ': "' + r.comment + '"', cta: 'Ajustar proposta' };
+      /* Os comentários entram inteiros: são o que quem organiza precisa ajustar, e cortar um deles esconderia parte do pedido. */
+      const criacoes = (k: Pid) => (lv!.conf[k].assets || []).map(x => lv!.snap[x]?.name).filter(Boolean).join(', '), fala = (k: Pid) => '"' + lv!.conf[k].comment + '"';
+      const who = nm(p, rf[0]), ats = criacoes(rf[0]), varias = rf.length > 1;
+      if (org) return { tab: 'decidir', label: 'Ajustar a proposta', note: varias
+        ? rf.length + ' pessoas recusaram a proposta ' + lv!.n + '. ' + rf.map(k => nm(p, k) + (criacoes(k) ? ' pediu ajuste em ' + criacoes(k) : '') + ': ' + fala(k)).join('. ')
+        : who + ' recusou a proposta ' + lv!.n + (ats ? ' e pediu ajuste em ' + ats : '') + ': ' + fala(rf[0]), cta: 'Ajustar proposta' };
       if (rf.includes(pid)) return { tab: 'proj', label: 'Sua recusa foi enviada', note: nm(p, p.org) + ' vai ajustar a proposta. Você confirma a nova versão quando ela chegar.' };
-      return { tab: 'proj', label: 'A proposta voltou para ajuste', note: who + ' recusou: "' + r.comment + '". Quando a nova versão chegar, todos confirmam de novo.' };
+      return { tab: 'proj', label: 'A proposta voltou para ajuste', note: (varias ? rf.length + ' pessoas recusaram. ' + rf.map(k => nm(p, k) + ': ' + fala(k)).join('. ') : who + ' recusou: ' + fala(rf[0])) + '. Quando a nova versão chegar, todos confirmam de novo.' };
     }
   }
   if (p.phase === 'encerrada' || p.phase === 'decisao') return org
@@ -452,7 +479,8 @@ export function memorialBody(p: Projeto, at: number | string | Date): string {
   });
   L.push(''); L.push('CONFIRMAÇÕES DA PROPOSTA ' + v.n);
   E.forEach(pid => { const c = v.conf[pid]; L.push('- ' + n(pid) + ': ' + (c ? (c.v === 'ok' ? 'confirmou' : 'recusou (' + c.comment + ')') + ' em ' + fmt(c.at) : 'ainda não se posicionou')); });
-  const ref: string[] = []; p.versions.forEach(x => Object.keys(x.conf).forEach(k => { if (x.conf[k].v === 'no') ref.push('- ' + n(k) + ' recusou a proposta ' + x.n + ': ' + x.conf[k].comment); }));
+  /* Só as versões anteriores: as recusas da versão impressa já estão no bloco CONFIRMAÇÕES acima. */
+  const ref: string[] = []; p.versions.slice(0, -1).forEach(x => Object.keys(x.conf).forEach(k => { if (x.conf[k].v === 'no') ref.push('- ' + n(k) + ' recusou a proposta ' + x.n + ': ' + x.conf[k].comment); }));
   if (ref.length) { L.push(''); L.push('RECUSAS E AJUSTES ANTERIORES'); ref.forEach(r => L.push(r)); }
   L.push(''); L.push(LIMITS);
   return L.join('\n');
