@@ -3,11 +3,11 @@
 import { Prisma } from '@prisma/client';
 import type { PrismaClient } from '@prisma/client';
 import { clone } from '@mip/domain';
-import type { Projeto, Pid, Aid, Sobre, Perfil, Fase, PassoPreparo, StatusMembro, StatusAtivo, TipoCriacao, ValorConfirmacao, Resposta, EntradaResposta, Proposta, CriacaoCongelada, Confirmacao, Comentario, EntradaHistorico, Memorial } from '@mip/domain';
+import type { Projeto, Pid, Aid, Sobre, Perfil, Fase, PassoPreparo, StatusMembro, StatusAtivo, TipoCriacao, ValorConfirmacao, Resposta, EntradaResposta, Proposta, CriacaoCongelada, MembroCongelado, Confirmacao, Comentario, EntradaHistorico, Memorial } from '@mip/domain';
 
 /* Este é o único lugar onde o que vem do banco vira objeto do domínio (e volta).
-   Os campos Json do Prisma (Project.sobre, Member.perfil, Answer.draft, Answer.sent, Proposal.data, Version.snap
-   e Confirmation.assets) chegam como JsonValue, sem forma; os textos de estado (phase, setupStep, status, type, value)
+   Os campos Json do Prisma (Project.sobre, Member.perfil, Answer.draft, Answer.sent, Proposal.data, Version.snap,
+   Version.members e Confirmation.assets) chegam como JsonValue, sem forma; os textos de estado (phase, setupStep, status, type, value)
    chegam como string. As conversões abaixo (`as`) não validam nada: confiam que o conteúdo é o que save()
    (ou o seed) gravou. */
 
@@ -68,7 +68,7 @@ export async function load(tx: Prisma.TransactionClient, projectId: string): Pro
     versions: r.versions.map(v => {
       const conf: Record<Pid, Confirmacao> = {};
       v.confirmations.forEach(c => { conf[c.userId] = { v: c.value as ValorConfirmacao, comment: c.comment, assets: c.assets as Aid[], at: ms(c.createdAt) }; });
-      return { id: v.id, n: v.n, at: ms(v.createdAt), snap: v.snap as unknown as Record<Aid, CriacaoCongelada>, conf };
+      return { id: v.id, n: v.n, at: ms(v.createdAt), snap: v.snap as unknown as Record<Aid, CriacaoCongelada>, ...(v.members ? { membros: v.members as unknown as MembroCongelado[] } : {}), conf };
     }),
     history: r.history.map(h => ({ id: h.id, at: ms(h.createdAt), who: h.userId || 'sistema', text: h.text })),
     memorials: r.memorials.map(m => ({ id: m.id, at: ms(m.createdAt), body: m.body, hash: m.hash }))
@@ -119,7 +119,7 @@ export async function save(tx: Prisma.TransactionClient, before: ProjetoCompleto
   for (const v of p.versions) {
     const b = before.versions.find(x => x.n === v.n);
     let vid = b?.id;
-    if (!b) { const created = await tx.version.create({ data: { projectId: pid, n: v.n, snap: v.snap as unknown as Prisma.InputJsonObject, createdAt: new Date(v.at as number) } }); vid = created.id; v.id = vid; }
+    if (!b) { const created = await tx.version.create({ data: { projectId: pid, n: v.n, snap: v.snap as unknown as Prisma.InputJsonObject, members: v.membros ? (v.membros as unknown as Prisma.InputJsonArray) : Prisma.DbNull, createdAt: new Date(v.at as number) } }); vid = created.id; v.id = vid; }
     for (const [uid, c] of Object.entries(v.conf)) {
       if (b?.conf[uid]) continue;
       await tx.confirmation.create({ data: { versionId: vid as string, userId: uid, value: c.v, comment: c.comment || '', assets: c.assets || [], createdAt: new Date(c.at) } });

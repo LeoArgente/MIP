@@ -1,7 +1,7 @@
 /* Grupo 6 — Memorial (registro do acordo): snapshot, memorialBody, memorialText. */
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { snapshot, memorialBody, memorialText, partOf, decQs, propDefault, LIMITS, PCT_SIM, PCT_NEG } from '@mip/domain';
+import { snapshot, membrosCongelados, memorialBody, memorialText, partOf, decQs, propDefault, propError, LIMITS, PCT_SIM, PCT_NEG } from '@mip/domain';
 import { projeto, responder, semResposta, addMembro, enviarVersao, T, T_TXT } from './fixtures.js';
 
 describe('snapshot', () => {
@@ -57,6 +57,29 @@ describe('snapshot', () => {
     assert.deepEqual(r[2], {
       pid: 'carla', respondido: false, desc: '', evidencia: '', origem: '', titularAtual: '', titularAtualNome: '', titularAtualBase: '', titularExterno: ''
     });
+  });
+});
+
+describe('membrosCongelados', () => {
+  test('uma entrada por integrante, com o nome de hoje, situação, elegibilidade e perfil', () => {
+    const p = projeto();
+    p.members[0].perfil = { funcao: 'gestão', investiu: 'Sim' };
+    p.members[2].status = 'naopart';
+    addMembro(p, 'zeca', { status: 'pendente' });
+    assert.deepEqual(membrosCongelados(p), [
+      { pid: 'ana', name: 'Ana', status: 'ativo', elig: true, perfil: { funcao: 'gestão', investiu: 'Sim' } },
+      { pid: 'bruno', name: 'Bruno', status: 'ativo', elig: true, perfil: undefined },
+      { pid: 'carla', name: 'Carla', status: 'naopart', elig: true, perfil: undefined },
+      { pid: 'zeca', name: 'zeca', status: 'pendente', elig: false, perfil: undefined }
+    ]);
+  });
+
+  test('é uma cópia: mudar o perfil depois não altera a lista congelada', () => {
+    const p = projeto();
+    p.members[0].perfil = { funcao: 'gestão' };
+    const m = membrosCongelados(p);
+    p.members[0].perfil.funcao = 'outra';
+    assert.equal(m[0].perfil.funcao, 'gestão');
   });
 });
 
@@ -177,7 +200,7 @@ describe('memorialBody', () => {
     assert.ok(!B.some(l => l.startsWith('  Descrição') || l.startsWith('  Link da criação') || l.startsWith('  Explicações')));
   });
 
-  test('só entram criações aprovadas hoje e presentes na versão enviada', () => {
+  test('entram as criações da versão enviada, mesmo desaprovadas depois; criação nova não entra', () => {
     const p = projeto();
     p.assets.push({ id: 'a2', name: 'App', type: 'codigo', cat: 'Código', st: 'ok' });
     enviarVersao(p);
@@ -185,8 +208,91 @@ describe('memorialBody', () => {
     p.assets[1].st = 'sug';
     const L = linhas(p);
     assert.ok(L.includes('Logo (Marca)'));
-    assert.ok(!L.includes('App (Código)'));
+    assert.ok(L.includes('App (Código)'));
     assert.ok(!L.includes('Depois (Outro)'));
+  });
+
+  test('sem acordo com "Sim, combinou" e sem percentuais não produz "undefined%"', () => {
+    const p = projeto();
+    p.proposal.a1 = { ...propDefault(p, 'a1'), semAcordo: true, saved: true };
+    p.proposal.a1.v.divisao = PCT_SIM;
+    p.proposal.a1.v.titular = ['ana', 'carla'];
+    p.proposal.a1.percentual = { ana: 60 };
+    assert.equal(propError(p, 'a1'), null);
+    enviarVersao(p);
+    const L = linhas(p);
+    assert.ok(!L.join('\n').includes('undefined'));
+    assert.ok(L.includes('  Percentuais de titularidade combinados: Ana: 60% · Carla: não informado'));
+    assert.ok(L.includes('  Pendências identificadas: decisão da criação ainda sem acordo; percentuais combinados não registrados; titularidade atual a verificar'));
+  });
+
+  test('criação renomeada depois do envio aparece com o nome, a categoria e os dados da versão', () => {
+    const p = projeto();
+    p.assets[0].desc = 'Logo principal';
+    enviarVersao(p);
+    Object.assign(p.assets[0], { name: 'Logo novo', cat: 'Outro', desc: 'Outra descrição', link: 'https://depois.com' });
+    const B = bloco(linhas(p), 'Logo (Marca)');
+    assert.equal(B[1], '  Descrição: Logo principal');
+    assert.ok(!B.some(l => l.startsWith('  Link da criação')));
+    assert.ok(!linhas(p).some(l => l.startsWith('Logo novo')));
+  });
+
+  test('criação desaprovada ou apagada depois do envio continua no registro', () => {
+    const p = projeto();
+    enviarVersao(p);
+    p.assets[0].st = 'rec';
+    assert.ok(linhas(p).includes('Logo (Marca)'));
+    p.assets = [];
+    assert.ok(linhas(p).includes('Logo (Marca)'));
+  });
+
+  test('ordem das criações: a do cadastro, não a das chaves da versão; as apagadas do projeto vêm no fim', () => {
+    const p = projeto();
+    p.assets.push({ id: 'a2', name: 'App', type: 'codigo', cat: 'Código', st: 'ok' }, { id: 'a3', name: 'Site', type: 'design', cat: 'Design', st: 'ok' });
+    const v = enviarVersao(p);
+    /* Como volta do banco (jsonb): chaves em outra ordem. */
+    v.snap = { a3: v.snap.a3, a2: v.snap.a2, a1: v.snap.a1 };
+    const titulos = () => linhas(p).filter(l => / \((Marca|Código|Design)\)$/.test(l));
+    assert.deepEqual(titulos(), ['Logo (Marca)', 'App (Código)', 'Site (Design)']);
+    p.assets.shift();
+    assert.deepEqual(titulos(), ['App (Código)', 'Site (Design)', 'Logo (Marca)']);
+  });
+
+  describe('equipe congelada no envio (versão com membros)', () => {
+    const enviarComEquipe = (p, conf = {}) => { const v = enviarVersao(p, conf); v.membros = membrosCongelados(p); return v; };
+
+    test('pessoa removida depois do envio continua nos participantes, com a situação e o perfil da época', () => {
+      const p = projeto();
+      p.members[1].perfil = { funcao: 'dev', investiu: 'Não' };
+      enviarComEquipe(p);
+      p.members = p.members.filter(m => m.pid !== 'bruno');
+      delete p.people.bruno;
+      p.members[1].status = 'naopart';
+      p.members[0].perfil = { funcao: 'gestão', investiu: 'Sim' };
+      addMembro(p, 'dani');
+      assert.deepEqual(bloco(linhas(p), 'PARTICIPANTES'), [
+        'PARTICIPANTES',
+        '- Ana, quem organiza',
+        '- Bruno, integrante',
+        '  Função declarada: dev · Investiu dinheiro: Não',
+        '- Carla, integrante'
+      ]);
+    });
+
+    test('pessoa que mudou de nome depois do envio aparece no registro com o nome da época', () => {
+      const p = projeto();
+      p.proposal.a1 = { ...propDefault(p, 'a1'), percentual: { ana: 100 } };
+      p.proposal.a1.v.divisao = PCT_SIM;
+      enviarComEquipe(p, { ana: { v: 'ok', at: T } });
+      p.people.ana.name = 'Ana Souza';
+      const L = linhas(p), txt = L.join('\n');
+      assert.ok(!txt.includes('Ana Souza'));
+      assert.ok(L.includes('- Ana, quem organiza'));
+      assert.ok(L.includes('  - Ana: respondeu'));
+      assert.ok(L.includes('  - Titularidade pretendida: Ana'));
+      assert.ok(L.includes('  Percentuais de titularidade combinados: Ana: 100%'));
+      assert.ok(L.includes('- Ana: confirmou em ' + T_TXT));
+    });
   });
 
   describe('pendências identificadas', () => {
@@ -222,6 +328,26 @@ describe('memorialBody', () => {
     test('sem acordo, e todas juntas na ordem fixa', () => {
       assert.equal(pend({ divisao: PCT_NEG, titularAtual: 'Não sei', origem: 'Não sei', terceiros: 'Ainda não sabemos', audioDireitos: 'Ainda não sabemos', marcaRegistro: 'Há conflito ou uso de terceiro', invDivulgacao: 'Ainda não sabemos' }, true),
         'decisão da criação ainda sem acordo; percentuais ainda não negociados; titularidade atual a verificar; origem a verificar; direitos de terceiros a verificar; autorizações de áudio a verificar; situação da marca a verificar; condições de divulgação a definir');
+    });
+
+    /* Pendências de uma versão com percentuais combinados e os percentuais dados. */
+    const pendPct = (v, percentual, externo = '') => {
+      const p = projeto(), s = enviarVersao(p).snap.a1;
+      Object.assign(s, { v: { ...SEM_PEND, divisao: PCT_SIM, ...v }, percentual, externo, semAcordo: true });
+      return linhas(p).find(l => l.startsWith('  Pendências identificadas: ')).slice('  Pendências identificadas: '.length);
+    };
+    const SEM_PCT = 'decisão da criação ainda sem acordo; percentuais combinados não registrados';
+
+    test('percentuais combinados sem valor para algum titular, ou sem titular: pendência', () => {
+      assert.equal(pendPct({ titular: ['ana'] }, {}), SEM_PCT);
+      assert.equal(pendPct({ titular: ['ana', 'carla'] }, { ana: 40, carla: '' }), SEM_PCT);
+      assert.equal(pendPct({ titular: ['ana'] }, { ana: 100 }, 'Empresa X'), SEM_PCT);
+      assert.equal(pendPct({ titular: [] }, {}), SEM_PCT);
+    });
+
+    test('percentuais combinados com valor para todos os titulares: sem essa pendência', () => {
+      assert.equal(pendPct({ titular: ['ana'] }, { ana: 100 }), 'decisão da criação ainda sem acordo');
+      assert.equal(pendPct({ titular: ['ana'] }, { ana: 30, __externo__: 70 }, 'Empresa X'), 'decisão da criação ainda sem acordo');
     });
   });
 
