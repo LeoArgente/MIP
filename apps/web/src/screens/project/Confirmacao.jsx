@@ -1,7 +1,7 @@
 /* Confirmação da equipe (Figma C13): quem já confirmou a proposta, e a proposta para ler, confirmar ou recusar.
    As regras (quem pode confirmar, recusar e editar) vêm de @mip/domain e da API, como antes. */
 import { useState } from 'react';
-import { QS, ansOf, approved, elig, fmt, fmtAns, isP, lastV, nm, pctTxt } from '@mip/domain';
+import { QS, ansOf, approved, eligNaVersao, fmt, fmtAns, isP, lastV, nm, pctTxt } from '@mip/domain';
 import { AppButton, AuthField, Avatar, Chip, RadioRow } from '../../components/ds/index.js';
 import { Panel, PanelHead, TextButton } from '../../components/journey/Shell.jsx';
 import { Banner } from '../../components/ui.jsx';
@@ -10,7 +10,7 @@ import { Fases } from './Painel.jsx';
 import { keyOf, ptsOf, votesOf } from './pontos.js';
 import checkBox from '../../assets/icons/checkbox-check.svg';
 
-export const confirmedBy = (p, lv) => elig(p).filter(x => lv.conf[x]?.v === 'ok');
+export const confirmedBy = (p, lv) => eligNaVersao(lv).filter(x => lv.conf[x]?.v === 'ok');
 /* Editar durante a confirmação: só pede confirmação da edição quando alguém já confirmou. */
 function editNote(p, lv, me) {
   const ns = confirmedBy(p, lv).map(x => (x === me ? 'você' : nm(p, x)));
@@ -21,7 +21,7 @@ function editNote(p, lv, me) {
 
 /* Uma versão da proposta: os pontos que divergiam, com o que mudou desde a anterior. */
 function Versao({ v, curr }) {
-  const { p } = useProject(), E = elig(p), pv = curr && p.versions.find(x => x.n === v.n - 1), as = approved(p);
+  const { p } = useProject(), E = eligNaVersao(v), pv = curr && p.versions.find(x => x.n === v.n - 1), as = approved(p);
   const chg = (aid, q) => {
     if (!pv) return false;
     const a = pv.snap[aid], b = v.snap[aid];
@@ -61,7 +61,7 @@ export function Confirmacao() {
   const { p, me, org, act, err, setErr, ui, setUi, go } = useProject(), lv = lastV(p);
   const [ra, setRa] = useState([]), [why, setWhy] = useState('');
   if (!lv) return <Banner>Ainda não há proposta para confirmar. Quem organiza registra as decisões primeiro.</Banner>;
-  const E = elig(p), c = lv.conf[me], ok = confirmedBy(p, lv), falta = E.length - ok.length, allOk = !falta;
+  const E = eligNaVersao(lv), c = lv.conf[me], ok = confirmedBy(p, lv), falta = E.length - ok.length, allOk = !falta;
   const sem = Object.values(lv.snap).filter(s => s.semAcordo).map(s => s.name), refs = E.filter(x => lv.conf[x]?.v === 'no');
   const can = p.phase === 'confirmacao' && E.includes(me) && !c;
   const pontos = approved(p).reduce((n, a) => n + ptsOf(p, a).length, 0);

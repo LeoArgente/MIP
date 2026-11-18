@@ -59,6 +59,8 @@ export const ACTIONS: Acoes = {
 
   naopart(p, me, d) {
     needOrg(p, me);
+    /* A versão em confirmação congelou a equipe no envio: quem confirma não muda no meio da confirmação. */
+    if (p.phase === 'confirmacao') fail('np', 'Não dá para tirar alguém das respostas durante a confirmação: a proposta foi enviada para esta equipe. Espere a confirmação terminar, ou reabra a proposta e envie uma nova versão.');
     if (d.pid === p.org) fail('np', 'Quem organiza não pode sair das respostas');
     /* Garantido: sem pid, mem não acha ninguém e fail lança; daqui em diante d.pid existe. */
     const m = mem(p, d.pid!) || fail('np', 'Pessoa não encontrada no projeto');

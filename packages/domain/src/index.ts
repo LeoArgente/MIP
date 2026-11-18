@@ -191,6 +191,12 @@ export const elig = (p: Projeto): Pid[] => p.members.filter(m => m.status === 'a
 export const approved = (p: Projeto): Ativo[] => p.assets.filter(a => a.st === 'ok');
 export const ansOf = (p: Projeto, pid: Pid, aid: Aid): EntradaResposta | undefined => p.answers[pid] && p.answers[pid][aid];
 export const lastV = (p: Projeto): Versao | undefined => p.versions[p.versions.length - 1];
+/* Quem era elegível na versão `v`: quem se posiciona sobre ela e conta para "confirmada por todos". É a equipe congelada
+   no envio, não a de hoje. Versão sem `membros` (enviada antes do congelamento da equipe): cada criação de snap traz um
+   relato por pessoa elegível no envio (veja snapshot), e a lista sai daí. */
+export const eligNaVersao = (v: Versao): Pid[] => v.membros
+  ? v.membros.filter(m => m.status === 'ativo' && m.elig).map(m => m.pid)
+  : [...new Set(Object.values(v.snap).flatMap(x => (x.relatos || []).map(r => r.pid)))];
 export const roleTxt = (p: Projeto, pid: Pid): string => (p.org === pid ? 'Quem organiza' : 'Integrante');
 export const validLink = (s: string | null | undefined): boolean => /^https?:\/\/\S+$/i.test((s || '').trim());
 
@@ -341,10 +347,10 @@ export function taskFor(p: Projeto, pid: Pid, qpos: Record<Aid, number | undefin
   if (p.phase === 'confirmacao') {
     /* Em confirmação sempre existe uma versão enviada. */
     const v = lastV(p)!, c = v && v.conf[pid], sem = Object.values(v.snap).filter(s => s.semAcordo).map(s => s.name);
-    if (sem.length && elig(p).every(x => v.conf[x] && v.conf[x].v === 'ok')) return org
+    if (sem.length && eligNaVersao(v).every(x => v.conf[x] && v.conf[x].v === 'ok')) return org
       ? { tab: 'conf', label: 'Falta acordo em ' + sem.join(', '), note: 'Todos confirmaram o resto. Quando a equipe decidir, reabra a proposta e registre a decisão.', cta: 'Reabrir proposta' }
       : { tab: 'proj', label: 'Falta acordo em ' + sem.join(', '), note: 'Todos confirmaram o resto. Quando a equipe decidir, ' + nm(p, p.org) + ' envia uma nova proposta.' };
-    return c || !m.elig
+    return c || !eligNaVersao(v).includes(pid)
       ? { tab: 'proj', label: 'Você está em dia', note: 'Sua posição foi registrada. Aguarde as demais pessoas.' }
       : { tab: 'conf', label: 'Confirmar a proposta', note: 'Leia a proposta e diga se ela representa o que a equipe combinou.', cta: 'Ler proposta' };
   }
@@ -359,7 +365,7 @@ export function secInfo(p: Projeto, me: Pid, k: Aba): InfoSecao {
   if (k === 'resp') { if (!m.elig) return { on: false, s: 'Você não responde desta vez' }; if (!as.length) return { on: false, s: 'Depois do cadastro das criações' }; const d = as.filter(a => ansOf(p, me, a.id)?.sent).length; return { on: true, s: d === as.length ? 'Respondidas' : d + ' de ' + as.length + ' criações respondidas' }; }
   if (k === 'coleta') { const done = E.filter(x => as.length && as.every(a => ansOf(p, x, a.id)?.sent)).length; return { on: true, s: p.phase === 'coleta' ? done + ' de ' + E.length + ' pessoas concluíram' : 'Respostas encerradas' }; }
   if (k === 'decidir') { if (p.phase === 'coleta') return { on: false, s: 'Abre após o encerramento da coleta' }; const n = diffCount(p); return { on: true, s: n ? n + (n > 1 ? ' pontos com diferença' : ' ponto com diferença') : 'Todos concordaram' }; }
-  if (k === 'conf') { if (!lv) return { on: false, s: 'Quando a proposta for enviada' }; return { on: true, s: Object.values(lv.conf).filter(c => c.v === 'ok').length + ' de ' + E.length + ' confirmaram' }; }
+  if (k === 'conf') { if (!lv) return { on: false, s: 'Quando a proposta for enviada' }; return { on: true, s: Object.values(lv.conf).filter(c => c.v === 'ok').length + ' de ' + eligNaVersao(lv).length + ' confirmaram' }; }
   return lv ? { on: true, s: p.phase === 'consolidado' ? 'Pronto' : 'Prévia disponível' } : { on: false, s: 'Quando a proposta for enviada' };
 }
 
@@ -381,10 +387,10 @@ export const membrosCongelados = (p: Projeto): MembroCongelado[] => p.members.ma
 
 /* ===== Registro do acordo (HU-24) ===== */
 /* Só é chamado quando já existe uma versão enviada. As criações e a equipe vêm da versão, como foram enviadas e
-   confirmadas, e não do projeto de hoje. Versão sem `membros` (enviada antes do congelamento da equipe): vale a
-   equipe de hoje, porque a de então não foi guardada. */
+   confirmadas, e não do projeto de hoje. Versão sem `membros` (enviada antes do congelamento da equipe): os
+   participantes são a equipe de hoje, porque a de então não foi guardada; as confirmações seguem eligNaVersao. */
 export function memorialBody(p: Projeto, at: number | string | Date): string {
-  const v = lastV(p)!, L: string[] = [], E = elig(p), allOk = E.every(pid => v.conf[pid]?.v === 'ok');
+  const v = lastV(p)!, L: string[] = [], E = eligNaVersao(v), allOk = E.every(pid => v.conf[pid]?.v === 'ok');
   /* pv: o projeto com os nomes da época, para todas as funções que escrevem nomes de pessoas. */
   const pv: Projeto = v.membros ? { ...p, people: { ...p.people, ...Object.fromEntries(v.membros.map(m => [m.pid, { name: m.name }])) } } : p;
   const n = (pid: Pid) => nm(pv, pid), fa = (q: ChavePergunta, x: Notas | ValorResposta | undefined) => fmtAns(pv, q, x);

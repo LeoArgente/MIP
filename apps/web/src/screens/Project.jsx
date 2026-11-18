@@ -2,7 +2,7 @@
    Rascunhos (respostas e proposta) são salvos sozinhos alguns instantes depois da última mudança. */
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { approved, mem, clone, propOf, elig, lastV } from '@mip/domain';
+import { approved, mem, clone, propOf, eligNaVersao, lastV } from '@mip/domain';
 import { get, post } from '../api.js';
 import { useSession } from '../session.jsx';
 import { AppFrame } from '../components/journey/Shell.jsx';
@@ -141,7 +141,7 @@ export default function Project() {
   }
   /* Convidado com a proposta para confirmar (D7): tela própria. */
   const lvAtual = lastV(p);
-  if (!org && p.phase === 'confirmacao' && ['conf', 'decidir'].includes(tab) && lvAtual && elig(p).includes(me) && !lvAtual.conf[me]) return <Ctx.Provider value={value}><BusyCtx.Provider value={busy}><AppFrame><ConfirmarProposta /></AppFrame></BusyCtx.Provider></Ctx.Provider>;
+  if (!org && p.phase === 'confirmacao' && ['conf', 'decidir'].includes(tab) && lvAtual && eligNaVersao(lvAtual).includes(me) && !lvAtual.conf[me]) return <Ctx.Provider value={value}><BusyCtx.Provider value={busy}><AppFrame><ConfirmarProposta /></AppFrame></BusyCtx.Provider></Ctx.Provider>;
   const screens = { proj: Painel, equipe: Equipe, ativos: Criacoes, sobre: Sobre, resp: Respostas, coleta: Andamento, decidir: Decidir, conf: Confirmacao, memorial: Registro };
   const Screen = screens[tab] || Painel;
   return (

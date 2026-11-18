@@ -37,7 +37,7 @@ export function Equipe() {
             <div className="jr-state">
               {m.pid === p.org ? <Chip tone="accent">Organiza</Chip> : m.status === 'ativo' && m.elig ? <Chip>Integrante</Chip> : memChip(m)}
               {resp(m)}
-              {org && m.pid !== p.org && m.status === 'ativo' && <TextButton onClick={() => act('naopart', { pid: m.pid })}>Tirar das respostas</TextButton>}
+              {org && m.pid !== p.org && m.status === 'ativo' && p.phase !== 'confirmacao' && <TextButton onClick={() => act('naopart', { pid: m.pid })}>Tirar das respostas</TextButton>}
               {org && m.pid !== p.org && p.phase === 'coleta' && rm?.pid !== m.pid && <TextButton className="jr-danger" onClick={() => askRemove(m.pid)}>Remover</TextButton>}
             </div>
             {rm?.pid === m.pid && (
