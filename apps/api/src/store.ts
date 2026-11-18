@@ -30,10 +30,13 @@ export interface ProjetoCompleto extends Projeto {
 /* Data do banco em milissegundos; sem data, null. */
 const ms = ((d: Date | null) => (d ? new Date(d).getTime() : null)) as { (d: Date): number; (d: Date | null): number | null };
 
-export async function load(tx: Prisma.TransactionClient, projectId: string): Promise<ProjetoCompleto | null> {
-  const r = await tx.project.findUnique({
+/* Carrega o projeto para quem participa dele (qualquer linha em Member, inclusive pendente e fora das respostas).
+   Para quem não participa, devolve null, igual a projeto inexistente: nenhum dado do projeto sai do banco.
+   A checagem fica aqui, e não em cada rota, para que uma rota nova não consiga esquecê-la. */
+export async function load(tx: Prisma.TransactionClient, projectId: string, me: Pid): Promise<ProjetoCompleto | null> {
+  const r = await tx.project.findFirst({
     relationLoadStrategy: 'join',
-    where: { id: projectId },
+    where: { id: projectId, members: { some: { userId: me } } },
     include: {
       members: { include: { user: true }, orderBy: { createdAt: 'asc' } },
       assets: { orderBy: { createdAt: 'asc' } },
@@ -131,11 +134,12 @@ export async function save(tx: Prisma.TransactionClient, before: ProjetoCompleto
   for (const m of p.memorials.filter(m => !m.id)) await tx.memorial.create({ data: { projectId: pid, body: m.body, hash: m.hash, createdAt: new Date(m.at) } });
 }
 
-/* Trava o projeto durante a ação para que duas pessoas não gravem por cima uma da outra. */
-export async function withProject<T>(prisma: PrismaClient, projectId: string, fn: (p: ProjetoCompleto | null, tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+/* Trava o projeto durante a ação para que duas pessoas não gravem por cima uma da outra.
+   `p` chega null se o projeto não existe ou se `me` não participa dele (veja load). */
+export async function withProject<T>(prisma: PrismaClient, projectId: string, me: Pid, fn: (p: ProjetoCompleto | null, tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   return prisma.$transaction(async tx => {
     await tx.$queryRaw`SELECT id FROM "Project" WHERE id = ${projectId} FOR UPDATE`;
-    const p = await load(tx, projectId);
+    const p = await load(tx, projectId, me);
     if (!p) return fn(null, tx);
     const before = clone(p);
     const out = await fn(p, tx);
