@@ -1,5 +1,6 @@
 /* Feedback: botão "Feedback", nota de satisfação e a leitura em /admin (fase de testes). */
 import { rateLimited } from '../../auth.js';
+import { mesmaPessoa } from '../../http.js';
 import type { Express } from 'express';
 import type { Prisma } from '@prisma/client';
 import type { Contexto, AuthedRequest } from '../../server.js';
@@ -10,7 +11,8 @@ export const ACTIONS: Acoes = {};
 export function routes(app: Express, { prisma, wrap, auth, feedbackOn, isAdmin }: Contexto) {
   /* ===== Feedback ===== */
   const cut = (v: unknown, n: number) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
-  app.post('/api/feedback', wrap(async (req, res) => {
+  /* Rota pública, mas grava req.user (autor do feedback, nota de satisfação): passa pela mesma checagem de `auth`. */
+  app.post('/api/feedback', mesmaPessoa, wrap(async (req, res) => {
     if (!feedbackOn) return res.status(404).json({ err: { _: 'Rota não encontrada.' } });
     if (rateLimited('fb:' + (req.user?.id || req.ip), 20)) return res.status(429).json({ err: { _: 'Muitos envios seguidos. Tente de novo daqui a alguns minutos.' } });
     const b: Record<string, unknown> = req.body || {}, kind = b.kind === 'satisfacao' ? 'satisfacao' : 'texto';

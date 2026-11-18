@@ -26,6 +26,22 @@ export const wrapMw = (fn: (req: Request, res: Response, next: NextFunction) => 
   Promise.resolve().then(() => fn(req, res, next)).catch((e: unknown) => next(e instanceof Error ? e : new Error('Rejeição sem Error: ' + String(e))));
 };
 
+/* Quem o navegador acha que está usando: apps/web/src/api.js manda em todo pedido o id da pessoa que a tela
+   carregou. O cookie é do navegador, não da aba: depois de trocar de conta em outra aba, a aba antiga ainda
+   mostra (e escreve como) a pessoa de antes, mas o cookie já é da nova. */
+export const CABECALHO_PESSOA = 'X-MIP-Pessoa';
+
+/* Recusa o pedido quando o cabeçalho existe e não é a pessoa da sessão, para nada ser lido ou gravado em nome de
+   quem a tela não mostra. 409, e não 401: a sessão existe e é válida, quem está velha é a tela. O apps/web
+   recarrega a página com 409 (sessão e tela voltam a concordar) e manda para o login com 401.
+   Sem cabeçalho passa: é o pedido antes de a tela saber quem é (/api/me), ou um cliente que não é o apps/web.
+   Sem sessão passa: quem exige sessão é `auth`, que responde 401 antes. */
+export const mesmaPessoa: RequestHandler = (req, res, next) => {
+  const pessoa = req.get(CABECALHO_PESSOA);
+  if (req.user && pessoa !== undefined && pessoa !== req.user.id) return res.status(409).json({ err: { _: 'Você entrou com outra conta em outra aba. Recarregue a página para continuar com ela.' } });
+  next();
+};
+
 /* Handler de erro (4 argumentos), o último registrado em /api.
    Erros do próprio Express com status 4xx público (JSON malformado, corpo grande demais) mantêm o status;
    antes deste handler eles chegavam ao handler padrão, que responde em HTML. */

@@ -357,8 +357,9 @@ export function taskFor(p: Projeto, pid: Pid, qpos: Record<Aid, number | undefin
   }
   return { tab: 'memorial', label: 'Acordo confirmado', note: 'Todas as pessoas confirmaram. O registro do acordo está pronto.', cta: 'Ver registro do acordo' };
 }
-/* Resumo de cada parte do projeto na página do projeto. `me` precisa ser integrante do projeto: no apps/web,
-   Project.jsx só aceita o projeto que o servidor montou para a própria sessão (store.load exige participação). */
+/* Resumo de cada parte do projeto na página do projeto. `me` precisa ser integrante do projeto: no apps/web, o
+   projeto só chega montado para a sessão que a tela conhece (api.js manda quem ela é, o `auth` da API recusa outra
+   pessoa com 409) e store.load exige participação. */
 export function secInfo(p: Projeto, me: Pid, k: Aba): InfoSecao {
   const m = mem(p, me)!, as = approved(p), E = elig(p), lv = lastV(p);
   if (k === 'equipe') { const n = p.members.filter(x => x.status === 'ativo').length; return { on: true, s: n + (n === 1 ? ' pessoa' : ' pessoas') }; }

@@ -6,7 +6,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
-import { wrap, erroJson } from './http.js';
+import { wrap, erroJson, mesmaPessoa } from './http.js';
 import { sendMail } from './mail.js';
 import { sessionUser, routes as authRoutes } from './auth.js';
 import { routes as moduleRoutes } from './modules/index.js';
@@ -63,7 +63,9 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-const auth: RequestHandler = (req, res, next) => (req.user ? next() : res.status(401).json({ err: { _: 'Entre na sua conta para continuar.' } }));
+/* Portão de toda rota que exige sessão: sem req.user, 401 (login); com a sessão de outra pessoa que não a da tela,
+   409 (mesmaPessoa, em http.ts). Vale para leitura e escrita. */
+const auth: RequestHandler = (req, res, next) => (req.user ? mesmaPessoa(req, res, next) : res.status(401).json({ err: { _: 'Entre na sua conta para continuar.' } }));
 
 /* ===== Rotas: conta (auth.js) e módulos (modules/) ===== */
 const ctx: Contexto = { prisma, wrap, auth, prod, devLogin, testLogin, feedbackOn, isAdmin };
