@@ -6,7 +6,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
-import { ActionError } from './modules/shared.js';
+import { wrap, erroJson } from './http.js';
 import { sendMail } from './mail.js';
 import { sessionUser, routes as authRoutes } from './auth.js';
 import { routes as moduleRoutes } from './modules/index.js';
@@ -63,13 +63,6 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-/* Único ponto da garantia de sessão: um handler que declara AuthedRequest está registrado depois de `auth`,
-   que responde 401 sem req.user. O TS não liga o middleware ao handler; esta conversão faz essa ligação. */
-const wrap: Contexto['wrap'] = <R extends Request>(fn: (req: R, res: Response) => unknown) => (req: Request, res: Response) => Promise.resolve(fn(req as R, res)).catch(e => {
-  if (e instanceof ActionError) return res.status(e.status).json({ err: e.err });
-  console.error(e);
-  res.status(500).json({ err: { _: 'Algo deu errado do nosso lado. Tente de novo.' } });
-});
 const auth: RequestHandler = (req, res, next) => (req.user ? next() : res.status(401).json({ err: { _: 'Entre na sua conta para continuar.' } }));
 
 /* ===== Rotas: conta (auth.js) e módulos (modules/) ===== */
@@ -84,6 +77,8 @@ if (existsSync(web)) {
   app.get(/^(?!\/api\/).*/, (_req, res) => res.sendFile(join(web, 'index.html')));
 }
 app.use('/api', (_req, res) => res.status(404).json({ err: { _: 'Rota não encontrada.' } }));
+/* Por último: o que um middleware passou adiante com next(e) (sessionUser, leitura do JSON) vira resposta JSON. */
+app.use('/api', erroJson);
 
 /* Na Vercel, a API roda como função (api/index.js usa este app); no computador e em servidores comuns, fica ouvindo uma porta. */
 if (!process.env.VERCEL) {
