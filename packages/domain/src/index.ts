@@ -345,8 +345,9 @@ export function taskFor(p: Projeto, pid: Pid, qpos: Record<Aid, number | undefin
     ? { tab: 'decidir', label: 'Decidir com a equipe', note: 'Veja onde as respostas diferem e registre o que vale para cada criação.', cta: 'Abrir decisões' }
     : { tab: 'proj', label: 'Você está em dia', note: 'Quem organiza está registrando as decisões. Você pode acompanhar e comentar em Decisões.' };
   if (p.phase === 'confirmacao') {
-    /* Em confirmação sempre existe uma versão enviada. */
-    const v = lastV(p)!, c = v && v.conf[pid], sem = Object.values(v.snap).filter(s => s.semAcordo).map(s => s.name);
+    /* Em confirmação sempre existe uma versão enviada: o único caminho que grava esta fase é sendv
+       (apps/api/src/modules/versoes), que cria a versão no mesmo passo, e nenhuma versão é apagada. */
+    const v = lastV(p)!, c = v.conf[pid], sem = Object.values(v.snap).filter(s => s.semAcordo).map(s => s.name);
     if (sem.length && eligNaVersao(v).every(x => v.conf[x] && v.conf[x].v === 'ok')) return org
       ? { tab: 'conf', label: 'Falta acordo em ' + sem.join(', '), note: 'Todos confirmaram o resto. Quando a equipe decidir, reabra a proposta e registre a decisão.', cta: 'Reabrir proposta' }
       : { tab: 'proj', label: 'Falta acordo em ' + sem.join(', '), note: 'Todos confirmaram o resto. Quando a equipe decidir, ' + nm(p, p.org) + ' envia uma nova proposta.' };
@@ -356,7 +357,8 @@ export function taskFor(p: Projeto, pid: Pid, qpos: Record<Aid, number | undefin
   }
   return { tab: 'memorial', label: 'Acordo confirmado', note: 'Todas as pessoas confirmaram. O registro do acordo está pronto.', cta: 'Ver registro do acordo' };
 }
-/* Resumo de cada parte do projeto na página do projeto. `me` precisa ser integrante do projeto. */
+/* Resumo de cada parte do projeto na página do projeto. `me` precisa ser integrante do projeto: no apps/web,
+   Project.jsx só aceita o projeto que o servidor montou para a própria sessão (store.load exige participação). */
 export function secInfo(p: Projeto, me: Pid, k: Aba): InfoSecao {
   const m = mem(p, me)!, as = approved(p), E = elig(p), lv = lastV(p);
   if (k === 'equipe') { const n = p.members.filter(x => x.status === 'ativo').length; return { on: true, s: n + (n === 1 ? ' pessoa' : ' pessoas') }; }

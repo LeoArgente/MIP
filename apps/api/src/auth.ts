@@ -1,6 +1,7 @@
 /* Entrada por link no e-mail (sem senha) e sessões em cookie httpOnly. */
 import { randomBytes, createHash } from 'node:crypto';
 import { sendMail, mailMode } from './mail.js';
+import { wrapMw } from './http.js';
 import type { PrismaClient, Prisma, User } from '@prisma/client';
 import type { Express, Request, Response, RequestHandler } from 'express';
 import type { Contexto, AuthedRequest } from './server.js';
@@ -63,22 +64,21 @@ export async function endSession(prisma: Prisma.TransactionClient, req: Request,
 }
 
 /* Middleware: põe req.user quando a sessão é válida.
-   Se o banco não responde, devolve 503 em vez de derrubar o servidor. */
-export const sessionUser = (prisma: PrismaClient): RequestHandler => async (req, res, next) => {
+   Se o banco não responde, devolve 503 em vez de derrubar o servidor; qualquer outra falha segue por wrapMw
+   para o handler de erro (500 em JSON). */
+export const sessionUser = (prisma: PrismaClient): RequestHandler => wrapMw(async (req, res, next) => {
   const t: string | undefined = req.cookies?.[COOKIE];
   if (t) {
     try {
       const s = await prisma.session.findUnique({ where: { tokenHash: hash(t) }, include: { user: true } });
       if (s && s.expiresAt > new Date()) req.user = s.user;
     } catch (e) {
-      /* Garantido: quem lança aqui é o Prisma, que sempre lança Error. (Se algo lançasse null, este catch lançaria
-         e o pedido ficaria sem resposta: sessionUser é middleware async, fora do wrap.) */
       console.error('Sessão: banco indisponível.', (e as Error).message);
       return res.status(503).json({ err: { _: 'Não foi possível falar com o banco de dados. Tente de novo em instantes.' } });
     }
   }
   next();
-};
+});
 
 /* Limite simples por chave (ex.: e-mail) para pedidos de link. */
 const hits = new Map<string, number[]>();

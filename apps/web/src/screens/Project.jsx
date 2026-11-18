@@ -34,9 +34,18 @@ export default function Project() {
   const pending = useRef(new Map()), timer = useRef();
   const [busy, setBusy] = useState(null), running = useRef(false);
 
+  /* O servidor monta o projeto para a sessão do cookie (project.me), e só para quem participa dele; as regras do
+     domínio contam com `me` dentro do projeto. Se a conta mudou em outra aba, o cookie já é de outra pessoa e `me`
+     ficou velho: recarrega a página para buscar sessão e projeto juntos, em vez de mostrar um com o outro. */
+  const daSessao = useCallback(proj => {
+    if (proj.me === me) return true;
+    window.location.reload();
+    return false;
+  }, [me]);
+
   const load = useCallback(async () => {
-    try { setP(await get('/api/projects/' + id)); setLoadErr(null); } catch (x) { setLoadErr(x); }
-  }, [id]);
+    try { const r = await get('/api/projects/' + id); if (daSessao(r)) { setP(r); setLoadErr(null); } } catch (x) { setLoadErr(x); }
+  }, [id, daSessao]);
   useEffect(() => { load(); }, [load]);
 
   /* Envia rascunhos pendentes (antes de qualquer outra ação e ao sair da tela). */
@@ -69,6 +78,7 @@ export default function Project() {
       await flush();
       setErr({});
       const r = await post(path || `/api/projects/${id}/actions/${type}`, body);
+      if (r.project && !daSessao(r.project)) return null;
       if (r.project) setP(r.project);
       const res = r.result || {};
       if (res.toast) say(res.toast);
@@ -86,7 +96,7 @@ export default function Project() {
       running.current = false;
       setBusy(null);
     }
-  }, [flush, go, id, load, say, me, setUi]);
+  }, [flush, go, id, load, say, me, setUi, daSessao]);
 
   /* Rascunho da resposta da pessoa (local na hora, servidor logo depois). */
   const editDraft = useCallback((aid, patchFn, step) => {
