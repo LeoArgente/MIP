@@ -37,15 +37,19 @@ export async function load(tx: Prisma.TransactionClient, projectId: string, me: 
   const r = await tx.project.findFirst({
     relationLoadStrategy: 'join',
     where: { id: projectId, members: { some: { userId: me } } },
+    /* Toda ordem termina numa coluna única (id). createdAt empata por construção: o default now() do Postgres é o
+       horário da transação, então tudo o que é criado junto recebe o mesmo valor, e o Postgres devolve o empate em
+       qualquer ordem (que pode mudar depois de um update ou de um vacuum). Em memorials, o empate decidiria qual é o
+       registro mais recente (p.memorials[0]). versions já termina em coluna única: (projectId, n) é único. */
     include: {
-      members: { include: { user: true }, orderBy: { createdAt: 'asc' } },
-      assets: { orderBy: { createdAt: 'asc' } },
+      members: { include: { user: true }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
+      assets: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
       answers: true,
       proposals: true,
       versions: { include: { confirmations: true }, orderBy: { n: 'asc' } },
-      comments: { orderBy: { createdAt: 'asc' } },
-      history: { orderBy: { createdAt: 'desc' }, take: 200 },
-      memorials: { orderBy: { createdAt: 'desc' } }
+      comments: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
+      history: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 200 },
+      memorials: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] }
     }
   });
   if (!r) return null;

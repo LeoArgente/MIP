@@ -187,13 +187,23 @@ export const clone: <T>(o: T) => T = o => (o === undefined ? undefined : JSON.pa
 export const fmt = (t: number | string | Date): string => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }).replace(', ', ' às ');
 export const nm = (p: Projeto, pid: Pid): string => (p.people && p.people[pid] ? p.people[pid].name : pid);
 export const mem = (p: Projeto, pid: Pid): Membro | undefined => p.members.find(m => m.pid === pid);
+/* Comparação de texto por unidade de código, sem locale: o resultado não muda com a versão do ICU do Node. */
+const cmpTexto = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+/* Pessoas na ordem da equipe (p.members: a ordem de entrada, a mesma de PARTICIPANTES no registro); quem não está na
+   equipe vem depois, pelo id. Para listas de pessoas tiradas de chaves de objeto, cuja ordem o banco (jsonb) não
+   guarda: a mesma entrada precisa dar o mesmo texto, porque o registro do acordo é hasheado. */
+const naOrdemDaEquipe = (p: Projeto, pids: Pid[]): Pid[] => {
+  const pos = (pid: Pid) => { const i = p.members.findIndex(m => m.pid === pid); return i === -1 ? p.members.length : i; };
+  return [...pids].sort((a, b) => pos(a) - pos(b) || cmpTexto(a, b));
+};
 export const elig = (p: Projeto): Pid[] => p.members.filter(m => m.status === 'ativo' && m.elig).map(m => m.pid);
 export const approved = (p: Projeto): Ativo[] => p.assets.filter(a => a.st === 'ok');
 export const ansOf = (p: Projeto, pid: Pid, aid: Aid): EntradaResposta | undefined => p.answers[pid] && p.answers[pid][aid];
 export const lastV = (p: Projeto): Versao | undefined => p.versions[p.versions.length - 1];
 /* Quem era elegível na versão `v`: quem se posiciona sobre ela e conta para "confirmada por todos". É a equipe congelada
    no envio, não a de hoje. Versão sem `membros` (enviada antes do congelamento da equipe): cada criação de snap traz um
-   relato por pessoa elegível no envio (veja snapshot), e a lista sai daí. */
+   relato por pessoa elegível no envio (veja snapshot), e a lista sai daí. A ordem das chaves de snap não altera o
+   resultado: todas as criações de um envio trazem a mesma lista de relatos, na ordem da equipe naquele momento. */
 export const eligNaVersao = (v: Versao): Pid[] => v.membros
   ? v.membros.filter(m => m.status === 'ativo' && m.elig).map(m => m.pid)
   : [...new Set(Object.values(v.snap).flatMap(x => (x.relatos || []).map(r => r.pid)))];
@@ -234,13 +244,13 @@ export function partOf(p: Projeto, aid: Aid): Participacao {
   });
   return { avg, share: shares(avg) };
 }
-export const partTxt = (p: Projeto, pt: Participacao): string => Object.keys(pt.avg).filter(k => pt.avg[k] > 0).map(k => nm(p, k) + ': ' + lvName(pt.avg[k]).toLowerCase()).join(' · ') || 'Sem participação informada';
+export const partTxt = (p: Projeto, pt: Participacao): string => naOrdemDaEquipe(p, Object.keys(pt.avg)).filter(k => pt.avg[k] > 0).map(k => nm(p, k) + ': ' + lvName(pt.avg[k]).toLowerCase()).join(' · ') || 'Sem participação informada';
 /* Percentual ainda não informado: a tela manda '' para o campo vazio (a API não aceita outro valor vazio). */
 const pctVazio = (x: number | string | undefined): boolean => x === undefined || x === '';
 export const pctTxt = (p: Projeto, s: Pick<Proposta, 'v' | 'externo' | 'percentual'>): string => s.v?.divisao === PCT_SIM ? (s.v.titular || []).concat(s.externo ? ['__externo__'] : []).map(pid => (pid === '__externo__' ? s.externo : nm(p, pid)) + ': ' + (pctVazio((s.percentual || {})[pid]) ? 'não informado' : (s.percentual || {})[pid] + '%')).join(' · ') : 'Não acordados';
 /* O formato de v depende de q: Notas para 'notas', lista de pessoas para 'titular', texto para as demais. */
 export const fmtAns = (p: Projeto, q: ChavePergunta, v: Notas | ValorResposta | null | undefined): string => q === 'notas'
-  ? (Object.keys(v || {}).filter(k => hasNota(v as Notas, k)).map(k => nm(p, k) + ': ' + lvName((v as Notas)[k]).toLowerCase()).join(' · ') || 'Sem respostas')
+  ? (naOrdemDaEquipe(p, Object.keys(v || {})).filter(k => hasNota(v as Notas, k)).map(k => nm(p, k) + ': ' + lvName((v as Notas)[k]).toLowerCase()).join(' · ') || 'Sem respostas')
   : isP(q) ? (((v as Pid[] | null | undefined) || []).map(x => nm(p, x)).join(', ') || 'Ninguém marcado') : ((v as string | null | undefined) || 'Não respondida');
 
 /* ===== Comparação das respostas (HU-15) ===== */
@@ -437,10 +447,10 @@ export function memorialBody(p: Projeto, at: number | string | Date): string {
     if (m.perfil && (m.perfil.funcao || m.perfil.investiu)) L.push('  Função declarada: ' + (m.perfil.funcao || 'não informada') + ' · Investiu dinheiro: ' + (m.perfil.investiu || 'não informado'));
   });
   L.push(''); L.push('SITUAÇÃO POR CRIAÇÃO');
-  /* Ordem do cadastro das criações; as que já não existem no projeto vêm no fim. A ordem das chaves de snap não
-     serve: o banco (jsonb) não a guarda. */
+  /* Ordem do cadastro das criações; as que já não existem no projeto vêm no fim, pelo nome (empate: id). A ordem das
+     chaves de snap não serve: o banco (jsonb) não a guarda. */
   const ids = Object.keys(v.snap);
-  p.assets.map(a => a.id).filter(id => v.snap[id]).concat(ids.filter(id => !p.assets.some(a => a.id === id))).forEach(aid => {
+  p.assets.map(a => a.id).filter(id => v.snap[id]).concat(ids.filter(id => !p.assets.some(a => a.id === id)).sort((a, b) => cmpTexto(v.snap[a].name, v.snap[b].name) || cmpTexto(a, b))).forEach(aid => {
     const x = v.snap[aid];
     L.push(''); L.push(x.name + ' (' + (x.cat || 'criação') + ')');
     if (x.desc) L.push('  Descrição: ' + x.desc);
@@ -479,8 +489,9 @@ export function memorialBody(p: Projeto, at: number | string | Date): string {
   });
   L.push(''); L.push('CONFIRMAÇÕES DA PROPOSTA ' + v.n);
   E.forEach(pid => { const c = v.conf[pid]; L.push('- ' + n(pid) + ': ' + (c ? (c.v === 'ok' ? 'confirmou' : 'recusou (' + c.comment + ')') + ' em ' + fmt(c.at) : 'ainda não se posicionou')); });
-  /* Só as versões anteriores: as recusas da versão impressa já estão no bloco CONFIRMAÇÕES acima. */
-  const ref: string[] = []; p.versions.slice(0, -1).forEach(x => Object.keys(x.conf).forEach(k => { if (x.conf[k].v === 'no') ref.push('- ' + n(k) + ' recusou a proposta ' + x.n + ': ' + x.conf[k].comment); }));
+  /* Só as versões anteriores: as recusas da versão impressa já estão no bloco CONFIRMAÇÕES acima. Em cada versão,
+     pela ordem em que as recusas chegaram (empate: id); a ordem das chaves de conf não serve. */
+  const ref: string[] = []; p.versions.slice(0, -1).forEach(x => Object.keys(x.conf).sort((a, b) => x.conf[a].at - x.conf[b].at || cmpTexto(a, b)).forEach(k => { if (x.conf[k].v === 'no') ref.push('- ' + n(k) + ' recusou a proposta ' + x.n + ': ' + x.conf[k].comment); }));
   if (ref.length) { L.push(''); L.push('RECUSAS E AJUSTES ANTERIORES'); ref.forEach(r => L.push(r)); }
   L.push(''); L.push(LIMITS);
   return L.join('\n');
