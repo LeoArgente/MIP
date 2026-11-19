@@ -68,7 +68,9 @@ model Project {
   org          User     @relation("Organizer", fields: [orgId], references: [id])
   /// coleta | encerrada | decisao | confirmacao | consolidado
   phase        String   @default("coleta")
-  /// equipe | ativos | resp
+  /// Preparação por quem organiza: equipe → ativos → sobre → resp. A ação setupnext avança equipe → ativos e
+  /// ativos → sobre (pede 1 criação aprovada); setupassets grava resp (perguntas liberadas) a partir de qualquer
+  /// passo, desde que haja criação aprovada e o "sobre o projeto" esteja respondido.
   setupStep    String   @default("equipe")
   inviteCode   String   @unique
   inviteActive Boolean  @default(true)

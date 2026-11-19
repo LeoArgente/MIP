@@ -7,6 +7,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { load } from '../dist/store.js';
+import { routes as rotasDaConta } from '../dist/auth.js';
+import { routes as rotasDeProjetos } from '../dist/modules/projetos/index.js';
+import { routes as rotasDeFeedback } from '../dist/modules/feedback/index.js';
 
 /* Relações que viram mapa (por pessoa ou por criação) e não lista: a ordem do banco não chega a lugar nenhum. Quem
    percorre esses mapas no domínio ordena por conta própria (veja packages/domain/test/determinismo.test.js). */
@@ -40,4 +43,47 @@ test('o desempate segue o sentido da ordem: o mais recente primeiro em history e
 test('as confirmações de cada versão viram mapa por pessoa; quem as lê ordena (registro, tarefa)', async () => {
   const { include } = await consulta();
   assert.deepEqual(include.versions.include, { confirmations: true });
+});
+
+/* ===== Listas fora do load: as rotas que ordenam por createdAt ===== */
+/* Mesma regra, mesmo desempate (id no sentido da ordem). Roda sem banco e sem servidor: registra as rotas reais
+   (dist/auth.js e dist/modules/) num app falso que só guarda os handlers, com um Prisma falso que guarda cada consulta
+   e devolve lista vazia, e chama o handler direto. */
+
+function montar(registrar) {
+  const rotas = {}, consultas = [];
+  const app = new Proxy({}, { get: (_, metodo) => (caminho, ...hs) => { rotas[metodo.toUpperCase() + ' ' + caminho] = hs.at(-1); } });
+  const prisma = new Proxy({}, { get: (_, modelo) => new Proxy({}, { get: (_, metodo) => async args => { consultas.push({ modelo, metodo, args }); return []; } }) });
+  const ctx = { prisma, wrap: fn => fn, auth: (_q, _r, next) => next(), prod: false, devLogin: true, testLogin: false, feedbackOn: true, isAdmin: () => true };
+  /* devLogin avisa no console ao registrar as rotas de teste. */
+  const warn = console.warn; console.warn = () => {};
+  try { registrar(app, ctx); } finally { console.warn = warn; }
+  const chamar = async rota => {
+    assert.ok(rotas[rota], rota + ': rota não registrada');
+    let corpo;
+    await rotas[rota]({ user: { id: 'u1', email: 'admin@mip.test' }, params: {}, body: {} }, { json: x => { corpo = x; }, status() { return this; } });
+    return corpo;
+  };
+  const achar = (modelo, metodo) => { const c = consultas.filter(x => x.modelo === modelo && x.metodo === metodo); assert.equal(c.length, 1, modelo + '.' + metodo); return c[0].args; };
+  return { chamar, achar };
+}
+
+test('lista de projetos: integrantes por createdAt desc, desempate por id desc', async () => {
+  const { chamar, achar } = montar(rotasDeProjetos);
+  assert.deepEqual(await chamar('GET /api/projects'), []);
+  assert.deepEqual(achar('member', 'findMany').orderBy, [{ createdAt: 'desc' }, { id: 'desc' }]);
+});
+
+test('feedback no /admin: por createdAt desc com desempate por id desc; as imagens de cada um, asc com desempate asc', async () => {
+  const { chamar, achar } = montar(rotasDeFeedback);
+  assert.deepEqual(await chamar('GET /api/admin/feedback'), []);
+  const args = achar('feedback', 'findMany');
+  assert.deepEqual(args.orderBy, [{ createdAt: 'desc' }, { id: 'desc' }]);
+  assert.deepEqual(args.include.images.orderBy, [{ createdAt: 'asc' }, { id: 'asc' }]);
+});
+
+test('pessoas do login de teste (DEV_LOGIN): por createdAt asc, desempate por id asc', async () => {
+  const { chamar, achar } = montar(rotasDaConta);
+  assert.deepEqual(await chamar('GET /api/dev/users'), []);
+  assert.deepEqual(achar('user', 'findMany').orderBy, [{ createdAt: 'asc' }, { id: 'asc' }]);
 });

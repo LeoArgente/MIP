@@ -48,8 +48,18 @@ export interface Pessoa { name: string; email?: string }
 export interface Membro { pid: Pid; status: StatusMembro; elig: boolean; by?: Pid; at?: number; perfil?: Perfil }
 export interface Ativo { id: Aid; name: string; type: TipoCriacao; cat: string; desc?: string; link?: string; st: StatusAtivo; by?: Pid; reason?: string }
 
-/** Participação percebida que cada pessoa deu a cada uma. A tela só grava números; o código também tolera '' e null vindos do JSON (veja hasNota). */
-export type Notas = Record<Pid, number | string>;
+/**
+ * Participação percebida que cada pessoa deu a cada uma, como é gravada: só números. Todo caminho que grava notas
+ * grava número: a tela (os valores de LV, em apps/web Question.jsx), a API no rascunho (erroDeFormato, em
+ * apps/api/src/modules/shared.ts, recusa o que não for número finito desde o 01c1030), sendErrors no envio e o seed.
+ */
+export type Notas = Record<Pid, number>;
+/**
+ * Notas como são lidas (notasOf, hasNota, Voto.v). Antes do 01c1030 a API gravava o rascunho como chegava, então um
+ * rascunho antigo pode trazer '', null ou texto; hasNota e partOf descartam esses valores (tolerância que vem do
+ * protótipo). Para o número de uma nota lida, use notaNum.
+ */
+export type NotasLidas = Record<Pid, number | string | null>;
 /** Uma opção escolhida ou as pessoas marcadas. */
 export type ValorResposta = string | Pid[];
 export type Opcoes = { [K in Exclude<ChavePergunta, 'notas' | 'titular'>]?: string };
@@ -62,7 +72,7 @@ export type Percentuais = Record<Pid | '__externo__', number | string>;
 export interface Proposta { v: ValoresProposta; externo?: string; percentual?: Percentuais; texto?: string; semAcordo?: boolean; saved?: boolean; by?: Pid; at?: number; ajuste?: { by: Pid; comment: string } }
 
 /** Resposta de uma pessoa a uma pergunta; `ext` é o titular fora da equipe (só em 'titular'). */
-export interface Voto { pid: Pid; v: Notas | ValorResposta; ext?: string }
+export interface Voto { pid: Pid; v: NotasLidas | ValorResposta; ext?: string }
 export interface ItemStatus { status: StatusItem; vals: Voto[]; missing: Pid[] }
 export interface Participacao { avg: Record<Pid, number>; share: Record<Pid, number> }
 
@@ -184,7 +194,19 @@ export const PCT_NEG = 'Ainda não, precisamos negociar';
 
 /* ===== Utilidades ===== */
 export const clone: <T>(o: T) => T = o => (o === undefined ? undefined : JSON.parse(JSON.stringify(o)));
-export const fmt = (t: number | string | Date): string => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }).replace(', ', ' às ');
+/* Data e hora no fuso de São Paulo, "dd/mm/aaaa às hh:mm". O texto é montado aqui, e não pelo padrão do locale
+   (toLocaleString): esse padrão vem do ICU do Node ou do navegador e pode mudar entre versões (vírgula, espaços), e a
+   data entra no registro do acordo, que é hasheado. Do Intl só saem os números, no fuso de São Paulo e com o horário de
+   verão de cada época (o tzdata do ICU). O ano sai sem zeros à esquerda; data inválida dá 'Invalid Date', como antes. */
+const NUMEROS_SP = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' });
+const doisDigitos = (n: number): string => (n < 10 ? '0' + n : '' + n);
+export const fmt = (t: number | string | Date): string => {
+  const d = new Date(t);
+  if (isNaN(d.getTime())) return 'Invalid Date';
+  const n: Record<string, number> = {};
+  NUMEROS_SP.formatToParts(d).forEach(x => { n[x.type] = +x.value; });
+  return doisDigitos(n.day) + '/' + doisDigitos(n.month) + '/' + n.year + ' às ' + doisDigitos(n.hour) + ':' + doisDigitos(n.minute);
+};
 export const nm = (p: Projeto, pid: Pid): string => (p.people && p.people[pid] ? p.people[pid].name : pid);
 export const mem = (p: Projeto, pid: Pid): Membro | undefined => p.members.find(m => m.pid === pid);
 /* Comparação de texto por unidade de código, sem locale: o resultado não muda com a versão do ICU do Node. */
@@ -214,9 +236,12 @@ export const validLink = (s: string | null | undefined): boolean => /^https?:\/\
 export const normExterno = (s: string | null | undefined): string => (s || '').trim();
 
 /* ===== Participação percebida ===== */
-export const notasOf = (d: Resposta | null | undefined): Notas => (d && d.notas) || {};
-export const hasNota = (n: Notas, pid: Pid): boolean => n[pid] !== undefined && n[pid] !== '' && n[pid] !== null && !isNaN(+n[pid]);
-export const contribOf = (d: Resposta | null | undefined): Pid[] => Object.keys(notasOf(d)).filter(k => +notasOf(d)[k] > 0);
+export const notasOf = (d: Resposta | null | undefined): NotasLidas => (d && d.notas) || {};
+export const hasNota = (n: NotasLidas, pid: Pid): boolean => n[pid] !== undefined && n[pid] !== '' && n[pid] !== null && !isNaN(+n[pid]);
+/* Número de uma nota lida; 0 para o que não é número (NaN). Nos usos abaixo dá o mesmo que o + de antes: ou é
+   comparado com > 0 (onde NaN e 0 dão false), ou vem depois de hasNota (que já descartou o NaN). */
+export const notaNum = (x: number | string | null | undefined): number => { const n = Number(x); return isNaN(n) ? 0 : n; };
+export const contribOf = (d: Resposta | null | undefined): Pid[] => Object.keys(notasOf(d)).filter(k => notaNum(notasOf(d)[k]) > 0);
 /* Percentuais inteiros que somam 100 (método do maior resto): cada pessoa recebe o piso da sua proporção, e os pontos
    que faltam para 100 vão, um para cada, a quem tem o maior resto fracionário.
    FATO DE PRODUTO: divisão igual nem sempre fecha em partes iguais. 100 entre 3 pessoas iguais dá 34 + 33 + 33:
@@ -262,7 +287,7 @@ export function itemStatus(p: Projeto, aid: Aid, q: ChavePergunta): ItemStatus {
   if (q === 'notas') {
     const vals: Voto[] = [];
     E.forEach(pid => { const a = ansOf(p, pid, aid); if (a && a.sent) vals.push({ pid, v: notasOf(a.sent) }); });
-    const spread = E.some(t => { const xs = vals.filter(x => hasNota(x.v as Notas, t)).map(x => +(x.v as Notas)[t]); return xs.length > 1 && Math.max(...xs) - Math.min(...xs) > 2; });
+    const spread = E.some(t => { const xs = vals.filter(x => hasNota(x.v as NotasLidas, t)).map(x => notaNum((x.v as NotasLidas)[t])); return xs.length > 1 && Math.max(...xs) - Math.min(...xs) > 2; });
     return { status: spread ? 'div' : (!vals.length || vals.length < E.length ? 'pend' : 'conv'), vals, missing: E.filter(pid => !vals.find(x => x.pid === pid)) };
   }
   const vals: { pid: Pid; v: ValorResposta; ext: string }[] = [];
@@ -275,14 +300,14 @@ export function itemStatus(p: Projeto, aid: Aid, q: ChavePergunta): ItemStatus {
 /* Distribuição das respostas por opção: linhas [rótulo, valor]. */
 export function distRows(p: Projeto, aid: Aid, q: ChavePergunta): string[][] {
   const r = itemStatus(p, aid, q), n = r.vals.length;
-  if (q === 'notas') return elig(p).map(t => { const xs = r.vals.filter(x => hasNota(x.v as Notas, t)).map(x => +(x.v as Notas)[t]); if (!xs.length) return [nm(p, t), 'sem respostas']; const lo = Math.min(...xs), hi = Math.max(...xs); return [nm(p, t), lvName(lo) === lvName(hi) ? lvName(lo) : 'de ' + lvName(lo).toLowerCase() + ' a ' + lvName(hi).toLowerCase()]; });
+  if (q === 'notas') return elig(p).map(t => { const xs = r.vals.filter(x => hasNota(x.v as NotasLidas, t)).map(x => notaNum((x.v as NotasLidas)[t])); if (!xs.length) return [nm(p, t), 'sem respostas']; const lo = Math.min(...xs), hi = Math.max(...xs); return [nm(p, t), lvName(lo) === lvName(hi) ? lvName(lo) : 'de ' + lvName(lo).toLowerCase() + ' a ' + lvName(hi).toLowerCase()]; });
   if (isP(q)) return elig(p).map(t => [nm(p, t), r.vals.filter(x => ((x.v as Pid[] | undefined) || []).includes(t)).length + ' de ' + n + ' marcaram']).concat(q === 'titular' ? r.vals.filter(x => x.ext).map(x => ['Titular fora da equipe indicado', x.ext!]) : []);
   const c: Record<string, number> = {}; r.vals.forEach(x => { if (x.v) c[x.v as string] = (c[x.v as string] || 0) + 1; });
   return Object.keys(c).map(o => [o, c[o] + (c[o] > 1 ? ' pessoas' : ' pessoa')]);
 }
 /* Proposta inicial de uma criação: o que todos responderam igual já entra preenchido. */
 export function propDefault(p: Projeto, aid: Aid): Proposta {
-  const a = p.assets.find(x => x.id === aid), v: Partial<Record<ChaveDecisao, Notas | ValorResposta>> = {};
+  const a = p.assets.find(x => x.id === aid), v: Partial<Record<ChaveDecisao, NotasLidas | ValorResposta>> = {};
   decQs(a).forEach(q => { const r = itemStatus(p, aid, q); v[q] = r.status === 'conv' && r.vals.length ? clone(r.vals[0].v) : (isP(q) ? [] : ''); });
   const own = itemStatus(p, aid, 'titular');
   /* A convergência compara sem as pontas e sem caixa; o texto que entra na proposta é o da primeira resposta, normalizado. */
@@ -319,7 +344,7 @@ export function stepErrors(p: Projeto, me: Pid, a: Pick<Ativo, 'id' | 'type'>, d
   const err: Record<string, string> = {}, k = a.id + ':';
   if (g === 'contrib') {
     if (!elig(p).every(pid => hasNota(notasOf(d), pid))) err[k + 'notas'] = 'Escolha quanto cada pessoa fez';
-    if (+notasOf(d)[me] > 0 && !(d.desc || '').trim()) err[k + 'desc'] = 'Conte em uma frase o que você fez';
+    if (notaNum(notasOf(d)[me]) > 0 && !(d.desc || '').trim()) err[k + 'desc'] = 'Conte em uma frase o que você fez';
     if (!d.origem) err[k + 'origem'] = 'Informe a origem';
     if (!d.titularAtual) err[k + 'titularAtual'] = 'Diga se já existe um documento';
     if ((d.link || '').trim() && !validLink(d.link)) err[k + 'link'] = 'Informe um link válido, começando com http';
@@ -336,7 +361,7 @@ export function stepErrors(p: Projeto, me: Pid, a: Pick<Ativo, 'id' | 'type'>, d
 export function sendErrors(p: Projeto, me: Pid, a: Pick<Ativo, 'id' | 'type'>, d: Resposta): Record<string, string> {
   const E = elig(p), err: Record<string, string> = {};
   qsFor(a).forEach(q => {
-    if (q === 'notas') { const n = notasOf(d), o: Record<Pid, number> = {}; E.forEach(pid => { if (hasNota(n, pid)) o[pid] = +n[pid]; }); d.notas = o; if (!E.every(pid => hasNota(o, pid))) err[a.id + ':notas'] = 'Escolha a participação percebida de cada pessoa'; return; }
+    if (q === 'notas') { const n = notasOf(d), o: Notas = {}; E.forEach(pid => { if (hasNota(n, pid)) o[pid] = notaNum(n[pid]); }); d.notas = o; if (!E.every(pid => hasNota(o, pid))) err[a.id + ':notas'] = 'Escolha a participação percebida de cada pessoa'; return; }
     if (isP(q)) d[q] = (d[q] || []).filter(x => E.includes(x));
     if (isP(q) ? !d[q]!.length && !(q === 'titular' && normExterno(d.titularExterno)) : !d[q]) err[a.id + ':' + q] = 'Responda esta pergunta para enviar';
   });
@@ -482,6 +507,9 @@ export function memorialBody(p: Projeto, at: number | string | Date): string {
     if (x.semAcordo) pend.push('decisão da criação ainda sem acordo');
     if (x.v.divisao === PCT_NEG) pend.push('percentuais ainda não negociados');
     if (x.v.divisao === PCT_SIM) { const ps = (x.v.titular || []).concat(normExterno(x.externo) ? ['__externo__'] : []); if (!ps.length || ps.some(pid => pctVazio((x.percentual || {})[pid]))) pend.push('percentuais combinados não registrados'); }
+    /* 'Ainda não sabemos' não está nas opções de titularAtual e nenhum caminho o grava hoje: é compatibilidade com dado
+       gravado antes do 01c1030, quando o seed gravava esse valor e a API não conferia as opções. Uma versão enviada
+       antes disso o guarda no snap, e o registro do acordo gerado dela continua marcando a pendência. */
     if (x.v.titularAtual === 'Não sei' || x.v.titularAtual === 'Ainda não sabemos') pend.push('titularidade atual a verificar');
     if (x.v.origem === 'Não sei') pend.push('origem a verificar');
     if (x.v.terceiros === 'Sim, autorização pendente' || x.v.terceiros === 'Ainda não sabemos') pend.push('direitos de terceiros a verificar');
