@@ -34,6 +34,14 @@ describe('snapshot', () => {
     assert.deepEqual([s.externo, s.percentual, s.texto, s.semAcordo], ['Empresa X', { ana: 100 }, 'obs', true]);
   });
 
+  test('o titular externo entra normalizado: sem espaços nas pontas, e só espaços vira vazio', () => {
+    const p = projeto();
+    p.proposal.a1 = { ...propDefault(p, 'a1'), externo: '  Empresa X ' };
+    assert.equal(snapshot(p).a1.externo, 'Empresa X');
+    p.proposal.a1.externo = '   ';
+    assert.equal(snapshot(p).a1.externo, '');
+  });
+
   test('é uma cópia: mudar a proposta depois não altera a versão enviada', () => {
     const p = projeto();
     p.proposal.a1 = propDefault(p, 'a1');
@@ -57,6 +65,13 @@ describe('snapshot', () => {
     assert.deepEqual(r[2], {
       pid: 'carla', respondido: false, desc: '', evidencia: '', origem: '', titularAtual: '', titularAtualNome: '', titularAtualBase: '', titularExterno: ''
     });
+  });
+
+  test('relatos: o titular externo de cada resposta entra normalizado', () => {
+    const p = projeto();
+    responder(p, 'ana', { titularExterno: ' Empresa X  ' });
+    responder(p, 'bruno', { titularExterno: '   ' });
+    assert.deepEqual(snapshot(p).a1.relatos.map(x => x.titularExterno), ['Empresa X', '', '']);
   });
 });
 
@@ -184,6 +199,22 @@ describe('memorialBody', () => {
       '  Explicações e pendências anotadas: Falta conversar',
       '  Pendências identificadas: percentuais ainda não negociados; titularidade atual a verificar'
     ]);
+  });
+
+  /* Versão enviada antes de o snapshot normalizar o externo: o texto cru ainda está gravado nela. */
+  test('por criação: titular externo gravado cru é lido sem espaços nas pontas, e só espaços some', () => {
+    const p = projeto(), s = enviarVersao(p).snap.a1;
+    Object.assign(s, { externo: ' Empresa X ', v: { ...s.v, divisao: PCT_SIM }, percentual: { ana: 60, __externo__: 40 } });
+    s.relatos[0].titularExterno = '  Empresa Y ';
+    s.relatos[1].titularExterno = '   ';
+    let B = bloco(linhas(p), 'Logo (Marca)');
+    assert.ok(B.includes('  - Titular pretendido fora da equipe: Empresa X'));
+    assert.ok(B.includes('  Percentuais de titularidade combinados: Ana: 60% · Empresa X: 40%'));
+    assert.deepEqual(B.filter(l => l.includes('segundo esta pessoa')), ['    Titular pretendido fora da equipe, segundo esta pessoa: Empresa Y']);
+    s.externo = '   ';
+    B = bloco(linhas(p), 'Logo (Marca)');
+    assert.ok(!B.some(l => l.startsWith('  - Titular pretendido fora da equipe')));
+    assert.ok(B.includes('  Percentuais de titularidade combinados: Ana: 60%'));
   });
 
   test('por criação: sem categoria, sem acordo, sem participação gravada e com percentuais', () => {
@@ -348,6 +379,14 @@ describe('memorialBody', () => {
     test('percentuais combinados com valor para todos os titulares: sem essa pendência', () => {
       assert.equal(pendPct({ titular: ['ana'] }, { ana: 100 }), 'decisão da criação ainda sem acordo');
       assert.equal(pendPct({ titular: ['ana'] }, { ana: 30, __externo__: 70 }, 'Empresa X'), 'decisão da criação ainda sem acordo');
+    });
+
+    /* pendPct grava o externo direto na versão, sem passar pelo snapshot: é o caso de uma versão enviada antes de o
+       snapshot normalizar o externo. Só espaços não é titular (como no propError, que deixou salvar), então não falta
+       percentual para ele; com espaços nas pontas, ele continua titular. */
+    test('titular externo só com espaços não gera a pendência de percentuais', () => {
+      assert.equal(pendPct({ titular: ['ana'] }, { ana: 100 }, '   '), 'decisão da criação ainda sem acordo');
+      assert.equal(pendPct({ titular: ['ana'] }, { ana: 100 }, ' Empresa X '), SEM_PCT);
     });
   });
 

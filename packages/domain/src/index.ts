@@ -247,7 +247,7 @@ export function partOf(p: Projeto, aid: Aid): Participacao {
 export const partTxt = (p: Projeto, pt: Participacao): string => naOrdemDaEquipe(p, Object.keys(pt.avg)).filter(k => pt.avg[k] > 0).map(k => nm(p, k) + ': ' + lvName(pt.avg[k]).toLowerCase()).join(' · ') || 'Sem participação informada';
 /* Percentual ainda não informado: a tela manda '' para o campo vazio (a API não aceita outro valor vazio). */
 const pctVazio = (x: number | string | undefined): boolean => x === undefined || x === '';
-export const pctTxt = (p: Projeto, s: Pick<Proposta, 'v' | 'externo' | 'percentual'>): string => s.v?.divisao === PCT_SIM ? (s.v.titular || []).concat(s.externo ? ['__externo__'] : []).map(pid => (pid === '__externo__' ? s.externo : nm(p, pid)) + ': ' + (pctVazio((s.percentual || {})[pid]) ? 'não informado' : (s.percentual || {})[pid] + '%')).join(' · ') : 'Não acordados';
+export const pctTxt = (p: Projeto, s: Pick<Proposta, 'v' | 'externo' | 'percentual'>): string => { const ext = normExterno(s.externo); return s.v?.divisao === PCT_SIM ? (s.v.titular || []).concat(ext ? ['__externo__'] : []).map(pid => (pid === '__externo__' ? ext : nm(p, pid)) + ': ' + (pctVazio((s.percentual || {})[pid]) ? 'não informado' : (s.percentual || {})[pid] + '%')).join(' · ') : 'Não acordados'; };
 /* O formato de v depende de q: Notas para 'notas', lista de pessoas para 'titular', texto para as demais. */
 export const fmtAns = (p: Projeto, q: ChavePergunta, v: Notas | ValorResposta | null | undefined): string => q === 'notas'
   ? (naOrdemDaEquipe(p, Object.keys(v || {})).filter(k => hasNota(v as Notas, k)).map(k => nm(p, k) + ': ' + lvName((v as Notas)[k]).toLowerCase()).join(' · ') || 'Sem respostas')
@@ -370,6 +370,9 @@ export function taskFor(p: Projeto, pid: Pid, qpos: Record<Aid, number | undefin
     if (rf.length) {
       /* Os comentários entram inteiros: são o que quem organiza precisa ajustar, e cortar um deles esconderia parte do pedido. */
       const criacoes = (k: Pid) => (lv!.conf[k].assets || []).map(x => lv!.snap[x]?.name).filter(Boolean).join(', '), fala = (k: Pid) => '"' + lv!.conf[k].comment + '"';
+      /* Várias recusas na mesma versão (varias) é defesa: hoje não acontece. A primeira recusa fecha a versão (a fase
+         volta para 'decisao' e refuse, em apps/api/src/modules/versoes, só aceita posição durante a confirmação), então
+         cada versão tem no máximo uma recusa. */
       const who = nm(p, rf[0]), ats = criacoes(rf[0]), varias = rf.length > 1;
       if (org) return { tab: 'decidir', label: 'Ajustar a proposta', note: varias
         ? rf.length + ' pessoas recusaram a proposta ' + lv!.n + '. ' + rf.map(k => nm(p, k) + (criacoes(k) ? ' pediu ajuste em ' + criacoes(k) : '') + ': ' + fala(k)).join('. ')
@@ -416,8 +419,8 @@ export function snapshot(p: Projeto): Record<Aid, CriacaoCongelada> {
     const pr = propOf(p, a.id);
     snap[a.id] = {
       name: a.name, cat: a.cat, desc: a.desc || '', link: a.link || '', part: partOf(p, a.id), qs: decQs(a), v: clone(pr.v),
-      externo: pr.externo || '', percentual: clone(pr.percentual || {}), texto: pr.texto || '', semAcordo: !!pr.semAcordo,
-      relatos: elig(p).map(pid => { const x = ansOf(p, pid, a.id)?.sent; return { pid, respondido: !!x, desc: x?.desc || '', evidencia: x?.link || '', origem: x?.origem || '', titularAtual: x?.titularAtual || '', titularAtualNome: x?.titularAtualNome || '', titularAtualBase: x?.titularAtualBase || '', titularExterno: x?.titularExterno || '' }; })
+      externo: normExterno(pr.externo), percentual: clone(pr.percentual || {}), texto: pr.texto || '', semAcordo: !!pr.semAcordo,
+      relatos: elig(p).map(pid => { const x = ansOf(p, pid, a.id)?.sent; return { pid, respondido: !!x, desc: x?.desc || '', evidencia: x?.link || '', origem: x?.origem || '', titularAtual: x?.titularAtual || '', titularAtualNome: x?.titularAtualNome || '', titularAtualBase: x?.titularAtualBase || '', titularExterno: normExterno(x?.titularExterno) }; })
     };
   });
   return snap;
@@ -464,7 +467,7 @@ export function memorialBody(p: Projeto, at: number | string | Date): string {
         L.push('    Origem declarada: ' + (r.origem || 'não informada'));
         L.push('    Documento de titularidade: ' + (r.titularAtual || 'não informada'));
         L.push('    Titular indicado hoje: ' + (r.titularAtualNome || 'não informado'));
-        if (r.titularExterno) L.push('    Titular pretendido fora da equipe, segundo esta pessoa: ' + r.titularExterno);
+        if (normExterno(r.titularExterno)) L.push('    Titular pretendido fora da equipe, segundo esta pessoa: ' + normExterno(r.titularExterno));
         L.push('    Base ou documento: ' + (r.titularAtualBase || 'não informado'));
         L.push('    Contribuição descrita: ' + (r.desc || 'não descrita'));
         L.push('    Evidência: ' + (r.evidencia || 'não informada'));
@@ -472,13 +475,13 @@ export function memorialBody(p: Projeto, at: number | string | Date): string {
     });
     L.push('  Decisões e condições propostas:');
     (x.qs || []).forEach(q => L.push('  - ' + QS[q].short + ': ' + fa(q, x.v[q])));
-    if (x.externo) L.push('  - Titular pretendido fora da equipe: ' + x.externo);
+    if (normExterno(x.externo)) L.push('  - Titular pretendido fora da equipe: ' + normExterno(x.externo));
     L.push('  Percentuais de titularidade combinados: ' + pctTxt(pv, x));
     if (x.texto) L.push('  Explicações e pendências anotadas: ' + x.texto);
     const pend: string[] = [];
     if (x.semAcordo) pend.push('decisão da criação ainda sem acordo');
     if (x.v.divisao === PCT_NEG) pend.push('percentuais ainda não negociados');
-    if (x.v.divisao === PCT_SIM) { const ps = (x.v.titular || []).concat(x.externo ? ['__externo__'] : []); if (!ps.length || ps.some(pid => pctVazio((x.percentual || {})[pid]))) pend.push('percentuais combinados não registrados'); }
+    if (x.v.divisao === PCT_SIM) { const ps = (x.v.titular || []).concat(normExterno(x.externo) ? ['__externo__'] : []); if (!ps.length || ps.some(pid => pctVazio((x.percentual || {})[pid]))) pend.push('percentuais combinados não registrados'); }
     if (x.v.titularAtual === 'Não sei' || x.v.titularAtual === 'Ainda não sabemos') pend.push('titularidade atual a verificar');
     if (x.v.origem === 'Não sei') pend.push('origem a verificar');
     if (x.v.terceiros === 'Sim, autorização pendente' || x.v.terceiros === 'Ainda não sabemos') pend.push('direitos de terceiros a verificar');

@@ -57,10 +57,13 @@ export const ACTIONS: Acoes = {
   comment(p, me, d) {
     if (!elig(p).includes(me)) deny('Só quem participa das respostas pode comentar.');
     assetOf(p, d.aid);
+    /* O corpo chega sem tipo: text precisa ser texto dentro do limite (recusado, não cortado). Sem text, vale como vazio. */
+    const e = d.text === undefined ? null : erroDeFormato('text', d.text);
+    if (e) fail('cmt', e);
     const t = (d.text || '').trim();
     if (!t) fail('cmt', 'Escreva o comentário antes de enviar.');
     /* Garantido: assetOf acima. */
-    p.comments.push({ aid: d.aid!, pid: me, text: t.slice(0, 2000), at: now() });
+    p.comments.push({ aid: d.aid!, pid: me, text: t, at: now() });
     return { toast: 'Comentário registrado. A proposta não foi alterada.' };
   }
 };
