@@ -1,6 +1,6 @@
 /* Versões: envio da proposta para confirmação, reabertura, confirmação e recusa de cada pessoa. */
 import { approved, eligNaVersao, nm, lastV, propOf, snapshot, membrosCongelados } from '@mip/domain';
-import { ActionError, deny, fail, now, needOrg, needPhase, ensureProp } from '../shared.js';
+import { ActionError, deny, fail, now, needOrg, needPhase, ensureProp, erroDeFormato, ehListaDeIds } from '../shared.js';
 import { log } from '../historico/index.js';
 import type { Acoes } from '../shared.js';
 
@@ -45,9 +45,16 @@ export const ACTIONS: Acoes = {
     if (lv.conf[me]) deny('Você já se posicionou sobre esta versão.');
     if (!eligNaVersao(lv).includes(me)) deny('Você não respondeu desta vez e não confirma a proposta.');
     if (p.org === me) deny('Quem organiza edita a proposta em vez de recusá-la.');
-    const ra = (d.assets || []).filter(x => lv.snap[x]), comment = (d.comment || '').trim(), err: Record<string, string> = {};
-    if (!ra.length) err.refa = 'Marque pelo menos uma criação';
-    if (!comment) err.refuse = 'Explique o que precisa mudar';
+    /* O corpo chega sem tipo. Sem assets ou sem comment, vale como vazio (pede a criação ou a explicação); com eles,
+       assets precisa ser lista de ids e comment, texto dentro do limite. Ids que não são criações da versão continuam
+       ignorados, como antes. */
+    const formato = d.comment === undefined ? null : erroDeFormato('comment', d.comment);
+    const listaOk = d.assets === undefined || ehListaDeIds(d.assets);
+    const ra = listaOk ? (d.assets || []).filter(x => lv.snap[x]) : [], comment = formato ? '' : (d.comment || '').trim(), err: Record<string, string> = {};
+    if (!listaOk) err.refa = 'Envie as criações marcadas como uma lista.';
+    else if (!ra.length) err.refa = 'Marque pelo menos uma criação';
+    if (formato) err.refuse = formato;
+    else if (!comment) err.refuse = 'Explique o que precisa mudar';
     if (Object.keys(err).length) throw new ActionError(err);
     lv.conf[me] = { v: 'no', comment, assets: ra, at: now() };
     ra.forEach(x => { const pr = ensureProp(p, x); pr.saved = false; pr.ajuste = { by: me, comment }; });

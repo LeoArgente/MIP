@@ -156,6 +156,13 @@ describe('pctTxt', () => {
     assert.equal(pctTxt(projeto(), s), 'Ana: não informado');
     assert.equal(pctTxt(projeto(), { v: { divisao: PCT_SIM, titular: ['ana', 'carla'] }, externo: 'Empresa X', percentual: { ana: 40, carla: '' } }), 'Ana: 40% · Carla: não informado · Empresa X: não informado');
   });
+
+  /* O externo é lido por normExterno, como no propError: só espaços não é titular. */
+  test('titular externo só com espaços não entra; com espaços nas pontas, entra sem eles', () => {
+    const s = { v: { divisao: PCT_SIM, titular: ['ana'] }, percentual: { ana: 100, __externo__: 50 } };
+    assert.equal(pctTxt(projeto(), { ...s, externo: '   ' }), 'Ana: 100%');
+    assert.equal(pctTxt(projeto(), { ...s, externo: ' Empresa X ' }), 'Ana: 100% · Empresa X: 50%');
+  });
 });
 
 describe('contribOf', () => {
