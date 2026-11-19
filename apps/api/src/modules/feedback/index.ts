@@ -48,7 +48,9 @@ export function routes(app: Express, { prisma, wrap, auth, feedbackOn, isAdmin }
   }));
   app.get('/api/admin/feedback', auth, wrap(async (req: AuthedRequest, res) => {
     if (!isAdmin(req.user)) return res.status(403).json({ err: { _: 'Só a equipe da MIP vê esta página.' } });
-    const rows = await prisma.feedback.findMany({ orderBy: { createdAt: 'desc' }, take: 500, include: { user: { select: { name: true, email: true } }, images: { select: { id: true } } } });
+    /* Toda ordem termina numa coluna única (id), como em store.ts: createdAt empata por construção, e as imagens de um
+       feedback são criadas juntas, no mesmo create. */
+    const rows = await prisma.feedback.findMany({ orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 500, include: { user: { select: { name: true, email: true } }, images: { select: { id: true }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] } } });
     /* Garantido: filter(Boolean) tira os null; o TS não estreita o tipo por Boolean. */
     const ids = [...new Set(rows.map(r => r.projectId).filter(Boolean) as string[])];
     const names = Object.fromEntries((await prisma.project.findMany({ where: { id: { in: ids } }, select: { id: true, name: true } })).map(p => [p.id, p.name]));

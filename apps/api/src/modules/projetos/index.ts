@@ -5,7 +5,7 @@ import { SOBRE, PERFIL, sobreErrors, perfilErrors, approved, mem, nm, taskFor, p
 import { load, withProject } from '../../store.js';
 import { viewFor } from '../../view.js';
 import { sendLoginLink, validEmail, nameFromEmail } from '../../auth.js';
-import { ActionError, deny, fail, now, needOrg, needPhase, ehObjeto, errosDeFormato } from '../shared.js';
+import { ActionError, deny, fail, now, needOrg, needPhase, ehObjeto, errosDeFormato, comProjeto } from '../shared.js';
 import { log } from '../historico/index.js';
 import type { Express, Response } from 'express';
 import type { Contexto, AuthedRequest } from '../../server.js';
@@ -76,7 +76,8 @@ export function routes(app: Express, { prisma, wrap, auth }: Contexto) {
 
   /* ===== Projetos ===== */
   app.get('/api/projects', auth, wrap(async (req: AuthedRequest, res) => {
-    const ms = await prisma.member.findMany({ where: { userId: req.user.id }, select: { projectId: true }, orderBy: { createdAt: 'desc' } });
+    /* A ordem termina em id, como em store.ts: o sort por lastAt abaixo é estável, e no empate de lastAt fica esta. */
+    const ms = await prisma.member.findMany({ where: { userId: req.user.id }, select: { projectId: true }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] });
     const out = [];
     /* Carrega os projetos em paralelo, não um depois do outro. */
     const all = await Promise.all(ms.map(({ projectId }) => load(prisma, projectId, req.user.id)));
@@ -135,10 +136,11 @@ export function routes(app: Express, { prisma, wrap, auth }: Contexto) {
       text: `${req.user.name} adicionou você ao projeto "${added.project.name}" na MIP. Cada pessoa responde em particular sobre o que a equipe criou, e ninguém vê suas respostas até o fim.`,
       linkLabel: 'Abrir o projeto'
     });
+    /* fresh existe hoje: quem age é quem organiza (conferido na transação acima), quem organiza não pode ser removido
+       (a rota /remove recusa) nem trocado (nenhuma rota muda Project.orgId), e nenhuma rota apaga projeto. Se um dia
+       deixar de existir, comProjeto responde só o resultado. */
     const fresh = await load(prisma, req.params.id, req.user.id);
-    /* Garantido hoje: o projeto existia na transação acima com quem organiza como integrante, e nenhuma rota apaga
-       projeto. Se um dia houver exclusão de projeto, aqui vira 500 (o wrap responde). */
-    res.json({ result: { toast: added.user.name + ' entrou no projeto.' + (sent ? ' Enviamos um e-mail com o link de acesso.' : ' O e-mail não foi enviado; compartilhe o link de convite.') }, project: viewFor(fresh!, req.user.id) });
+    res.json(comProjeto({ toast: added.user.name + ' entrou no projeto.' + (sent ? ' Enviamos um e-mail com o link de acesso.' : ' O e-mail não foi enviado; compartilhe o link de convite.') }, fresh, req.user.id));
   }));
 
   /* Remover alguém do projeto (só quem organiza, enquanto as respostas estão abertas).
@@ -163,10 +165,10 @@ export function routes(app: Express, { prisma, wrap, auth }: Contexto) {
       return { toast: name + ' foi removido do projeto.' };
     });
     if (out.confirmRemove) return res.json({ result: out });
+    /* fresh existe hoje pelo mesmo motivo do convite: quem age é quem organiza, que esta rota não deixa remover
+       (pid === p.org acima), e nenhuma rota troca quem organiza nem apaga projeto. */
     const fresh = await load(prisma, req.params.id, req.user.id);
-    /* Garantido hoje: o projeto existia na transação acima com quem organiza como integrante (quem organiza não pode
-       ser removido), e nenhuma rota apaga projeto. Se um dia houver exclusão de projeto, aqui vira 500 (o wrap responde). */
-    res.json({ result: out, project: viewFor(fresh!, req.user.id) });
+    res.json(comProjeto(out, fresh, req.user.id));
   }));
 
   app.post('/api/projects/:id/remind', auth, wrap(async (req: AuthedRequest, res) => {
@@ -199,9 +201,12 @@ export function routes(app: Express, { prisma, wrap, auth }: Contexto) {
     const out = await prisma.$transaction(async tx => {
       await tx.$queryRaw`SELECT id FROM "Project" WHERE id = ${pr.id} FOR UPDATE`;
       if (await tx.member.findUnique({ where: { projectId_userId: { projectId: pr.id, userId: req.user.id } }, select: { id: true } })) return { already: true };
-      /* Garantido hoje: pr foi achado logo acima e nenhuma rota apaga projeto. Se um dia houver exclusão de projeto,
-         aqui vira 500 (o wrap responde). */
-      const { phase } = (await tx.project.findUnique({ where: { id: pr.id }, select: { phase: true } }))!;
+      /* Existe hoje: pr foi achado logo acima, o FOR UPDATE trava a linha até o fim da transação e nenhuma rota apaga
+         projeto. Se um dia houver exclusão, o projeto apagado entre a leitura de pr e a trava responde como convite
+         inexistente (o mesmo 404 de cima), sem gravar nada. */
+      const proj = await tx.project.findUnique({ where: { id: pr.id }, select: { phase: true } });
+      if (!proj) throw new ActionError('Convite não encontrado.', 404);
+      const { phase } = proj;
       await tx.member.create({ data: { projectId: pr.id, userId: req.user.id, elig: phase === 'coleta' } });
       await tx.historyEntry.create({ data: { projectId: pr.id, userId: req.user.id, text: 'entrou pelo link de convite' } });
       return { already: false, elig: phase === 'coleta' };

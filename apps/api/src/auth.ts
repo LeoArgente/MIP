@@ -176,7 +176,7 @@ export function routes(app: Express, { prisma, wrap, auth, prod, devLogin, testL
   /* ===== Só para testes locais: entrar como qualquer pessoa sem e-mail (DEV_LOGIN=1). ===== */
   if (devLogin) {
     console.warn('DEV_LOGIN ativo: qualquer pessoa pode entrar como outra. Não use em produção com dados reais.');
-    app.get('/api/dev/users', wrap(async (_req, res) => res.json(await prisma.user.findMany({ select: { id: true, name: true, email: true }, orderBy: { createdAt: 'asc' } }))));
+    app.get('/api/dev/users', wrap(async (_req, res) => res.json(await prisma.user.findMany({ select: { id: true, name: true, email: true }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] }))));
     app.post('/api/dev/login', wrap(async (req, res) => {
       const u = await prisma.user.findUnique({ where: { id: String(req.body.id || '') } });
       if (!u) return res.status(404).json({ err: { _: 'Pessoa não encontrada.' } });

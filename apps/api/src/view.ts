@@ -3,7 +3,7 @@
    - Durante as respostas, só chegam as suas próprias e um marcador de "já enviou" das demais.
    - Depois que as respostas são encerradas, chegam as respostas por pergunta com o autor de cada uma
      e a participação percebida média, para a tela de Decisões mostrar quem escolheu o quê. */
-import { approved, qsFor, itemStatus, partOf, elig } from '@mip/domain';
+import { approved, qsFor, itemStatus, partOf } from '@mip/domain';
 import type { Pid, Aid, Membro, EntradaResposta, Projeto } from '@mip/domain';
 import type { ProjetoCompleto } from './store.js';
 
@@ -25,7 +25,6 @@ export interface Vista extends Omit<ProjetoCompleto, 'members' | 'answers' | 'li
   link: { active: boolean; code?: string };
   stats?: NonNullable<Projeto['stats']>;
   parts?: NonNullable<Projeto['parts']>;
-  eligible?: Pid[];
 }
 
 export function viewFor(p: ProjetoCompleto, me: Pid): Vista {
@@ -53,6 +52,5 @@ export function viewFor(p: ProjetoCompleto, me: Pid): Vista {
   }
   /* O link de convite só interessa a quem organiza. */
   if (p.org !== me) out.link = { active: p.link.active };
-  out.eligible = elig(p);
   return out;
 }

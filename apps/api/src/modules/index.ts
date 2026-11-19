@@ -2,8 +2,7 @@
    se tiver, as próprias rotas (routes). O despachante de ações monta um mapa único a partir deles. */
 import { mem } from '@mip/domain';
 import { load, withProject } from '../store.js';
-import { viewFor } from '../view.js';
-import { ActionError, deny } from './shared.js';
+import { ActionError, deny, comProjeto } from './shared.js';
 import * as projetos from './projetos/index.js';
 import * as ativos from './ativos/index.js';
 import * as respostas from './respostas/index.js';
@@ -54,11 +53,14 @@ export function routes(app: Express, ctx: Contexto) {
       return { result, p };
     });
     if (out.result.quiet) return res.json({ result: out.result });
+    /* Sem garantia: este load roda depois do fim da transação, e entre os dois quem organiza pode tirar a pessoa do
+       projeto pela rota /remove (durante a coleta), que não passa por aqui. Aí load devolve null e a resposta leva só o
+       resultado (comProjeto), porque a ação já foi gravada.
+       Defeito conhecido: a pessoa removida não é avisada. A tela fica com o projeto de antes; o próximo carregamento
+       (a cada 20 s ou ao voltar para a aba) recebe 404, e o apps/web mostra "Não foi possível carregar o painel" e
+       pede para verificar a conexão, sem dizer que ela foi removida. */
     const fresh = await load(prisma, req.params.id, req.user.id);
-    /* Garantido hoje: o projeto existia na transação acima com a pessoa como integrante, nenhuma rota apaga projeto
-       e nenhuma ação apaga integrante (só a rota /remove, que não passa por aqui).
-       Se um dia houver exclusão de projeto ou uma ação que tire a pessoa, aqui vira 500 (o wrap responde). */
-    res.json({ result: out.result, project: viewFor(fresh!, req.user.id) });
+    res.json(comProjeto(out.result, fresh, req.user.id));
   }));
 
   for (const m of Object.values(MODULES)) if (m.routes) m.routes(app, ctx);

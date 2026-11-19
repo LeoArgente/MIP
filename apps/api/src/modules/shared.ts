@@ -4,7 +4,9 @@
    Este arquivo guarda o que as ações de vários módulos usam em comum. */
 import { propDefault, QS, SOBRE, PERFIL, isP } from '@mip/domain';
 import type { Pid, Aid, Fase, Ativo, Proposta, Aba, Sobre, Perfil, Resposta, ChavePergunta, Pergunta } from '@mip/domain';
+import { viewFor } from '../view.js';
 import type { ProjetoCompleto } from '../store.js';
+import type { Vista } from '../view.js';
 
 /**
  * Corpo de uma ação (POST /api/projects/:id/actions/:type), como o apps/web envia. Todos os campos são
@@ -43,6 +45,13 @@ export interface Resultado {
   next?: Aid | null;
   confirmDelete?: { aid: Aid; n: number };
 }
+
+/**
+ * Resposta de uma rota que mudou o projeto: o resultado e o projeto recarregado depois da transação (`fresh`, de
+ * load). Sem `fresh` (load devolveu null: a pessoa já não participa), só o resultado, como nas ações quiet; a ação
+ * já foi gravada, e o apps/web aceita resposta sem `project`.
+ */
+export const comProjeto = <R>(result: R, fresh: ProjetoCompleto | null, me: Pid): { result: R; project?: Vista } => (fresh ? { result, project: viewFor(fresh, me) } : { result });
 
 export type Acao = (p: ProjetoCompleto, me: Pid, d: DadosAcao) => Resultado;
 export type Acoes = Record<string, Acao>;
